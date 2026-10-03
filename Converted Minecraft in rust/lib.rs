@@ -17,3 +17,11 @@
 
 pub mod com;
 pub mod net;
+
+/// Java standard-library equivalents (Math.floorMod, String.hashCode, the
+/// java.util.Random LCG, MD5, the golden-data reader). These have no `.java`
+/// counterpart in minecraft-decompiled/, so Rule 3 puts them in `_porting/`; we
+/// still expose them as a normal crate module so ported game code can `use`
+/// them without path gymnastics. See _porting/DESIGN_DECISIONS.md (#javacompat).
+#[path = "_porting/javacompat/mod.rs"]
+pub mod javacompat;

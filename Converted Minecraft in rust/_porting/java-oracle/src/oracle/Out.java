@@ -83,8 +83,21 @@ public final class Out {
 		return "bool:" + v;
 	}
 
+	/**
+	 * Encodes a Java string.
+	 *
+	 * The format separates values with a single space, so a value that contains a
+	 * space -- or is empty -- would be unparseable. Escape it: `\s` for a space,
+	 * `\0` for empty, `\n` for a newline. The Rust reader unescapes.
+	 */
 	public static String str(final String v) {
-		return "str:" + (v == null ? "<null>" : v);
+		if (v == null) {
+			return "str:\\0null";
+		}
+		if (v.isEmpty()) {
+			return "str:\\0";
+		}
+		return "str:" + v.replace("\\", "\\\\").replace(" ", "\\s").replace("\n", "\\n").replace("\t", "\\t");
 	}
 
 	public static String ints(final int... values) {
