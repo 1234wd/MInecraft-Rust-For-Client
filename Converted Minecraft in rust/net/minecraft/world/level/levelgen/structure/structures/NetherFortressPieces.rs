@@ -1,0 +1,7 @@
+//! Port of: net/minecraft/world/level/levelgen/structure/structures/NetherFortressPieces.java
+//! Java class(es): net.minecraft.world.level.levelgen.structure.structures.NetherFortressPieces, net.minecraft.world.level.levelgen.structure.structures.BridgeCrossing, net.minecraft.world.level.levelgen.structure.structures.BridgeEndFiller, net.minecraft.world.level.levelgen.structure.structures.BridgeStraight, net.minecraft.world.level.levelgen.structure.structures.CastleCorridorStairsPiece, net.minecraft.world.level.levelgen.structure.structures.CastleCorridorTBalconyPiece, net.minecraft.world.level.levelgen.structure.structures.CastleEntrance, net.minecraft.world.level.levelgen.structure.structures.CastleSmallCorridorCrossingPiece, net.minecraft.world.level.levelgen.structure.structures.CastleSmallCorridorLeftTurnPiece, net.minecraft.world.level.levelgen.structure.structures.CastleSmallCorridorPiece, net.minecraft.world.level.levelgen.structure.structures.CastleSmallCorridorRightTurnPiece, net.minecraft.world.level.levelgen.structure.structures.CastleStalkRoom, net.minecraft.world.level.levelgen.structure.structures.MonsterThrone, net.minecraft.world.level.levelgen.structure.structures.RoomCrossing, net.minecraft.world.level.levelgen.structure.structures.StairsRoom, net.minecraft.world.level.levelgen.structure.structures.StartPiece
+//! Status: SKELETON
+//!
+//! Not yet ported. See _porting/MANIFEST.csv and
+//! _porting/OPEN_QUESTIONS.md. Do not invent behaviour here.
+
