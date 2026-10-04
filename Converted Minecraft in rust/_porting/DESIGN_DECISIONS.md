@@ -509,3 +509,78 @@ The test still walks every row. It fails if the set of diverging rows changes, a
 the comment says to delete the allowance deliberately once `Math.log` is exact. A
 suite that is green *because* it is honest beats a suite that is green because it
 stopped looking.
+---
+
+## `one-golden-group-per-operation` (session 05, new rule 2)
+
+**The rule I broke myself while writing the batch-2 oracle, twice.**
+
+The natural way to write an emitter is to declare all the headers for a block and then run
+ONE loop that emits for all of them:
+
+```java
+o.fn("blockpos.relativeDir", ...);
+o.fn("blockpos.relativeAxis", ...);
+o.fn("blockpos.rotate", ...);
+for (...) { o.row(...); o.row(...); o.row(...); }   // ALL of these land under `rotate`
+```
+
+Every row lands under the **LAST** header. `blockpos.facing` collected 66,420 rows that
+belonged to four other groups, and those four groups were silently EMPTY.
+
+An empty group is the session-03 trap wearing a new hat: it is indistinguishable from a
+group that was correctly implemented and correctly claimed. It looks exactly like a pass.
+
+So the rule is not just "split finely" -- it is **`o.fn(...)` is immediately followed by
+the only loop that writes to it, always.** The oracle now has **235 groups for 11 classes**,
+and `no_batch2_group_is_empty` in `parity_batch2.rs` fails the build if any one of them
+comes back empty.
+
+---
+
+## `a-harness-that-reports-success-while-doing-nothing` (session 05)
+
+Two bugs in this class, both mine, both caught only by checking the OUTPUT FILES rather
+than the exit code:
+
+1. **`Out` buffered every row in an `ArrayList<String>`.** Several four-double groups made
+   it 26^4 = 456,976 rows each, and the JVM ran out of heap -- then could not allocate the
+   `OutOfMemoryError` either, so it printed `Exception in thread "main"` with **no type and
+   no stack trace**. Fixed by making `Out(Path)` stream to disk: size is now bounded by
+   disk rather than by heap.
+
+2. **The `--only` stage filter matched the JAR PATH.** I wrote "the first argument that
+   does not start with `--`" to select a single emitter, but `run.ps1` passes
+   `--expect-origin <jar>`, and the jar path does not start with `--`. So `only` became
+   the jar path, **no stage matched, nothing ran**, and the oracle cheerfully printed
+   `done.`. The golden files were left at their previous contents for several iterations
+   before I noticed the file mtime had not moved.
+
+Both are why `emit` now runs each section through a wrapper that logs and continues, and
+why the report below counts groups and rows from the files rather than trusting `done.`.
+
+The general lesson: **verify that the artefact changed.** An exit code of zero and the word
+"done" are not evidence that work happened.
+
+---
+
+## `#argb-linear-lerp-negative-alpha` (session 05)
+
+A real crash in vanilla 26.2, found because the oracle threw and the section wrapper named
+it:
+
+```java
+LINEAR_TO_SRGB[Mth.lerpInt(alpha, SRGB_TO_LINEAR[red(p0]), SRGB_TO_LINEAR[red(p1)])]
+```
+
+`lerpInt` is `(int)(start + alpha * (end - start))` with no clamping, so the index leaves
+the 1024-entry table on both ends:
+
+| alpha | index | result |
+|---|---|---|
+| `-1.0f` | `-1023` | `ArrayIndexOutOfBoundsException` |
+| `2.0f` | `184140` | `ArrayIndexOutOfBoundsException` |
+
+Only `alpha` in `[0, 1]` is safe. **A clamping "port" would return a colour where the game
+throws**, which is exactly the kind of well-meaning fix this project forbids. The Rust port
+must reproduce the throw. `argb.linearLerpThrows` records which alphas throw.

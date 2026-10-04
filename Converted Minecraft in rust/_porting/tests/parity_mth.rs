@@ -344,12 +344,27 @@ fn random_backed_helpers() {
 /// us to fake a test for something we cannot compile yet.
 ///
 /// Each maps to an entry in _porting/OPEN_QUESTIONS.md and _porting/PORTING_PLAN.md.
+/// Mth members with no parity test yet.
+///
+/// # TWO OF THESE NAMES WERE WRONG UNTIL SESSION 05
+///
+/// `javap -p` on the real 26.2 jar shows the methods are
+///
+/// ```text
+/// public static long getSeed(Vec3i)
+/// public static Vec3 lerp(double, Vec3, Vec3)
+/// ```
+///
+/// There is no `getSeedVec3i` and no `lerpVec3`. Those names sat in this list from
+/// sessions 02/03 and were copied from a plan document rather than checked. Completing
+/// them by name would have written two `todo!()` stubs for methods that do not exist,
+/// while leaving the two vanilla actually uses untested. See OPEN_QUESTIONS #19.
 const BLOCKED_ON_UNPORTED_TYPES: &[&str] = &[
     "mulAndTruncate",      // needs commons-lang3 Fraction
     "rayIntersectsAABB",   // needs Vec3 + AABB
     "rotationAroundAxis",  // needs JOML Quaternionf/Vector3fc
-    "getSeedVec3i",        // needs Vec3i
-    "lerpVec3",            // needs Vec3
+    "getSeed",             // needs Vec3i
+    "lerp",                // needs Vec3
 ];
 
 #[test]

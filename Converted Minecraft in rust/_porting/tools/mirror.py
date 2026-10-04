@@ -72,6 +72,10 @@ path = "_porting/tests/parity_core.rs"
 name = "parity_random"
 path = "_porting/tests/parity_random.rs"
 
+[[test]]
+name = "parity_batch2"
+path = "_porting/tests/parity_batch2.rs"
+
 [profile.dev]
 # 7055 mirrored modules: keep debug info out of the way.
 debug = 0

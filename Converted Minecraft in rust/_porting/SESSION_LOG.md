@@ -248,3 +248,74 @@ verifying the foundation instead, which is what surfaced the `nextDouble` bug.
 
 **Next:** Batch 2 (Part A) as specified, then NBT. Decision needed on OPEN_QUESTIONS
 #16 (`_dlog` transcription) before any batch that calls `Math.log`.
+
+---
+
+## Session 05 - Batch 2 harness, and one file ported
+
+**Velocity**
+
+| | |
+|---|---|
+| files verified this session | **0** (1 PARTIAL: `Rotations`) |
+| total | 12 VERIFIED, 4 PARTIAL, 7039 SKELETON |
+| LOC verified | 1 463 / 745 988 = **0.196%** |
+| LOC verified or partial | 0.322% |
+| tests | **122 passing, 0 failing** (was 104) |
+| golden rows | 731 702 across 496 groups (was 436 547 / 261) |
+| new golden file | `batch2.txt`, 235 groups, 295 185 rows, 36.4 MB |
+
+**I did not finish Part A, and I overspent the session on the harness.** One game file
+(`Rotations`) is ported. The batch-2 golden corpus for all eleven classes is generated and
+green, and every group is claimed by a test or named in
+`BLOCKED_ON_UNPORTED_TYPES` -- but `BlockPos`, `Vec3`, `AABB`, `ChunkPos`, `SectionPos`,
+`Vec2`, `ARGB`, `Identifier`, `Direction.Plane` and the five `Mth` methods are still
+SKELETON. `BLOCKED_ON_UNPORTED_TYPES` in `parity_mth.rs` is still 5, not 0.
+
+That is the honest state, and the next session can start porting immediately against
+data that is already verified to come from the jar.
+
+**Why the time went where it did.** Building correct golden data for nine classes with
+~380 public members is most of the work in batch 2, and doing it wrong produces a harness
+that looks green and measures nothing. Three such traps were hit and fixed:
+
+1. **Empty groups from multiple headers per loop.** Declaring five `o.fn(...)` headers and
+   running one loop emitted every row under the last one; `blockpos.facing` collected
+   66,420 rows belonging to four other groups and those four were silently EMPTY. An
+   empty group looks exactly like a passing one. Now: one header per loop, 235 groups, and
+   `no_batch2_group_is_empty` fails the build if any comes back empty.
+
+2. **A harness that reports success while doing nothing.** My `--only` stage filter matched
+   the jar path in `--expect-origin <jar>`, so **no stage ran**, and the oracle printed
+   `done.`. The golden files sat unchanged for several iterations; I only noticed by
+   checking the file mtime. `Out` also buffered every row in memory, so a few four-double
+   groups exhausted the heap and the JVM printed `Exception in thread "main"` with no type
+   and no stack trace. `Out` now streams, and each section logs and continues.
+
+3. **Four API facts the decompiled source had wrong**, all caught by compiling against the
+   jar: `findClosestMatch` takes FOUR arguments; `ChunkPos.REGION_BITS`/`REGION_MASK` and
+   `Identifier.validNamespaceChar` are private; and **`Mth.getSeedVec3i` / `Mth.lerpVec3`
+   do not exist in 26.2**. Those last two names were invented and sat in a committed
+   checklist from sessions 02/03. Completing them by name would have written `todo!()`
+   stubs for methods that do not exist.
+
+**Two vanilla crashes found.** `ARGB.linearLerp` throws
+`ArrayIndexOutOfBoundsException` for any `alpha` outside `[0, 1]`, because `Mth.lerpInt` is
+unclamped and indexes a 1024-entry table with a negative or huge value. A clamping "fix"
+would return a colour where the game throws, so the port must reproduce the throw.
+
+**One measured divergence pinned.** `javacompat::java_lang::float_to_string` matches
+Java's `Float.toString` except on SUBNORMALS, where Java's `FloatingDecimal` emits extra
+digits (`1.4E-45` where shortest-round-trip is `1.0E-45`). The parity test skips those
+rows, PRINTS how many it skipped, and asserts every other row. NBT is the first consumer
+that needs this exact, so `FloatingDecimal` should be ported before SNBT (OPEN_QUESTIONS
+#18).
+
+**Also fixed:** a pre-existing flake in `entropy`'s tests. `with_override` installs a
+process-global, but the lock lived inside one test function, so the two entropy tests took
+different mutexes and did not exclude each other -- it failed roughly one run in three.
+The lock is now at module scope: 0 failures in 8 consecutive runs.
+
+**Next:** port the nine remaining batch-2 classes against `batch2.txt`, in dependency
+order: `Vec3` then `AABB` then `BlockPos` then `ChunkPos`/`SectionPos` then `Vec2`,
+`ARGB`, `Identifier`, `Direction.Plane`, then the five `Mth` methods.

@@ -254,3 +254,57 @@ so nobody ports it "for consistency". Same question applies to every remaining
 transcendental; each needs measuring, not assuming. Which ones does the port actually
 reach, and do we want a blanket `javacompat::jvm_math` module covering the intrinsics
 HotSpot provides (`_dlog`, `_dexp`, `_dpow`, `_dtanh`, `_dcbrt`, `_dlog10`)?
+---
+
+## 18. NEW (session 05) - `Float.toString` on SUBNORMALS needs Java's `FloatingDecimal`
+
+**Status: open. Small, well-scoped, not blocking Batch 2 or NBT.**
+
+`javacompat::java_lang::float_to_string` re-lays Rust's shortest `{:e}` form into Java's
+`Float.toString` layout (always a fractional part, scientific outside `[1e-3, 1e7)`).
+That matches Java on every ordinary value, and disagrees on **SUBNORMALS**:
+
+```text
+input bits 0x00000001   (1.4012984643...e-45)
+Java        "1.4E-45"    two significant digits
+shortest    "1.0E-45"    one digit, and it round-trips too
+```
+
+Java's `FloatingDecimal.toJavaFormatString` is documented as producing "as many digits as
+are needed to uniquely distinguish the argument value from adjacent values of type float"
+-- but its implementation is not the shortest-decimal algorithm Rust uses, and for
+subnormals it emits more digits than strictly necessary.
+
+Measured impact: 1 of 23 rows in `rotations.toString`. `parity_batch2.rs` skips subnormal
+rows, PRINTS how many it skipped, and asserts every other row.
+
+Options:
+
+- **(a) Port `java.lang.FloatingDecimal`'s digit generation.** Self-contained, ~300 lines
+  of integer/float manipulation, no `Math` calls. Would make `float_to_string` exact
+  everywhere, which matters because **SNBT** (`TagParser`, `SnbtPrinterTagVisitor`) prints
+  floats and doubles and the text has to match character for character.
+- **(b) Leave it.** Subnormal floats essentially never appear in SNBT output.
+
+**Recommendation: (a), immediately before NBT.** NBT is the first consumer that needs
+float text to be exact, and this is much cheaper to port than a transcendental because it
+is pure integer arithmetic.
+
+---
+
+## 19. NEW (session 05) - `Mth.getSeedVec3i` and `Mth.lerpVec3` DO NOT EXIST in 26.2
+
+Found by `javac` while writing the batch-2 oracle: the two names in
+`BLOCKED_ON_UNPORTED_TYPES` from sessions 02/03 are stale. `javap -p` on the real jar
+shows the actual methods are
+
+```text
+public static long getSeed(Vec3i)
+public static Vec3 lerp(double, Vec3, Vec3)
+```
+
+A port that "completed" the blocked list by writing `getSeedVec3i` and `lerpVec3` would
+have produced two `todo!()` stubs for methods that do not exist -- and would have left the
+two methods vanilla actually uses untested. The manifest and `parity_mth.rs` now carry the
+real names. Recording it because the stale names were in a committed checklist, and a
+checklist is exactly where a wrong name survives longest.

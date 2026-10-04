@@ -677,14 +677,17 @@ public final class MthOracle {
 		}
 		o.blank();
 
-		o.fn("getSeedVec3i", "i32 i32 i32", "i64");
+		// Group named for the REAL 26.2 method. It was called "getSeedVec3i" until session
+		// 05, which is a name I invented and which javap shows does not exist; the call
+		// below was always Mth.getSeed(Vec3i). See OPEN_QUESTIONS #19.
+		o.fn("getSeed", "i32 i32 i32", "i64");
 		for (int a : coords) {
 			o.row(Out.join(Out.i32(a), Out.i32(-a), Out.i32(a * 31)),
 					Out.i64(Mth.getSeed(new Vec3i(a, -a, a * 31))));
 		}
 		o.blank();
 
-		o.fn("lerpVec3", "f64 f64 f64 f64 f64 f64 f64", "f64 f64 f64");
+		o.fn("lerp", "f64 f64 f64 f64 f64 f64 f64", "f64 f64 f64");
 		for (double a : D) {
 			Vec3 p1 = new Vec3(a, -a, a * 0.5);
 			Vec3 p2 = new Vec3(-a, a, a * 0.25);

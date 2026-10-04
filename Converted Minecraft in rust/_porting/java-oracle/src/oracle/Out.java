@@ -33,25 +33,74 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class Out {
+	/**
+	 * Buffered mode. Everything is held in memory until {@link #write(Path)}.
+	 *
+	 * Kept for the three oracles that predate streaming. Fine for their sizes; do NOT
+	 * use for anything that emits millions of rows -- see {@link #Out(Path)}.
+	 */
 	private final List<String> lines = new ArrayList<>();
 
+	/** Streaming mode. Null when buffering. */
+	private PrintWriter sink;
+
+	private long count;
+
+	/**
+	 * Buffering writer. See {@link #Out(Path)} before reaching for this on a big oracle.
+	 */
+	public Out() {
+	}
+
+	/**
+	 * STREAMING writer: rows go straight to disk.
+	 *
+	 * A golden file can be hundreds of megabytes. Holding that many {@code String}s
+	 * at once is what turns a large oracle into an OutOfMemoryError -- and because the
+	 * JVM then cannot allocate the exception object either, the failure prints as a bare
+	 * `Exception in thread "main"` with no type and no stack trace. Streaming removes
+	 * that failure mode entirely: size is bounded by disk, not by heap.
+	 */
+	public Out(final Path path) throws IOException {
+		Files.createDirectories(path.getParent());
+		this.sink = new PrintWriter(Files.newBufferedWriter(path, StandardCharsets.UTF_8));
+	}
+
+	private void emit(final String line) {
+		this.count++;
+		if (this.sink != null) {
+			this.sink.print(line);
+			this.sink.print('\n');
+		} else {
+			this.lines.add(line);
+		}
+	}
+
 	public void fn(final String name, final String argTypes, final String retType) {
-		this.lines.add("#fn " + name + " " + argTypes + " -> " + retType);
+		this.emit("#fn " + name + " " + argTypes + " -> " + retType);
 	}
 
 	public void row(final String args, final String ret) {
-		this.lines.add(args + " -> " + ret);
+		this.emit(args + " -> " + ret);
 	}
 
 	public void comment(final String text) {
-		this.lines.add("# " + text);
+		this.emit("# " + text);
 	}
 
 	public void blank() {
-		this.lines.add("");
+		this.emit("");
 	}
 
 	public void write(final Path path) throws IOException {
+		if (this.sink != null) {
+			// Already streaming to `path`; just close it.
+			this.sink.flush();
+			this.sink.close();
+			this.sink = null;
+			System.out.println("wrote " + this.count + " lines -> " + path);
+			return;
+		}
 		Files.createDirectories(path.getParent());
 		try (PrintWriter w = new PrintWriter(Files.newBufferedWriter(path, StandardCharsets.UTF_8))) {
 			for (String line : this.lines) {

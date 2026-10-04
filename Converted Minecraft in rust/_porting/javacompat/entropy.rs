@@ -148,6 +148,13 @@ pub fn with_override<R>(nanos: i64, f: impl FnOnce() -> R) -> R {
 
 #[cfg(test)]
 mod tests {
+    /// Serialises every test in this module.
+    ///
+    /// with_override installs a PROCESS-GLOBAL override, so any test that reads the
+    /// clock can observe another test's override. Serialising only the WRITER is not
+    /// enough: the reader has to take the lock too. That was a real flake here -- it
+    /// failed roughly one run in three before the lock was hoisted to module scope.
+    static LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
     use super::*;
 
     /// The override is a process global, and `cargo test` runs tests in parallel
@@ -156,7 +163,6 @@ mod tests {
     /// separate `#[test]`s.
     #[test]
     fn override_makes_the_clock_deterministic() {
-        static LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
         let _guard = LOCK.lock().unwrap_or_else(|e| e.into_inner());
 
         with_override(1_234_567_890_123_456_789, || {
@@ -184,6 +190,7 @@ mod tests {
     }
     #[test]
     fn thread_local_random_is_stable_under_override() {
+        let _guard = LOCK.lock().unwrap_or_else(|e| e.into_inner());
         with_override(42, || {
             assert_eq!(thread_local_random_next_long(), thread_local_random_next_long());
             // Still differs from `nano_time` itself, so it is not a pass-through.

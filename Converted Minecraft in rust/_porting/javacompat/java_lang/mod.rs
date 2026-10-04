@@ -552,6 +552,7 @@ pub fn compare_f32(a: f32, b: f32) -> Ordering {
 ///
 /// `>=` rather than `>`, matching Java: `Math.max(0, -0)` is `0` (identical for ints),
 /// and for equal values the choice is unobservable.
+pub mod float_to_string;
 pub mod log;
 
 #[inline]

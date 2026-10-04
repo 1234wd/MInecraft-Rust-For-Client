@@ -67,16 +67,32 @@ public final class Oracle {
 		"net.minecraft.world.level.ChunkPos",
 		"net.minecraft.core.SectionPos",
 		"net.minecraft.world.phys.Vec3",
-		"net.minecraft.world.phys.Vec2",
 		"net.minecraft.world.phys.AABB",
 		"net.minecraft.util.ARGB",
 		"net.minecraft.core.Rotations",
 		"net.minecraft.resources.Identifier",
+		// --- session 05: batch 2 additions ---
+		"net.minecraft.world.phys.Vec2",
 	};
 
 	public static void main(final String[] args) throws Exception {
 		Path testData = Path.of(args.length > 0 ? args[0] : "../test-data");
 		boolean noWrite = List.of(args).contains("--no-write");
+		// Optional stage filter: `oracle.Oracle <outDir> --only batch2` runs just that emitter.
+		// Useful for isolating a crash without paying for the other four.
+		//
+		// It MUST be an explicit `--only <name>` flag. I first wrote this as "the first
+		// argument that does not start with --", which silently matched the JAR PATH in
+		// `--expect-origin <jar>`: every stage was skipped, the run printed "done.", and
+		// the golden files were left untouched at their previous contents. A harness that
+		// reports success while doing nothing is the worst kind of harness bug, and it is
+		// invisible unless you check the OUTPUT FILES rather than the exit code.
+		String only = null;
+		for (int i = 0; i < args.length - 1; i++) {
+			if (args[i].equals("--only")) {
+				only = args[i + 1];
+			}
+		}
 		Path expectFrom = null;
 		for (int i = 0; i < args.length - 1; i++) {
 			if (args[i].equals("--expect-origin")) {
@@ -122,11 +138,57 @@ public final class Oracle {
 			return;
 		}
 
-		MthOracle.emit(testData.resolve("mth.txt"));
-		MthOracle.emitTables(testData.resolve("mth_tables.txt"));
-		RandomOracle.emit(testData.resolve("random.txt"));
-		CoreOracle.emit(testData.resolve("core.txt"));
+		// Each emitter is wrapped so a failure names WHICH one died, and prints a real
+		// stack trace.
+		//
+		// Without this, a failure inside an emitter surfaced only as
+		// `Exception in thread "main"` with a truncated toString: no type, no stack, no
+		// hint which of five emitters was responsible. That happened twice while
+		// building the batch-2 oracle. Batch 2 in particular reaches `Bootstrap` and
+		// `commons-lang3` initialisers, whose failures are not self-explanatory, so
+		// "which stage" is the first thing you need to know.
+		if (only == null || only.equals("mth")) {
+			stage("mth", () -> MthOracle.emit(testData.resolve("mth.txt")));
+		}
+		if (only == null || only.equals("mth_tables")) {
+			stage("mth_tables", () -> MthOracle.emitTables(testData.resolve("mth_tables.txt")));
+		}
+		if (only == null || only.equals("random")) {
+			stage("random", () -> RandomOracle.emit(testData.resolve("random.txt")));
+		}
+		if (only == null || only.equals("core")) {
+			stage("core", () -> CoreOracle.emit(testData.resolve("core.txt")));
+		}
+		if (only == null || only.equals("batch2")) {
+			stage("batch2", () -> Batch2Oracle.emit(testData.resolve("batch2.txt")));
+		}
 
 		System.out.println("done.");
+	}
+
+	/** One emitter's worth of work. */
+	private interface Emit {
+		void run() throws Exception;
+	}
+
+	/** Run one emitter; on failure say which one, print the stack trace, and exit 3. */
+	private static void stage(final String name, final Emit body) throws Exception {
+		System.out.println("--- stage: " + name);
+		try {
+			body.run();
+		} catch (Throwable t) {
+			// Write the trace to a FILE as well as stderr. Bootstrap installs
+			// logging that can swallow stderr, and a stage failure with no
+			// visible message is exactly as useless as no failure at all.
+			String msg = "STAGE FAILED: " + name + ": " + t;
+			System.err.println(msg);
+			try (java.io.PrintWriter w = new java.io.PrintWriter(
+					new java.io.FileWriter("stage-error.txt", true))) {
+				w.println(msg);
+				t.printStackTrace(w);
+			}
+			System.err.flush();
+			System.exit(3);
+		}
 	}
 }
