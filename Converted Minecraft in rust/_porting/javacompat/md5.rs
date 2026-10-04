@@ -94,12 +94,49 @@ pub fn md5(data: &[u8]) -> [u8; 16] {
     out
 }
 
-/// Port of `Longs.fromBytes` + `RandomSupport.seedFromHashOf(String)`'s reading of
-/// the digest: bytes 0..8 little-endian into the low long, bytes 8..16 into the high.
+/// Port of `RandomSupport.seedFromHashOf(String)`'s reading of the digest:
+/// bytes 0..8 become `seedLo`, bytes 8..16 become `seedHi`.
+///
+/// # THE BYTE ORDER IS BIG-ENDIAN, AND THAT IS EASY TO GET WRONG
+///
+/// `RandomSupport#seedFromHashOf` reads the digest with
+/// `Longs.fromBytes(hashCode[0], hashCode[1], ..., hashCode[7])`, and the name
+/// "fromBytes" plus the near-universal little-endian convention on x86 makes
+/// little-endian the obvious assumption. It is wrong.
+///
+/// Guava 33.6.0-jre (the version Minecraft 26.2 resolves to) compiles that method
+/// to `b1 << 56 | b2 << 48 | ... | b8` -- the FIRST byte is the MOST significant.
+/// Verified with `javap -c`:
+///
+/// ```text
+/// public static long fromBytes(byte, byte, byte, byte, byte, byte, byte, byte);
+///    0: iload_0        // b1
+///    1: i2l
+///    2: ldc2_w  255l
+///    5: land
+///    6: bipush 56
+///    8: lshl           // b1 << 56
+/// ```
+///
+/// Measured, MD5("a") = `0cc175b9 c0f1b6a8 31c399e2 69772661`:
+///
+/// | reading                    | seedLo            |
+/// |----------------------------|-------------------|
+/// | big-endian (CORRECT)       | `0x0cc175b9c0f1b6a8` |
+/// | little-endian (wrong)      | `0xa8b6f1c0b975c10c` |
+///
+/// Getting this backwards still produces plausible-looking 128-bit seeds, so
+/// nothing downstream would ever flag it -- every world would simply be generated
+/// from different seeds. Session 02 shipped a stubbed `Longs` that happened to be
+/// little-endian, which made the wrong assumption look correct; the stub was
+/// removed in session 03 and the divergence surfaced immediately.
+///
+/// The values below are asserted against the oracle in `parity_random.rs`, and
+/// `md5_long_order_is_big_endian` pins them independently of any golden file.
 pub fn md5_lo_hi(data: &[u8]) -> (i64, i64) {
     let digest = md5(data);
-    let lo = i64::from_le_bytes([digest[0], digest[1], digest[2], digest[3], digest[4], digest[5], digest[6], digest[7]]);
-    let hi = i64::from_le_bytes([digest[8], digest[9], digest[10], digest[11], digest[12], digest[13], digest[14], digest[15]]);
+    let lo = i64::from_be_bytes([digest[0], digest[1], digest[2], digest[3], digest[4], digest[5], digest[6], digest[7]]);
+    let hi = i64::from_be_bytes([digest[8], digest[9], digest[10], digest[11], digest[12], digest[13], digest[14], digest[15]]);
     (lo, hi)
 }
 
@@ -126,5 +163,32 @@ mod tests {
 
     fn hex(b: &[u8]) -> String {
         b.iter().map(|x| format!("{x:02x}")).collect()
+    }
+    /// `Longs.fromBytes` is BIG-endian in Guava 33.6.0-jre, so `seedFromHashOf`
+    /// must read the MD5 digest most-significant-byte-first.
+    ///
+    /// These are hand-computed from the published MD5 digests, not copied from a
+    /// golden file, so this test stands on its own if the harness is ever wrong.
+    #[test]
+    fn md5_long_order_is_big_endian() {
+        // MD5("")    = d41d8cd98f00b204 e9800998ecf8427e
+        assert_eq!(
+            md5_lo_hi(b""),
+            (0xd41d_8cd9_8f00_b204u64 as i64, 0xe980_0998_ecf8_427eu64 as i64)
+        );
+        // MD5("a")   = 0cc175b9c0f1b6a8 31c399e269772661
+        assert_eq!(
+            md5_lo_hi(b"a"),
+            (0x0cc1_75b9_c0f1_b6a8u64 as i64, 0x31c3_99e2_6977_2661u64 as i64)
+        );
+        // MD5("abc") = 900150983cd24fb0 d6963f7d28e17f72
+        assert_eq!(
+            md5_lo_hi(b"abc"),
+            (0x9001_5098_3cd2_4fb0u64 as i64, 0xd696_3f7d_28e1_7f72u64 as i64)
+        );
+
+        // The little-endian reading is a genuinely different value, so this test
+        // would fail loudly if someone "simplifies" the cast back to `from_le_bytes`.
+        assert_ne!(md5_lo_hi(b"a").0, 0xa8b6_f1c0_b975_c10cu64 as i64);
     }
 }
