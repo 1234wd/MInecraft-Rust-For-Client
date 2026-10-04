@@ -462,8 +462,8 @@ fn worldgen_random_seeding() {
         let b = BitRandomSource::next_int(&mut w);
         let count = w.get_count();
         assert_eq!(
-            (a, b, count),
-            (r.exp(0).as_i32(), r.exp(1).as_i32(), count as i64),
+            (a, b, count as i64),
+            (r.exp(0).as_i32(), r.exp(1).as_i32(), r.exp(2).as_i64()),
             "expected (nextInt, nextInt, getCount); the call counter must advance \
              exactly once per next(bits) call"
         );
@@ -515,10 +515,22 @@ fn worldgen_random_seeding() {
         golden::assert_i32("worldgen.nextBits", r, got);
     }
 
-    each(&g, "worldgen.overXoroshiro", |r| {
-        let mut w = WorldgenRandom::new(Box::new(XoroshiroRandomSource::new(r.arg(0).as_i64())));
-        golden::assert_i32("worldgen.overXoroshiro", r, w.next(r.arg(1).as_i32()));
-    });
+    // One XoroshiroRandomSource per SEED, then all five `bits` groups are drawn from
+    // that same stream -- the oracle's loop is `for bits { for k { r.next(bits) } }`
+    // around a single `WorldgenRandom`, so the stream carries across groups.
+    let mut over: Option<(i64, Box<dyn RandomSource>)> = None;
+    for r in g.rows("worldgen.overXoroshiro") {
+        let seed = r.arg(0).as_i64();
+        let keep = over.as_ref().map(|(s, _)| *s) == Some(seed);
+        if !keep {
+            over = Some((seed, Box::new(XoroshiroRandomSource::new(seed))));
+        }
+        let mut source = over.take().unwrap().1;
+        let mut w = WorldgenRandom::new(source);
+        let got = BitRandomSource::next(&mut w, r.arg(1).as_i32());
+        over = Some((seed, w.take_random_source_for_test()));
+        golden::assert_i32("worldgen.overXoroshiro", r, got);
+    }
 
     each(&g, "worldgen.seedSlimeChunk", |r| {
         let mut s: Box<dyn RandomSource> = WorldgenRandom::seed_slime_chunk(r.arg(0).as_i32(), r.arg(1).as_i32(), r.arg(2).as_i64(), r.arg(3).as_i64());

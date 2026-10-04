@@ -69,8 +69,14 @@ impl WorldgenRandom {
     /// decoration placement (flowers, grass, snow layers) against everything else.
     pub fn set_decoration_seed(&mut self, seed: i64, chunk_x: i32, chunk_z: i32) -> i64 {
         self.set_seed(seed);
-        let x_scale = self.random_source.next_long() | 1;
-        let z_scale = self.random_source.next_long() | 1;
+        // `this.nextLong()` in Java resolves to WorldgenRandom's OWN inherited
+        // BitRandomSource#nextLong, which goes through this class's `next(int)`
+        // override -- so it advances `count` by 2 per call (nextLong = two
+        // next(32) calls). Calling the wrapped source directly would skip the
+        // counter and desync `getCount()`, which feature code reads to decide how
+        // much randomness it has burned.
+        let x_scale = BitRandomSource::next_long(self) | 1;
+        let z_scale = BitRandomSource::next_long(self) | 1;
         let result = (chunk_x as i64)
             .wrapping_mul(x_scale)
             .wrapping_add((chunk_z as i64).wrapping_mul(z_scale))
@@ -86,10 +92,15 @@ impl WorldgenRandom {
     }
 
     /// Port of `WorldgenRandom#setLargeFeatureSeed(long,int,int)`.
+    /// Port of `WorldgenRandom#setLargeFeatureSeed(long,int,int)`.
+    ///
+    /// This one really IS a three-way xor -- contrast `set_decoration_seed`, which
+    /// is an add followed by an xor. Same `this.nextLong()` routing, so `count`
+    /// advances here too.
     pub fn set_large_feature_seed(&mut self, seed: i64, chunk_x: i32, chunk_z: i32) {
         self.set_seed(seed);
-        let x_scale = self.random_source.next_long();
-        let z_scale = self.random_source.next_long();
+        let x_scale = BitRandomSource::next_long(self);
+        let z_scale = BitRandomSource::next_long(self);
         let result = (chunk_x as i64).wrapping_mul(x_scale) ^ (chunk_z as i64).wrapping_mul(z_scale) ^ seed;
         self.set_seed(result);
     }
@@ -111,13 +122,25 @@ impl WorldgenRandom {
     /// overflows as an `int` first for large `x`. Reproduced with `wrapping_mul`
     /// on `i32` and one widening step at the end, exactly as the JVM promotes.
     pub fn seed_slime_chunk(x: i32, z: i32, seed: i64, salt: i64) -> Box<dyn RandomSource> {
-        let inner = x
-            .wrapping_mul(x)
-            .wrapping_mul(4987142i32)
-            .wrapping_add(x.wrapping_mul(5947611i32))
-            .wrapping_add(z.wrapping_mul(z).wrapping_mul(4392871i32))
-            .wrapping_add(z.wrapping_mul(389711i32));
-        create_thread_local_instance((inner as i64) ^ salt)
+        // Java:
+        //   RandomSource.createThreadLocalInstance(
+        //       seed + x * x * 4987142 + x * 5947611 + z * z * 4392871L + z * 389711 ^ salt);
+        //
+        // Two things are load-bearing and easy to get wrong:
+        //
+        // 1. PRECEDENCE. `*` and `+` bind tighter than `^`, so the `^ salt` applies
+        //    to the whole sum, not just the last term.
+        //
+        // 2. MIXED WIDTHS. `x * x * 4987142`, `x * 5947611` and `z * 389711` are all
+        //    `int` arithmetic and wrap at 32 bits. `z * z * 4392871L` is the odd one
+        //    out: the trailing `L` makes it a `long` multiply. Java then sums
+        //    left-to-right with a promotion at each step. Doing it all in i32 (or
+        //    all in i64) gives a different slime-chunk decision near chunk borders.
+        let step1 = seed.wrapping_add(x.wrapping_mul(x).wrapping_mul(4987142i32) as i64);
+        let step2 = step1.wrapping_add(x.wrapping_mul(5947611i32) as i64);
+        let step3 = step2.wrapping_add((z as i64).wrapping_mul(z as i64).wrapping_mul(4392871i64));
+        let step4 = step3.wrapping_add(z.wrapping_mul(389711i32) as i64);
+        create_thread_local_instance(step4 ^ salt)
     }
 }
 
