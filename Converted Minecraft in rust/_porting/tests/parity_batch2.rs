@@ -39,6 +39,159 @@ fn each(g: &Golden, group: &str, mut f: impl FnMut(&Row)) {
 }
 
 // =============================================================================
+// Vec2
+// =============================================================================
+
+use minecraft_rust::net::minecraft::world::phys::Vec2::Vec2;
+use minecraft_rust::javacompat::golden::{
+    assert_bool, assert_f32_bits_at, assert_i32, assert_multi_f32, assert_str,
+};
+use minecraft_rust::javacompat::nan_policy::float_to_raw_int_bits;
+
+/// The sixteen constant component values, in the order `vec2.constants` emits them.
+///
+/// # THIS GROUP HAS AN UNUSUAL SHAPE: THE SIXTEEN VALUES ARE ARGUMENTS
+///
+/// ```text
+/// #fn vec2.constants  -> f32 f32 ... f32        <- header declares NO arguments
+/// f32:0x0 f32:0x0 ... f32:0x1 -> str:constants <- but the row puts all 16 BEFORE the ->
+/// ```
+///
+/// The oracle declares an empty argument slot (constants take none) but still has to put
+/// the values somewhere, and they land on the left of the arrow. The single EXPECTED value
+/// is the string literal `"constants"`.
+///
+/// So these are read with `r.arg(i)`, not `r.exp(i)`. Getting that backwards makes
+/// `as_f32_bits` panic on `Str("constants")`, which is a confusing way to learn it.
+///
+/// The interesting value is `MIN`: `Float.MIN_VALUE` == `1.4E-45`, the smallest POSITIVE
+/// NORMAL. Every other reading of "MIN" is a plausible mistake, so all sixteen are pinned
+/// rather than just `MIN`.
+#[test]
+fn vec2_constants() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "vec2.constants", |r| {
+        let pairs: [(Vec2, &str); 8] = [
+            (Vec2::ZERO, "ZERO"),
+            (Vec2::ONE, "ONE"),
+            (Vec2::UNIT_X, "UNIT_X"),
+            (Vec2::NEG_UNIT_X, "NEG_UNIT_X"),
+            (Vec2::UNIT_Y, "UNIT_Y"),
+            (Vec2::NEG_UNIT_Y, "NEG_UNIT_Y"),
+            (Vec2::MAX, "MAX"),
+            (Vec2::MIN, "MIN"),
+        ];
+        for (i, (v, label)) in pairs.iter().enumerate() {
+            assert_eq!(
+                float_to_raw_int_bits(v.x),
+                r.arg(i * 2).as_f32_bits() as i32,
+                "vec2.constants [{label}.x] (golden line {})",
+                r.line
+            );
+            assert_eq!(
+                float_to_raw_int_bits(v.y),
+                r.arg(i * 2 + 1).as_f32_bits() as i32,
+                "vec2.constants [{label}.y] (golden line {})",
+                r.line
+            );
+        }
+        // The trailing label is the one expected value.
+        assert_str("vec2.constants", r, r.exp0().as_opt_str().unwrap_or(""));
+    });
+}
+
+/// `length`, `lengthSquared`, and both components of `normalized` in one row.
+#[test]
+fn vec2_lengths() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "vec2.lengths", |r| {
+        let v = Vec2::new(r.arg(0).as_f32(), r.arg(1).as_f32());
+        let n = v.normalized();
+        assert_multi_f32(
+            "vec2.lengths",
+            r,
+            &[v.length(), v.length_squared(), n.x, n.y],
+        );
+    });
+}
+
+#[test]
+fn vec2_hash_code() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "vec2.hashCode", |r| {
+        let v = Vec2::new(r.arg(0).as_f32(), r.arg(1).as_f32());
+        assert_i32("vec2.hashCode", r, v.java_hash_code());
+    });
+}
+
+/// `equals` uses `==`, so `-0.0f` equals `0.0f` here. The corpus contains both signs,
+/// which is what makes that observable.
+#[test]
+fn vec2_equals() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "vec2.equals", |r| {
+        let a = Vec2::new(r.arg(0).as_f32(), r.arg(1).as_f32());
+        let b = Vec2::new(r.arg(2).as_f32(), r.arg(3).as_f32());
+        assert_bool("vec2.equals", r, a.java_equals(&b));
+    });
+}
+
+/// `scale().x`, `scale().y`, `dot`, `add().x`, `add().y`, `distanceToSqr`.
+#[test]
+fn vec2_scale_add() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "vec2.scaleAdd", |r| {
+        let a = Vec2::new(r.arg(0).as_f32(), r.arg(1).as_f32());
+        let s = r.arg(2).as_f32();
+        let b = Vec2::new(s, r.arg(1).as_f32());
+        let scaled = a.scale(s);
+        let added = a.add_vec2(&b);
+        assert_multi_f32(
+            "vec2.scaleAdd",
+            r,
+            &[
+                scaled.x,
+                scaled.y,
+                a.dot(&b),
+                added.x,
+                added.y,
+                a.distance_to_sqr(&b),
+            ],
+        );
+    });
+}
+
+/// `add(float).x/.y` then `negated().x/.y` -- the negation flips zero's sign bit.
+#[test]
+fn vec2_add_scalar_negated() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "vec2.addScalarNegated", |r| {
+        let a = Vec2::new(r.arg(0).as_f32(), r.arg(1).as_f32());
+        let s = r.arg(2).as_f32();
+        let added = a.add(s);
+        let neg = a.negated();
+        assert_multi_f32(
+            "vec2.addScalarNegated",
+            r,
+            &[added.x, added.y, neg.x, neg.y],
+        );
+    });
+}
+
+/// `rotate(double)`: `Mth.cos`/`Mth.sin` take a double and return a float, so the whole
+/// rotation is single precision even though the angle is not.
+#[test]
+fn vec2_rotate() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "vec2.rotate", |r| {
+        let v = Vec2::new(r.arg(0).as_f32(), r.arg(1).as_f32());
+        let out = v.rotate(r.arg(2).as_f64());
+        assert_f32_bits_at("vec2.rotate", r, 0, "x", out.x);
+        assert_f32_bits_at("vec2.rotate", r, 1, "y", out.y);
+    });
+}
+
+// =============================================================================
 // Rotations
 // =============================================================================
 
@@ -125,6 +278,14 @@ fn rotations_to_string() {
 /// nothing asserts it". Deleting an entry without adding the test fails the guard below,
 /// which is the point.
 const COVERED: &[&str] = &[
+    // Vec2 -- pulled forward out of order because Vec3's signatures need it
+    "vec2.constants",
+    "vec2.lengths",
+    "vec2.hashCode",
+    "vec2.equals",
+    "vec2.scaleAdd",
+    "vec2.addScalarNegated",
+    "vec2.rotate",
     // Rotations
     "rotations.constructor",
     "rotations.hashCode",
