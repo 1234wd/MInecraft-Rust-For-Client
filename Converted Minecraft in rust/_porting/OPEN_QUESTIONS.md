@@ -119,3 +119,83 @@ placeholder behind. It is `#[doc(hidden)]` and exists only for the parity tests.
 
 **Decision needed:** fine to keep, or would you rather the tests construct a
 `WorldgenRandom` per seed and lose the exact loop replication?
+---
+
+## 11. ANSWERED (session 03) — NaN policy
+
+As directed: exact NaN sign and payload are matched only where game code can observe
+them (`floatToRawIntBits`/`doubleToRawLongBits` results, hashing, serialisation,
+network). Everywhere else the parity test asserts only that both sides are NaN.
+
+`javacompat::nan_policy` implements the policy and documents that **the JVM's own NaN
+sign is CPU-dependent** — x86-64 raises the negative real indefinite for an invalid
+operation, AArch64 raises the positive default. **We target x86-64 HotSpot**, and the
+oracle measures exactly that.
+
+Closed because it was a policy question with a defensible answer, not a fork in the road.
+
+## 12. ANSWERED (session 03) — entropy injection
+
+Done: `javacompat::entropy` is the single funnel for `System.nanoTime`,
+`currentTimeMillis` and thread-local entropy. `RandomSupport#generateUniqueSeed` now
+calls `entropy::nano_time()` instead of `SystemTime::now()` directly.
+
+This closes question 1 as far as it can be closed. The residual divergence is
+**documented, not eliminated**: Java's `nanoTime` counts from an arbitrary JVM-chosen
+origin and Rust cannot reproduce that number, so `generateUniqueSeed` returns a
+different value than vanilla on the same call. It is unobservable by construction —
+that is the point of the function. What is now guaranteed is that it is *injectable*,
+so tests are deterministic and the remaining clock reads are auditable in one file.
+
+If you want bit-identical `generateUniqueSeed` anyway, the only route is to drop
+`nanoTime` and take an explicit seed from the caller. **Say so and I will do it.**
+
+## 13. ANSWERED (session 03) — JOML
+
+Decided: port the subset from JOML 1.10.8's own bytecode into
+`_porting/javacompat/joml/`, do **not** use `glam`/`nalgebra`. The deciding factor is
+concrete: `Vector3f#dot` and `Quaternionf#normalize` are built on `Math.fma`, an IEEE
+fused multiply-add that rounds once; a general Rust math library would not reproduce
+it, and its FMA-contraction behaviour is not something we can audit.
+
+`invsqrt`, `fma`, `Vector3f::dot` and `Quaternionf::normalize/set` are ported and
+unit-tested. The rationale is in DESIGN_DECISIONS.md (#joml-subset-ported-not-swapped).
+
+## 14. STILL OPEN — the codec/serialisation decision needs a call from you
+
+A full proposal is in DESIGN_DECISIONS.md (#dfu-proposal): port DataFixerUpper into
+`javacompat` (option A) versus write a minimal replacement (option B). **I recommend
+A, after NBT.**
+
+The three parity risks are the same either way and are worth your attention before I
+start, because they are the ones that corrupt worlds *silently*:
+
+1. **Field order** in a serialised map. `RecordCodecBuilder` preserves declaration
+   order and that order is on the wire and in save files. A `HashMap` here corrupts
+   worlds without erroring.
+2. **`DataResult` error text** reaches the player, so a message change is user-visible.
+3. **Numeric widening.** DFU refuses to silently narrow `int64 -> int32`; a
+   replacement that permits it corrupts values at the world border instead of erroring.
+
+Batch 3 (NBT) does not need this decision and can start immediately.
+
+## 15. NEW (session 03) — `Util.java` does not compile under JDK 25
+
+`Util#makeEnumMap` contains
+
+```java
+for (K key : (Enum[])keyType.getEnumConstants()) {   // K extends Enum<K>
+```
+
+which JDK 25's javac rejects: `incompatible types: Enum cannot be converted to K`.
+This is a decompiler artefact — Mojang's real source has no such cast.
+
+**Current handling:** `Util` is NOT in the oracle's compile list; the real
+`minecraft-merged-deobf` jar supplies it, since it is only reached for trivial
+delegation (`Util.make`) and is not a batch-2 port target.
+
+**Question:** if a future batch needs to test something `Util` actually computes,
+we will have to either compile a patched copy (breaking the "unmodified sources" claim
+for that one file) or mirror it into `javacompat` as third-party-ish code. **I would
+prefer mirroring into `javacompat` with a comment naming the artefact**, but that is a
+rule change and should be your call.

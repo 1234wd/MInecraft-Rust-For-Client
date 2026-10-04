@@ -337,6 +337,32 @@ pub fn assert_multi_f32(method: &str, row: &Row, actual: &[f32]) {
     }
 }
 
+
+/// Assert a space-separated list of `i32` results (e.g. a `Vec3i`'s x/y/z).
+///
+/// Distinct from [`assert_ints`], which expects the `s:1,2,3` "int stream" encoding.
+/// Two encodings exist because vanilla has two shapes: `IntStream` results (comma lists)
+/// and ordinary multi-value returns (space separated). Mixing them up produces a
+/// confusing "expected int list, got I32(0)".
+pub fn assert_multi_i32(method: &str, row: &Row, actual: &[i32]) {
+    let expected = &row.expect;
+    assert_eq!(
+        expected.len(),
+        actual.len(),
+        "{method} (golden line {}): expected {} values, got {}",
+        row.line,
+        expected.len(),
+        actual.len()
+    );
+    for (i, (want, got)) in expected.iter().zip(actual.iter()).enumerate() {
+        let want = want.as_i32();
+        assert_eq!(
+            *got, want,
+            "{method} (golden line {}) value {i}",
+            row.line
+        );
+    }
+}
 pub fn assert_ints(method: &str, row: &Row, actual: &[i32]) {
     assert_eq!(actual, row.exp0().as_ints(), "{method} (golden line {}) args={:?}", row.line, row.args);
 }

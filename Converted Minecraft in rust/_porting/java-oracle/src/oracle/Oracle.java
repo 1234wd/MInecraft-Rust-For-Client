@@ -93,6 +93,7 @@ public final class Oracle {
 
 		MthOracle.emit(testData.resolve("mth.txt"));
 		MthOracle.emitTables(testData.resolve("mth_tables.txt"));
+		CoreOracle.emit(testData.resolve("core.txt"));
 		RandomOracle.emit(testData.resolve("random.txt"));
 
 		System.out.println("done.");

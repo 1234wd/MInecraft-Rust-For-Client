@@ -548,6 +548,48 @@ pub fn compare_f32(a: f32, b: f32) -> Ordering {
     }
 }
 
+/// Port of `Math.max(int, int)`.
+///
+/// `>=` rather than `>`, matching Java: `Math.max(0, -0)` is `0` (identical for ints),
+/// and for equal values the choice is unobservable.
+#[inline]
+pub fn max_i32(a: i32, b: i32) -> i32 {
+    if a >= b {
+        a
+    } else {
+        b
+    }
+}
+
+/// Port of `Math.min(int, int)`.
+#[inline]
+pub fn min_i32(a: i32, b: i32) -> i32 {
+    if a <= b {
+        a
+    } else {
+        b
+    }
+}
+
+/// Port of `Math.max(long, long)`.
+#[inline]
+pub fn max_i64(a: i64, b: i64) -> i64 {
+    if a >= b {
+        a
+    } else {
+        b
+    }
+}
+
+/// Port of `Math.min(long, long)`.
+#[inline]
+pub fn min_i64(a: i64, b: i64) -> i64 {
+    if a <= b {
+        a
+    } else {
+        b
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;

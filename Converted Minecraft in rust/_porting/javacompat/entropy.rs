@@ -150,36 +150,38 @@ pub fn with_override<R>(nanos: i64, f: impl FnOnce() -> R) -> R {
 mod tests {
     use super::*;
 
+    /// The override is a process global, and `cargo test` runs tests in parallel
+    /// threads. Two tests that install it concurrently would race and flake, so they
+    /// are combined into one and serialised with a mutex rather than being left as
+    /// separate `#[test]`s.
     #[test]
     fn override_makes_the_clock_deterministic() {
+        static LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+        let _guard = LOCK.lock().unwrap_or_else(|e| e.into_inner());
+
         with_override(1_234_567_890_123_456_789, || {
             assert_eq!(nano_time(), 1_234_567_890_123_456_789);
             assert_eq!(nano_time(), 1_234_567_890_123_456_789);
-            // 1234567890123456789 ns / 1e6 = 1234567890123.456789 ns -> truncated
+            // 1234567890123456789 ns / 1e6 = 1234567890123.456789 -> truncated
             assert_eq!(current_time_millis(), 1_234_567_890_123);
         });
-        // Restored: no longer the injected value.
+        // Restored to the real clock.
         assert_ne!(nano_time(), 1_234_567_890_123_456_789);
-    }
 
-    #[test]
-    fn nested_override_restores_the_outer_value() {
+        // Nested overrides restore the outer value.
         with_override(100, || {
             with_override(200, || assert_eq!(nano_time(), 200));
             assert_eq!(nano_time(), 100);
         });
-    }
+        assert_ne!(nano_time(), 100);
 
-    #[test]
-    fn real_clock_is_plausible() {
+        // Removing the override gives a plausible wall-clock reading: after 2020 and
+        // before 2100. If this ever fails the UNIT is wrong, not the machine's clock.
         set_override(NANOS_OVERRIDE_NONE);
-        // After 2020-01-01 and before 2100. If this ever fails the unit is wrong,
-        // not the machine's clock.
         let nanos = nano_time();
         assert!(nanos > 1_577_836_800_000_000_000, "nano_time looks like seconds: {nanos}");
         assert!(nanos < 4_102_444_800_000_000_000, "nano_time overflowed: {nanos}");
     }
-
     #[test]
     fn thread_local_random_is_stable_under_override() {
         with_override(42, || {

@@ -173,3 +173,167 @@ The oracle pins `joml-1.10.8.jar` and `commons-lang3-3.17.0.jar`, fetched by
 `fetch_libs.ps1` and committed under `_porting/java-oracle/lib/` so it runs offline.
 joml's `Math.invsqrt` is version-specific, so pinning matters. The exact versions
 Minecraft 26.2 ships are **unverified** â€” see `OPEN_QUESTIONS.md` #5.
+---
+
+## `oracle-with-zero-stubs` — no source stubs, ever (session 03)
+
+Session 02 compiled against 17 hand-written stubs. **All 17 are gone.** Guava, DFU,
+netty and jspecify are now the real jars at the versions Minecraft 26.2 resolves; the
+Minecraft value types are compiled from `minecraft-decompiled/` like everything else.
+
+**Why it matters:** a stub on a golden-data path makes the oracle report vanilla
+behaviour for something that is actually our own approximation. Three stubs were on
+golden paths and **all three were wrong** (see SESSION_LOG 2d/3b). The rule now is
+enforced in three places:
+
+* `fetch_libs.ps1` pins every coordinate and **fails if an unpinned jar appears** in
+  `lib/`.
+* `run.ps1` **fails if any stub reappears** in `stubs/`.
+* `run.ps1` passes `--require-origins`, and the oracle **exits 2** if any tracked class
+  did not load from the directory we compiled it into. Without that, the prebuilt
+  Minecraft jar could silently shadow a file we believe we are testing.
+
+The real `minecraft-merged-deobf-26.2.jar` supplies every Minecraft type we do *not*
+compile, so even `StreamCodec`/`Component`/`Entity` need no stub.
+
+---
+
+## `versions-are-read-not-chosen`
+
+Every dependency version is read from the Fabric Loom / Gradle cache on this machine —
+i.e. the resolved dependency tree Loom actually produced for the 26.2 client jar
+(`%USERPROFILE%\.gradle\caches\modules-2\files-2.1\<group>\<artifact>\<version>`). The
+table lives in `fetch_libs.ps1`.
+
+This immediately caught a mistake: session 02 pinned **commons-lang3 3.17.0** as
+"close enough to current", but 26.2 resolves **3.20.0**. Guessing versions for a
+bit-exactness port is exactly the wrong instinct — `joml`'s `Math.invsqrt` is a
+version-specific bit trick.
+
+---
+
+## `jdk-25-required`
+
+The oracle must run on **JDK 25**. Minecraft 26.2 ships as class-file **version 69.0**,
+and JDK 21's javac caps at 65.0.
+
+The failure mode is nasty: it does not say "wrong JDK". It reports a cascade of
+
+```
+bad class file: .../minecraft-merged-deobf-26.2.jar(/net/minecraft/network/FriendlyByteBuf.class)
+  class file has wrong version 69.0, should be 65.0
+```
+
+which surfaces as dozens of `cannot access FriendlyByteBuf` / `cannot access
+StreamCodec` on completely ordinary imports, and reads like a missing-dependency
+problem. `run.ps1` now selects a JDK 25 explicitly and asserts the version before
+compiling.
+
+---
+
+## `nan-policy` — match NaN bits only where they are observable
+
+Session 02 added exact-sign arithmetic helpers everywhere. That is right for the
+arithmetic and **wrong as a blanket policy**, because:
+
+* `Math.min`/`Math.max` propagate whatever NaN operand they were handed, so an
+  intermediate's sign depends on argument order.
+* A NaN that reaches `Mth#wrapDegrees` may have had its sign rewritten by any preceding
+  comparison or multiply.
+* **The JVM's own answer is CPU-dependent.** On x86-64 an invalid operation raises the
+  real-indefinite QNaN, which is *negative*; on AArch64 it raises the positive default.
+  So an exact NaN sign is not a portable property of the algorithm.
+
+The rule now (`javacompat/nan_policy.rs`): match exact sign **and payload** only where
+game code can observe it — `floatToRawIntBits`/`doubleToRawLongBits` results, and
+anything hashed, serialised, or put on the wire. Everywhere else, assert only that
+both sides are NaN (`equivalent_f32`/`equivalent_f64`). Signed zero is still
+distinguished, because that *is* observable.
+
+**We target x86-64 HotSpot**, and say so, because that is what the oracle measures and
+what nearly all Minecraft runs on.
+
+---
+
+## `entropy-injection`
+
+Every clock and entropy read goes through `javacompat::entropy`. No ported code may call
+`SystemTime::now`, `Instant::now`, `RandomState`, or read `/dev/urandom` directly — one
+file, one grep, is the whole point.
+
+This is *not* a gameplay change: `RandomSupport#generateUniqueSeed` is non-deterministic
+by construction, so its value was never reproducible. Centralising the clock changes
+only *where* it is read, and makes `cargo test` deterministic.
+
+`System.nanoTime()` has no portable Rust equivalent — Java's origin is
+JVM-chosen and unspecified. `entropy::nano_time` returns nanoseconds since the UNIX
+epoch instead. Different number, same property (fresh each call); see
+OPEN_QUESTIONS.md #1.
+
+---
+
+## `joml-subset-ported-not-swapped`
+
+Decision: port the JOML subset the game uses, method by method, from **JOML's own
+compiled bytecode**, into `_porting/javacompat/joml/`. Do **not** substitute
+`glam`/`nalgebra`.
+
+**Why, concretely:** `Vector3f#dot` and `Quaternionf#normalize` are built on
+`Math.fma`, an IEEE-754 **fused** multiply-add that rounds ONCE. `a * b + c` in Rust
+rounds twice. `javap -c` of joml 1.10.8:
+
+```text
+public static float fma(float, float, float);
+   0: getstatic  Field org/joml/Runtime.HAS_Math_fma:Z
+   3: ifeq      13
+   6..9: invokestatic  Method java/lang/Math.fma:(FFF)F   <-- taken on JDK 9+
+```
+
+Rust's `f32::mul_add` is the same operation and, unlike the `a*b+c` spelling, is
+immune to the compiler contracting or reassociating around it.
+
+A general-purpose Rust math library would also change float behaviour in ways that are
+hard to audit (FMA contraction settings, SIMD paths, `no_std` variants). Porting the
+few methods we need keeps every rounding decision visible.
+
+**One assumption of mine was wrong** and is recorded as such: I expected JOML's
+widen-to-f64-before-sqrt `invsqrt` to differ from a single-precision `sqrt`. It does
+not, for normal inputs — double rounding is benign when the intermediate has at least
+`2p + 2` mantissa bits, and f64 has 53 = 2·24 + 2 = 50. The test now sweeps 200k values
+to keep that honest rather than asserting my guess. The JOML spelling is kept anyway,
+so it stays auditable against `javap` and does not depend on the theorem holding.
+
+---
+
+## `dfu-proposal` — how we will handle DataFixerUpper and Codec (PROPOSAL ONLY)
+
+Not implemented. `Direction.CODEC`, `Vec3i.CODEC`, `Vec3.STREAM_CODEC` etc. are all
+`todo!()` and their files are `PARTIAL` where that is the only thing missing.
+
+**Option A — port DataFixerUpper into `javacompat`.** ~30 classes (`Codec`, `DataResult`,
+`RecordCodecBuilder`, the `MapCodec`/`RecordCodecBuilder` DSL). Pros: one dependency
+model, full control, and the DSL is what vanilla's codec declarations read like.
+Cons: large, and DFU has its own `DynamicOps` hierarchy that is itself a
+serialisation format we would then need to match.
+
+**Option B — a minimal replacement.** Only what vanilla actually uses:
+`Codec<T>` over a `DataResult<T>`, `MapCodec`, `RecordCodecBuilder`, `Either`, `ExtraCodecs`.
+Pros: far smaller surface. Cons: it is a *new* implementation, so its failure modes are
+ours; and vanilla's codec graphs are deeply nested (`StreamCodec` chains especially), so
+"only what's used" is optimistic.
+
+**Recommendation: A, in the serialisation batch (plan batch 5), but only after NBT
+(batch 3)**, because the honest test is a JSON/NBT round-trip through the real thing.
+
+**Parity risks either way, and they are the same three:**
+
+1. **Field order** in a serialised map. `RecordCodecBuilder` preserves declaration
+   order, and that order is on the wire and in save files. A `HashMap` here corrupts
+   worlds silently.
+2. **`DataResult` error text.** Reachable by the player (`argument.id.invalid` and
+   friends are translations), so a message change is a user-visible difference.
+3. **Numeric widening.** DFU will not silently narrow `int64 -> int32`; a replacement
+   that does would corrupt values at the world border instead of erroring.
+
+The golden harness is the mitigation for all three: extend `CoreOracle` to emit codec
+round-trips (value -> JSON -> value) and assert on the exact JSON bytes.

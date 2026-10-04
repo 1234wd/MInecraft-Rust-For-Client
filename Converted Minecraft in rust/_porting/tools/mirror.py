@@ -55,9 +55,18 @@ path = "lib.rs"
 
 # Parity tests against the Java oracle golden data (see _porting/java-oracle).
 # Paths are relative to the crate root, i.e. "Converted Minecraft in rust/".
+#
+# NOTE: this file is regenerated on every mirror.py run, so a new parity test must be
+# added HERE, not by editing Cargo.toml directly. Adding it only to Cargo.toml works
+# right up until the next `mirror.py` run silently drops it -- and the failure mode is
+# "no test target named parity_X", which reads like a typo rather than a lost entry.
 [[test]]
 name = "parity_mth"
 path = "_porting/tests/parity_mth.rs"
+
+[[test]]
+name = "parity_core"
+path = "_porting/tests/parity_core.rs"
 
 [[test]]
 name = "parity_random"
