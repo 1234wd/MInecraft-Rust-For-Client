@@ -83,39 +83,57 @@ pub trait BitRandomSource {
     /// Port of `BitRandomSource#nextDouble()` (the default method):
     /// 26 high bits, then 27 low bits.
     ///
-    /// # THE VANILLA QUIRK: `combined` is narrowed to `float` before the multiply
+    /// # A DECOMPILER ARTIFACT ALMOST COST US EVERY WORLD
     ///
-    /// Java source:
+    /// The decompiled source reads:
+    ///
     /// ```java
     /// long combined = ((long)upper << 27) + lower;
     /// return combined * 1.110223E-16F;
     /// ```
     ///
-    /// `1.110223E-16F` is a **float** literal, so binary numeric promotion for
-    /// `long * float` widens `long -> float` FIRST and then `float -> double`. The
-    /// `long` is therefore squeezed into a 24-bit mantissa and loses its low 32 bits
-    /// BEFORE the scaling happens.
+    /// Taken literally that is `long * <float literal>`, so Java would narrow `long`
+    /// to `float` (24 mantissa bits) *before* scaling -- and `nextDouble` would carry
+    /// only ~24 bits of entropy. Session 02 found that "quirk", pinned it with a test,
+    /// and wrote it up as a vanilla oddity worth preserving.
     ///
-    /// Measured on HotSpot 21 with seed 0:
+    /// **The decompiled source is wrong.** `javap -c` on the real jar:
+    ///
     /// ```text
-    /// upper = 0x02ec82d1          lower = 0x006a6ca89
-    /// combined                 = 0x1764168ea6ca89
-    /// (float) combined         = 0x4337641680000000   <-- low 32 bits are GONE
-    /// (double)combined * 2^-53 = 0x3fe764168ea6ca89   <-- the "obvious" port
-    /// actual vanilla result    = 0x3fe7641680000000   <-- the float-narrowed one
+    /// public default double nextDouble();
+    ///   27: lload_3                                  // combined
+    ///   28: l2d                                      // long -> double, FULL precision
+    ///   29: ldc2_w   #16  // double 1.1102230246251565E-16d
+    ///   32: dmul
+    ///   33: dreturn
     /// ```
     ///
-    /// So vanilla's `nextDouble` carries only ~24 bits of entropy, not 53. The
-    /// natural `(combined as f64) * 2f64.powi(-53)` yields a DIFFERENT stream and
-    /// desynchronises every legacy world. The `as f32` cast is not a typo -- do not
-    /// "fix" it.
+    /// `l2d` widens the `long` to `double` directly -- there is no `l2f` anywhere -- and
+    /// the constant is a **double** (`...E-16d`, not `...E-16F`). The decompiler emitted
+    /// the widened double's *value* and then attached a spurious `F` suffix.
+    ///
+    /// Measured, seed 0, `combined = 0x1764168ea6ca89`:
+    ///
+    /// | reading | result |
+    /// |---|---|
+    /// | jar (`l2d`, then multiply) | `0x3fe764168ea6ca89` |
+    /// | float-narrowed (decompiled source, session 02) | `0x3fe7641680000000` |
+    ///
+    /// So vanilla's `nextDouble` carries the full 53 bits, and the "obvious"
+    /// `(combined as f64) * 2f64.powi(-53)` is in fact the correct port. A stream with
+    /// 24 bits per draw still *looks* random, so nothing downstream would ever have
+    /// flagged this -- every legacy world would simply have been generated from
+    /// different values than vanilla's.
+    ///
+    /// Recorded in `_porting/DESIGN_DECISIONS.md` (#decompiler-artifacts) and
+    /// `_porting/OPEN_QUESTIONS.md`. The rule that caught it: **the jar is ground
+    /// truth**; the decompiled source is only ever a cross-check.
     #[inline]
     fn next_double(&mut self) -> f64 {
         let upper = self.next(26) as i64;
         let lower = self.next(27) as i64;
         let combined = (upper << 27).wrapping_add(lower);
-        // Java's `long * <float literal>` promotes long -> float -> double.
-        (combined as f32) as f64 * DOUBLE_MULTIPLIER
+        combined as f64 * DOUBLE_MULTIPLIER
     }
 }
 

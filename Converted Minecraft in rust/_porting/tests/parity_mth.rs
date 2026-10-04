@@ -321,8 +321,6 @@ fn random_backed_helpers() {
         };
         golden::assert_i32("nextIntOriginBound", r, rng.next_int_origin_bound(r.arg(1).as_i32(), r.arg(2).as_i32()));
     }
-
-    each(&g, "wobble", |r| golden::assert_f64_bits("wobble", r, Mth::wobble(r.arg(0).as_f64())));
     each(&g, "createInsecureUUID", |r| {
         let mut random = create_with_seed(r.arg(0).as_i64());
         let (most, least) = Mth::create_insecure_uuid(&mut *random);
@@ -372,7 +370,7 @@ fn every_golden_group_is_covered() {
         "atan2", "fastInvSqrt", "invSqrt_f", "invSqrt_d", "fastInvCubeRoot", "square_f", "square_d",
         "square_i", "square_l", "cube", "getSeed3", "getInt", "binarySearch", "outFromOrigin", "nextInt_rand",
         "randomBetweenInclusive", "nextFloat_rand", "randomBetween", "nextDouble_rand", "normal",
-        "nextIntBound_rand", "wobble", "createInsecureUUID", "absMax_i", "absMax_f", "absMax_d",
+        "nextIntBound_rand", "createInsecureUUID", "absMax_i", "absMax_f", "absMax_d",
         "clamp_i", "clamp_l", "clamp_f", "clamp_d", "chessboardDistance",
         "murmurHash3Mixer", "nextIntOriginBound",
     ];
@@ -399,24 +397,38 @@ fn every_golden_group_is_covered() {
     }
 }
 
-/// The float-narrowing quirk in `BitRandomSource#nextDouble` is the single easiest
-/// thing in this batch to "fix" by accident, and doing so desyncs every legacy
-/// world. Pin it with the exact values HotSpot 21 produces.
+/// The `nextDouble` float-narrowing "quirk" that session 02 believed in was a
+/// DECOMPILER ARTIFACT. The real jar widens `long -> double` with `l2d` and
+/// multiplies by a `double` constant, so vanilla carries the full 53 bits.
+///
+/// This test exists to make the wrong value impossible to reintroduce: it asserts
+/// the *correct* bits AND that the float-narrowed value does not appear. Session 03's
+/// version of this test asserted the opposite and passed, because the oracle was
+/// compiling the same decompiled source we were porting from -- two copies of the same
+/// mistake agreeing with each other.
+///
+/// See `_porting/DESIGN_DECISIONS.md` (#decompiler-artifacts).
 #[test]
-fn legacy_next_double_carries_only_24_bits() {
-    use minecraft_rust::net::minecraft::world::level::levelgen::LegacyRandomSource::LegacyRandomSource;
+fn legacy_next_double_carries_all_53_bits() {
     use minecraft_rust::net::minecraft::world::level::levelgen::BitRandomSource::BitRandomSource;
+    use minecraft_rust::net::minecraft::world::level::levelgen::LegacyRandomSource::LegacyRandomSource;
 
     let mut r = LegacyRandomSource::new(0);
-    assert_eq!(r.next(26), 0x02ec82d1);
-    assert_eq!(r.next(27), 0x006a6ca89);
+    assert_eq!(BitRandomSource::next(&mut r, 26), 0x02ec82d1);
+    assert_eq!(BitRandomSource::next(&mut r, 27), 0x006a6ca89);
 
     let mut r = LegacyRandomSource::new(0);
+    let got = BitRandomSource::next_double(&mut r);
     assert_eq!(
-        r.next_double().to_bits(),
+        got.to_bits(),
+        0x3fe764168ea6ca89,
+        "vanilla widens long->double directly; the low 32 bits survive"
+    );
+    // The value the decompiled source produces. It must NOT be what we return.
+    assert_ne!(
+        got.to_bits(),
         0x3fe7641680000000,
-        "vanilla nextDouble loses the low 32 bits to a float narrowing; the natural \
-         f64 implementation gives 0x3fe764168ea6ca89 instead"
+        "this is the float-narrowed (decompiled-source) value -- a decompiler artifact"
     );
 }
 

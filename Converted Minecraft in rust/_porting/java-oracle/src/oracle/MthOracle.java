@@ -154,7 +154,25 @@ public final class MthOracle {
 		unaryD64(o, "smoothstep", Mth::smoothstep, new double[]{-1.0, -0.5, 0.0, 0.25, 0.5, 0.75, 1.0, 2.0, Double.NaN});
 		unaryD64(o, "smoothstepDerivative", Mth::smoothstepDerivative, new double[]{-1.0, -0.5, 0.0, 0.25, 0.5, 0.75, 1.0, 2.0, Double.NaN});
 		unaryI32(o, "murmurHash3Mixer", Mth::murmurHash3Mixer, I);
-		unaryD64(o, "wobble", Mth::wobble, D);
+
+		// `Mth#wobble` is DELIBERATELY NOT EMITTED.
+		//
+		// public static double wobble(double coord) {
+		//     return coord + (2.0 * RandomSource.createThreadLocalInstance(floor(coord * 3000.0)).nextDouble() - 1.0) * 1.0E-7 / 2.0;
+		// }
+		//
+		// `createThreadLocalInstance(long)` with no seed draws from netty's
+		// ThreadLocalRandom, i.e. per-thread state seeded off the system clock. The
+		// result is therefore different on every call and cannot be asserted against a
+		// golden value -- emitting it produced rows that changed on every oracle run,
+		// which is worse than useless because it makes the whole file look unstable.
+		//
+		// What IS deterministic, and what random.txt tests as `wobble_check`, is the
+		// seeded path: `RandomSource.createThreadLocalInstance(seed)` followed by a draw
+		// from it. That covers the arithmetic wobble performs on the drawn value, which
+		// is the part worth pinning.
+		//
+		// See OPEN_QUESTIONS.md #1 -- this is also why `generateUniqueSeed` is untested.
 
 		strings(o);
 		pairs(o);

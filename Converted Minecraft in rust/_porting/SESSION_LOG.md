@@ -185,3 +185,66 @@ belong to the serialization batch (question 8).
 Batch 2 — core value types (`Vec3i`, `Vec3`, `Direction`, `BlockPos`, `AABB`,
 `Identifier`, `ARGB`, …). It closes out the five blocked `Mth` methods and is a
 prerequisite for NBT, registries and worldgen. See `PORTING_PLAN.md`.
+
+---
+
+## Session 04 - the jar becomes ground truth
+
+**Velocity**
+
+| | |
+|---|---|
+| files verified this session | 0 new (re-verified 13 against the jar) |
+| total verified | 12 VERIFIED, 3 PARTIAL, 7040 SKELETON |
+| LOC verified | 1 463 / 745 988 = **0.196%** |
+| LOC verified or partial | 0.318% |
+| tests | **104 passing, 0 failing** (was 98) |
+| golden rows | 436 547 across 261 groups (was 370 697 / 243) |
+| commits | `HEAD` below, local only |
+
+**Headline: zero new game files ported, and it was still the right session.** The
+oracle now loads every game class from `minecraft-merged-deobf-26.2.jar` instead of
+recompiling the decompiled sources. That single change immediately surfaced a bug
+that would have desynchronised **every legacy and every modern world, silently,
+forever** -- see DESIGN_DECISIONS `#decompiler-artifacts` #1.
+
+`BitRandomSource#nextDouble` and `XoroshiroRandomSource#nextDouble` were returning a
+24-bit-narrowed double because the decompiled source says `combined *
+1.110223E-16F` and nobody checked the `F`. The jar says `l2d` and a *double* constant:
+full 53 bits. Session 02 found the "quirk", pinned it with a test, and wrote it up in
+three places as a vanilla oddity. It survived two sessions because **the oracle was
+compiling the same decompiled source we were porting from** -- two copies of one
+mistake, agreeing with each other.
+
+That is the transferable lesson and it is now a rule: *a harness that shares an
+assumption with the code under test cannot detect that assumption.* Hence
+`jar-is-ground-truth`, `Mode Jar` as the only golden-data-producing mode, and
+`--expect-origin` failing the build if any of the 28 tracked classes did not come from
+the jar.
+
+**Second finding: `Math.log` is not fdlibm.** Chasing a 2-ULP gaussian divergence
+showed Java has two logarithms and they disagree by 1 ULP -- `StrictMath.log` is fdlibm,
+`Math.log` is HotSpot's table-driven `_dlog` intrinsic. Host `ln()` matches 255/256,
+fdlibm matches 234/256. `javacompat::java_lang::log` now carries all four
+implementations with the measurements; `MarsagliaPolarGaussian` is honestly `PARTIAL`
+at 255/256 with the eight diverging draw indices pinned by name. Same class of problem
+as `Mth`'s embedded trig tables: **reproduce the JVM's answer, not the best one.**
+
+**Three harness traps hit and fixed** (each of which had been lying):
+1. The harness recompiled vanilla, so a decompiler artifact was self-confirming.
+2. `assert_f64_bits` always checks `exp(0)` -- on a multi-value row it silently
+   re-checks the first value. Added `assert_f64_bits_at` / `f64_matches`.
+3. My first `gaussianSteps` golden group omitted the **rejection loop**. ~1 pair in 8 is
+   discarded, costing 2 more doubles; without it the diagnostic desynchronised from the
+   transcript and produced NaN where the game had a valid value. The harness was wrong,
+   the port was right, and it took a while to notice. Emitting intermediates made it
+   visible immediately.
+
+**Not done, and it is most of the session's plan:** Part A (Batch 2 completion --
+`BlockPos`, `ChunkPos`, `SectionPos`, `Vec3`, `Vec2`, `AABB`, `ARGB`, `Identifier`,
+`Rotations`, `Direction.Plane`, the 5 blocked `Mth` methods) and Part B (NBT) were not
+started. `BLOCKED_ON_UNPORTED_TYPES` still has 5 entries. The session went into
+verifying the foundation instead, which is what surfaced the `nextDouble` bug.
+
+**Next:** Batch 2 (Part A) as specified, then NBT. Decision needed on OPEN_QUESTIONS
+#16 (`_dlog` transcription) before any batch that calls `Math.log`.

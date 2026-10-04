@@ -111,6 +111,69 @@ public final class RandomOracle {
 				o.row(Out.i64(seed), Out.f64(r.nextGaussian()));
 			}
 		}
+
+		// The intermediates behind nextGaussian, as their OWN group.
+		//
+		// Why this exists: `nextGaussian` alternates between consuming randomness (even
+		// draws) and returning a cached spare (odd draws), so a 2-ULP divergence in the
+		// multiplier shows up at draw N+1 while actually being caused at draw N. Debugging
+		// that from the values alone is miserable. Emitting each step separately means a
+		// failing parity test can name the exact operation that drifted.
+		//
+		// The order is the bytecode's:
+		//   do { v1 = 2.0*nextDouble()-1; v2 = 2.0*nextDouble()-1;
+		//        radiusSquared = Mth.square(v1) + Mth.square(v2); }
+		//   while (radiusSquared >= 1.0 || radiusSquared == 0.0);
+		//   q = (-2.0 * Math.log(radiusSquared)) / radiusSquared;
+		//   multiplier = Math.sqrt(q);
+		//
+		// THE REJECTION LOOP IS PART OF IT. An earlier version of this group computed a
+		// single pair with no loop, which is WRONG: roughly one pair in eight has
+		// radiusSquared >= 1 and is discarded, and the real nextGaussian then draws two
+		// MORE doubles. Omitting the loop desynchronised the diagnostic from the
+		// transcript and produced NaN where the game had a perfectly good value -- a
+		// divergence I chased for a while before realising the harness, not the port, was
+		// at fault. `rejections` counts the discarded pairs, so a port that changes the
+		// rejection rate (i.e. consumes a different number of doubles) is caught at once.
+		o.fn(tag + ".gaussianSteps", "i64", "i32 f64 f64 f64 f64 f64 f64 f64 f64 f64 f64");
+		for (long seed : SEEDS) {
+			RandomSource r = ctor.apply(seed);
+			// 8 accepted pairs == 16 draws, exactly the `.nextGaussian` transcript length
+			// above. Covering only part of it would let a drift past the midpoint hide.
+			for (int k = 0; k < 8; k++) {
+				double n1;
+				double n2;
+				double v1;
+				double v2;
+				double radiusSquared;
+				double logRs;
+				double q;
+				double multiplier;
+				int rejections = 0;
+				do {
+					n1 = r.nextDouble();
+					n2 = r.nextDouble();
+					v1 = 2.0 * n1 - 1.0;
+					v2 = 2.0 * n2 - 1.0;
+					radiusSquared = v1 * v1 + v2 * v2;
+					if (radiusSquared < 1.0 && radiusSquared != 0.0) {
+						logRs = Math.log(radiusSquared);
+						q = (-2.0 * logRs) / radiusSquared;
+						multiplier = Math.sqrt(q);
+						break;
+					}
+					rejections++;
+				} while (true);
+				o.row(Out.i64(seed), Out.join(
+						Out.i32(rejections),
+						Out.f64(n1), Out.f64(n2), Out.f64(v1), Out.f64(v2),
+						Out.f64(radiusSquared), Out.f64(logRs), Out.f64(q), Out.f64(multiplier),
+						// The two RESULTS, not just the inputs. MarsagliaPolarGaussian
+						// returns v1*multiplier now and v2*multiplier on the NEXT call, so a
+						// drift in either product is invisible until two draws later.
+						Out.f64(v1 * multiplier), Out.f64(v2 * multiplier)));
+			}
+		}
 		o.blank();
 
 		// nextInt(bound): one transcript per bound, all sharing ONE instance per

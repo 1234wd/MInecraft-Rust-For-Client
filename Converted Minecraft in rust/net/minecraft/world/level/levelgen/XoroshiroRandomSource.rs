@@ -135,14 +135,34 @@ impl RandomSource for XoroshiroRandomSource {
 
     /// Port of `XoroshiroRandomSource#nextDouble()`.
     ///
-    /// SAME float-narrowing quirk as `BitRandomSource#nextDouble`:
-    /// `nextBits(53) * 1.110223E-16F` is `long * <float literal>`, so Java widens
-    /// `long -> float` first (keeping only 24 mantissa bits) and then
-    /// `float -> double`. Writing `next_bits(53) as f64 * DOUBLE_UNIT` produces a
-    /// DIFFERENT stream and desynchronises modern worlds.
+    /// ```java
+    /// public double nextDouble() {
+    ///     return this.nextBits(53) * 1.110223E-16F;
+    /// }
+    /// ```
+    ///
+    /// # THE `F` SUFFIX HERE IS ALSO A DECOMPILER ARTIFACT
+    ///
+    /// Session 02 read the decompiled source, saw `long * <float literal>`, and
+    /// concluded -- correctly from that source -- that Java would narrow the `long` to
+    /// 24 bits first. It does not. `javap -c` on the jar:
+    ///
+    /// ```text
+    /// public double nextDouble();
+    ///   ...  invokevirtual nextBits:(I)J
+    ///   l2d                                     // long -> double, full precision
+    ///   ldc2_w  // double 1.1102230246251565E-16d
+    ///   dmul
+    /// ```
+    ///
+    /// Same artifact as `BitRandomSource#nextDouble`, same fix. Modern worlds'
+    /// `nextDouble` stream carries the full 53 bits.
+    ///
+    /// See `BitRandomSource#next_double` for the full write-up, and
+    /// `_porting/DESIGN_DECISIONS.md` (#decompiler-artifacts).
     #[inline]
     fn next_double(&mut self) -> f64 {
-        (self.next_bits(53) as f32) as f64 * DOUBLE_UNIT
+        self.next_bits(53) as f64 * DOUBLE_UNIT
     }
 
     /// Port of `XoroshiroRandomSource#nextGaussian()`.

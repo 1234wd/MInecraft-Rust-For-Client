@@ -337,3 +337,175 @@ ours; and vanilla's codec graphs are deeply nested (`StreamCodec` chains especia
 
 The golden harness is the mitigation for all three: extend `CoreOracle` to emit codec
 round-trips (value -> JSON -> value) and assert on the exact JSON bytes.
+---
+
+## `jar-is-ground-truth` (session 04)
+
+**Session 03 recompiled the decompiled sources and treated them as authoritative.
+That was wrong in principle, and the moment we tested it against the real jar it
+cost us a world-breaking bug.** The oracle now runs in two modes (`run.ps1 -Mode
+Jar | Source`); `Jar` is the default and the only mode that writes golden data.
+
+```
+Mode Jar     compile nothing from minecraft-decompiled/. Every game class loads from
+             minecraft-merged-deobf-26.2.jar. --expect-origin FAILS if any of the 28
+             tracked classes came from anywhere else.
+Mode Source  additionally compiles the decompiled sources and puts them first on the
+             classpath. Diffed against Jar purely to find decompiler artifacts.
+```
+
+Nothing is patched, and nothing game-shaped is mirrored into `javacompat`. Where the
+two ever disagree, **the jar wins** and the case is logged under
+`#decompiler-artifacts`. The immediate payoff: `Util.java` stops being a problem at
+all. It cannot be recompiled under JDK 25, and now we simply never recompile it.
+
+---
+
+## `#decompiler-artifacts`
+
+### 1. `BitRandomSource#nextDouble` / `XoroshiroRandomSource#nextDouble` - a spurious `F` suffix
+
+**The single most expensive mistake in the port so far**, and it survived two
+sessions because the harness could not see it.
+
+```java
+long combined = ((long)upper << 27) + lower;
+return combined * 1.110223E-16F;     // <-- the decompiler's lie
+```
+
+Read literally that is `long * <float literal>`, so Java would narrow `long` to a
+24-bit mantissa *before* scaling, and `nextDouble` would carry ~24 bits of entropy
+instead of 53. Session 02 found that, pinned it with a test, and wrote it up in three
+places as a curious vanilla quirk worth preserving.
+
+`javap -c` on the jar:
+
+```
+27: lload_3                                  // combined
+28: l2d                                      // long -> double, FULL precision
+29: ldc2_w   #16  // double 1.1102230246251565E-16d
+32: dmul
+```
+
+`l2d`, no `l2f` anywhere, and the constant is a **double**. The decompiler emitted the
+widened double's value and then attached a spurious `F`.
+
+| seed 0, `combined = 0x1764168ea6ca89` | result |
+|---|---|
+| jar (`l2d`, then multiply) | `0x3fe764168ea6ca89` |
+| decompiled source / session-02 port | `0x3fe7641680000000` |
+
+The obvious `(combined as f64) * 2f64.powi(-53)` was right all along. **A stream with
+24 bits per draw still looks random**, so nothing downstream would ever have flagged
+it -- every legacy world would simply have been generated from different values than
+vanilla's, forever, with no visible symptom.
+
+*Why two copies of the same mistake agreed:* session 02/03's oracle recompiled the
+same decompiled source we were porting from, so the golden data and the Rust were
+both wrong in the same direction and the test passed. **A harness that shares an
+assumption with the code under test cannot detect that assumption.** That is the
+general lesson, and it is the whole reason for the jar switch.
+
+### 2. `Rotations` lives in `net.minecraft.core`, not `net.minecraft.util`
+
+Not a behavioural artifact -- a package misread, caught by `--expect-origin`
+reporting `NOT FOUND on the classpath`. Recorded because it is the kind of thing that
+would have been papered over with a stub.
+
+### 3. `Mth#wobble` is non-deterministic and must not be asserted
+
+```java
+return coord + (2.0 * RandomSource.createThreadLocalInstance(floor(coord * 3000.0)).nextDouble() - 1.0) * 1.0E-7 / 2.0;
+```
+
+`createThreadLocalInstance(long)` with no seed draws from netty's `ThreadLocalRandom`,
+i.e. per-thread state seeded off the system clock. The bytecode matches the source
+exactly -- it is not an artifact. But emitting it produced 203 golden rows that
+**changed on every oracle run**, which is worse than useless: it makes the whole file
+look unstable and trains you to ignore diffs. Removed from the golden set; the seeded
+path stays covered by `random.txt`'s `wobble_check`. Same reason
+`generateUniqueSeed` is untestable (OPEN_QUESTIONS #1).
+
+---
+
+## `math-log-is-not-fdlibm` (session 04)
+
+`MarsagliaPolarGaussian#nextGaussian` computes `sqrt(-2.0 * Math.log(rs) / rs)` --
+the only `Math.log` in the ported surface. It is **not exact**, and the reason is
+worth recording because it generalises to every other transcendental Minecraft uses.
+
+Java has two logarithms and they disagree:
+
+| call | what it is |
+|---|---|
+| `StrictMath.log(x)` | **fdlibm** `e_log.c`, shipped inside the JDK |
+| `Math.log(x)` | HotSpot's **`_dlog` intrinsic** (`stubGenerator_x86_64_log.cpp`, `generate_libmLog`) |
+
+`_dlog` is neither fdlibm nor the host libm. It is a **table-driven** stub: a
+128-entry `_L_tbl` of doubles indexed by the top mantissa bits, a 2-entry `_log2`
+(`ln2_hi`/`ln2_lo`), and 6 `_coeff` doubles, with a packed `mulpd`/`addpd` polynomial
+tail. Measured over 256 arbitrary doubles (the `radiusSquared` corpus from
+`random.txt`):
+
+```
+Math.log       == StrictMath.log   : 234 / 256
+Math.log       == host f64::ln()    : 255 / 256
+StrictMath.log == host f64::ln()    : 235 / 256
+StrictMath.log == our strict_log_f64: 256 / 256   <- exact
+```
+
+Every difference is 1 ULP. `javacompat::java_lang::log` carries all four
+implementations plus the evidence.
+
+**Decision:** use the host `ln()` (255/256, the best available) via a single named
+function `math_log_f64`, so there is exactly one place to change when `_dlog` is
+transcribed and exactly one place to grep to measure exposure. Do **not** pretend it
+is exact: `MarsagliaPolarGaussian` is marked `PARTIAL`, and `parity_random` pins the
+eight diverging draw indices out of 256x16. Transcribing the stub is OPEN_QUESTIONS
+#16.
+
+**Why this is the same class of problem as `embedded-trig-tables`.** Vanilla already
+ships 65536-entry `SIN`/`COS`/`ASIN` tables in `Mth` for precisely this reason. The
+rule is uniform: **reproduce the JVM's answer, not the mathematically best one.** A
+correctly-rounded `log` would be a *third* answer and would not match HotSpot either.
+
+---
+
+## `golden-groups-are-diagnostics` (session 04)
+
+Debugging the gaussian cost hours, and the reason was structural: `nextGaussian`
+alternates between consuming randomness and returning a **cached spare**, so a 1-ULP
+drift in the multiplier shows up at draw N+1 while being *caused* at draw N. From the
+values alone that is close to undebuggable.
+
+So the oracle now emits `<kind>.gaussianSteps`, with each operation as its own
+expected value plus the rejection count. Two things came out of that immediately:
+
+1. The first version of the group **omitted the rejection loop** and was therefore
+   wrong -- roughly one pair in eight is discarded, and the real code then draws two
+   MORE doubles. It desynchronised from the transcript and produced NaN where the game
+   had a valid value. The harness was wrong; the port was right. Emitting the
+   intermediates is what made that visible instead of a mystery.
+2. It localised the real divergence to `Math.log` in one step instead of a bisection.
+
+General rule: **a golden group should make a future divergence name itself.**
+`assert_f64_bits_at` exists because `assert_f64_bits` always checks `exp(0)`; on a
+multi-value row that silently re-checks the first value, so you think you are
+asserting index 4 while asserting index 0.
+
+---
+
+## `known-divergences-are-pinned-not-deleted` (session 04)
+
+The `Math.log` gap could have been made to disappear three ways, all of them wrong:
+assert equality and let the suite fail; delete the assertion; or round the result.
+Instead the divergence is a **named, counted, self-reporting allowance**:
+
+```rust
+assert_eq!(gaussian_mismatches, expected_gaussian_log_divergences(prefix), ...)
+```
+
+The test still walks every row. It fails if the set of diverging rows changes, and
+the comment says to delete the allowance deliberately once `Math.log` is exact. A
+suite that is green *because* it is honest beats a suite that is green because it
+stopped looking.

@@ -374,3 +374,47 @@ pub fn assert_str(method: &str, row: &Row, actual: &str) {
     };
     assert_eq!(actual, expected, "{method} (golden line {}) args={:?}", row.line, row.args);
 }
+/// Assert a specific EXPECTED value of a multi-value row.
+///
+/// [`assert_f64_bits`] and friends always compare against `exp(0)`, which is fine for
+/// single-value rows but silently re-checks the first value when a row carries several.
+/// That failure mode is nasty: you think you are asserting index 4, the test actually
+/// asserts index 0, and it either passes vacuously or fails somewhere unrelated.
+///
+/// The `label` is only used to make the assertion message name which step drifted.
+pub fn assert_f64_bits_at(method: &str, row: &Row, index: usize, label: &str, actual: f64) {
+    let expected = row.exp(index);
+    assert_eq!(
+        crate::javacompat::nan_policy::double_to_raw_long_bits(actual),
+        expected.as_f64_bits() as i64,
+        "{method} [{label}] (golden line {}, expected index {index})",
+        row.line
+    );
+}
+
+/// `f32` counterpart of [`assert_f64_bits_at`].
+pub fn assert_f32_bits_at(method: &str, row: &Row, index: usize, label: &str, actual: f32) {
+    let expected = row.exp(index);
+    assert_eq!(
+        crate::javacompat::nan_policy::float_to_raw_int_bits(actual),
+        expected.as_f32_bits() as i32,
+        "{method} [{label}] (golden line {}, expected index {index})",
+        row.line
+    );
+}
+/// Assert a specific EXPECTED value of a multi-value row against an `i32`.
+pub fn assert_i32_at(method: &str, row: &Row, index: usize, label: &str, actual: i32) {
+    assert_eq!(actual, row.exp(index).as_i32(), "{method} [{label}] (golden line {}, expected index {index})", row.line);
+}
+/// Does `actual` equal the EXPECTED value at `index` of `row`, bit for bit?
+///
+/// This is the non-panicking counterpart of [`assert_f64_bits_at`]. It exists for
+/// rows where a divergence is *known, measured and bounded* rather than absent: the
+/// caller needs to count the exceptions, assert that the set of exceptions is exactly
+/// the one already documented, and fail loudly if it grows.
+///
+/// A blanket `assert_eq!` cannot express that, and deleting the assertion to make the
+/// suite green would hide the very thing being tracked.
+pub fn f64_matches(row: &Row, index: usize, actual: f64) -> bool {
+    row.exp(index).as_f64_bits() == crate::javacompat::nan_policy::double_to_raw_long_bits(actual) as u64
+}
