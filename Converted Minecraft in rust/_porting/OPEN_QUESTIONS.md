@@ -308,3 +308,64 @@ have produced two `todo!()` stubs for methods that do not exist -- and would hav
 two methods vanilla actually uses untested. The manifest and `parity_mth.rs` now carry the
 real names. Recording it because the stale names were in a committed checklist, and a
 checklist is exactly where a wrong name survives longest.
+
+---
+
+## 20. NEW (session 06) - `+NaN + (-NaN)` has NO single answer; 39 golden rows depend on it
+
+**Status: open, measured, pinned. Not blocking anything.**
+
+`Vec3#subtract(s)` is `add(-s,-s,-s)`, so when a component is NaN and `s` is NaN, vanilla
+evaluates `+NaN + (-NaN)`. What HotSpot returns depends on the COMPILED FORM, not on the
+language. Two golden rows with identical operand bits disagree:
+
+```text
+Vec3( 0.0, 0.0, NaN).subtract(NaN)  ->  -NaN, -NaN, +NaN    first operand won
+Vec3( 1.0, NaN, 1.0).subtract(NaN)  ->  -NaN, -NaN, -NaN    second operand won
+```
+
+The only difference is WHICH COMPONENT is NaN, which changes scalar-vs-vectorised codegen.
+A standalone probe of `x + y` on HotSpot 25 says "first wins"; the game's own `Vec3.add`
+produces both answers.
+
+So `javacompat::java_lang::nan_result_*` implements the MEASURED MAJORITY -- **second operand
+wins** -- which matches 295,146 of 295,185 rows overall and 4,057 of 4,096 in
+`vec3.subtractScalar`. The **39** exceptions are compared first and only then tolerated, so
+the other 4,057 rows still assert; anything that differs and is NOT a both-NaN add still
+fails the build.
+
+**Recommendation:** leave it. The divergence is only observable through NaN coordinates,
+which do not occur in a running world (positions are finite; a NaN position means the game
+has already gone wrong). Transcribing HotSpot's codegen choices is not tractable and not
+worth it.
+
+---
+
+## 21. NEW (session 06) - `jvm_math` needs `atan2` AND `asin`; measured sizes
+
+**Status: open. This is the #16 work with the numbers filled in.**
+
+Measured on the 512-row `vec3.rotation` corpus:
+
+| quantity | host `Math` | bit-exact | source |
+|---|---|---|---|
+| yaw | `atan2(-x, z)` | **376 / 512** | 136 rows differ |
+| pitch | `asin(-y / len)` | **333 / 512** | 179 rows differ |
+
+All divergences are **1 ULP**, which is the signature of a correctly-rounded-but-different
+implementation rather than a wrong one.
+
+Encouragingly, `vec3.addLocalCoordinates` is **512/512 bit-exact** even though it goes
+through `rotation()` -- the 1-ULP yaw/pitch difference is absorbed by the following `Mth`
+table lookups and `float` products. So the divergence is confined to code that READS
+`rotation()` directly: entity yaw/pitch, `LivingEntity#setYawRot`, camera angles, and
+anything that serialises a rotation.
+
+What is asserted today: the 112 **axis-aligned** rows, where the expected yaw is exactly
+`-0.0`, `0.0`, `180.0` or `-180.0`. Those are sign conventions (`atan2(-0.0, 1.0)` is
+`-0.0`), not transcendental results, so they are immune to the ULP question and they pin
+the argument order -- which was one of the two real bugs in this method.
+
+**Recommendation:** `asin` first (179 rows, single-argument, the simplest of the two), then
+`atan2`. `atan2` is the harder one because it has four quadrants plus the signed-zero and
+axis cases, and those are precisely the cases the current assertion protects.

@@ -14,15 +14,31 @@ PATH = r"_porting\tests\parity_batch2.rs"
 
 
 def split_list(src, name):
-    """Return (start, end, set_of_entries, text) for `const <name>: &[&str] = &[ ... ];`."""
-    m = re.search(r"const " + name + r": &\[&str\] = &\[", src)
+    """Return (start, end, entries) for `const <name>: &[&str] = &[ ... ];`.
+
+    The `];` must be found by SCANNING FORWARD, not by `src.index("];", start)`: if the
+    list is damaged (or a later list is missing its `const` header) `index` happily finds
+    the NEXT list's terminator and this function silently merges two lists. That is exactly
+    how `const BLOCKED_ON_UNPORTED_TYPES` got eaten in session 06.
+    """
+    m = re.search(r"^const " + name + r": &\[&str\] = &\[", src, re.M)
     if not m:
-        sys.exit("could not find const " + name)
+        sys.exit("could not find the `const " + name + ": &[&str] = &[` header")
     start = m.end()
-    end = src.index("];", start)
+    end = src.find("];", start)
+    if end < 0:
+        sys.exit("const " + name + " has no closing `];` -- the list is damaged")
     body = src[start:end]
     entries = re.findall(r'"([^"]+)"', body)
-    return m.start(), end + 2, entries, src[start:end]
+    if not entries:
+        sys.exit("const " + name + " is EMPTY -- refusing to rewrite it")
+    # Sanity: nothing but whitespace and entries between the brackets.
+    residue = re.sub(r'"[^"]+"', "", body)
+    if residue.strip():
+        sys.exit(
+            "const " + name + " has unexpected content between entries: %r" % residue[:120]
+        )
+    return m.start(), end + 2, entries
 
 
 def rebuild(entries):
@@ -33,14 +49,22 @@ def main(move):
     with io.open(PATH, encoding="utf-8") as fh:
         src = fh.read()
 
-    for name, group in (("COVERED", "covered"), ("BLOCKED_ON_UNPORTED_TYPES", "blocked")):
-        s, e, entries, _ = split_list(src, name)
-        missing = [g for g in move if g not in entries]
-        if missing:
-            sys.exit("not in %s: %s" % (name, missing))
-        kept = [x for x in entries if x not in move]
-        src = src[:s] + rebuild(kept) + "\n" + src[e:]
-        print("%-26s %d -> %d" % (name, len(entries), len(kept)))
+    # COVERED: add the groups (each now has a test).
+    s, e, entries, _ = split_list(src, "COVERED")
+    added = [g for g in move if g not in entries]
+    kept = entries + added
+    src = src[:s] + rebuild(kept) + chr(10) + src[e:]
+    print("COVERED                  %d -> %d (+%d)" % (len(entries), len(kept), len(added)))
+
+    # BLOCKED: remove them, and insist they were actually listed -- a typo here would
+    # leave a group claimed-as-blocked while a test also claims it.
+    s, e, entries, _ = split_list(src, "BLOCKED_ON_UNPORTED_TYPES")
+    missing = [g for g in move if g not in entries]
+    if missing:
+        sys.exit("not in BLOCKED_ON_UNPORTED_TYPES: %s" % missing)
+    kept = [x for x in entries if x not in move]
+    src = src[:s] + rebuild(kept) + chr(10) + src[e:]
+    print("BLOCKED_ON_UNPORTED_TYPES %d -> %d" % (len(entries), len(kept)))
 
     with io.open(PATH, "w", encoding="utf-8", newline="") as fh:
         fh.write(src)

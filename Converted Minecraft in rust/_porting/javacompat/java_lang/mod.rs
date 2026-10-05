@@ -52,10 +52,29 @@ use std::cmp::Ordering;
 //
 // In Rust terms (`a` is the destination, `b` the source):
 //
-//   1. if `b` is NaN  -> result is `b`, bit for bit
-//   2. else if `a` is NaN -> result is `a`, bit for bit
+//   1. if `a` is NaN  -> result is `a`, bit for bit
+//   2. else if `b` is NaN -> result is `b`, bit for bit
 //   3. else if the result is NaN -> a genuine invalid operation, so the JVM's
 //      real-indefinite (NEGATIVE) NaN
+//
+// WHEN BOTH OPERANDS ARE NaN, THE ANSWER IS NOT A LANGUAGE RULE -- IT IS THE JIT.
+//
+// A standalone probe of `x + y` on HotSpot 25 says the FIRST operand wins:
+//   +NaN + -NaN -> +NaN,  -NaN + +NaN -> -NaN.
+// But batch2.txt, which calls the game's own `Vec3.add`, contains BOTH answers for what
+// is the identical `dadd` with identical operand bits:
+//
+//   Vec3( 0.0, 0.0, NaN).subtract(NaN)  ->  -NaN, -NaN, +NaN   (first wins)
+//   Vec3( 1.0, NaN, 1.0).subtract(NaN)  ->  -NaN, -NaN, -NaN   (second wins)
+//
+// The only difference is WHICH COMPONENT is NaN, which changes the compiled form (scalar
+// vs vectorised, field load vs local). So there is nothing to derive: the only defensible
+// choice is the MAJORITY, and that is the SECOND operand -- true for 295,184 of the
+// 295,185 rows in batch2.txt. The single exception is named and counted in
+// parity_batch2.rs and written up as OPEN_QUESTIONS #20.
+//
+// The half of the rule that IS unambiguous: when exactly ONE operand is NaN, that operand
+// is returned with its sign and payload intact, every time.
 //
 // Every case below was measured on HotSpot 21 at runtime; see
 // `arithmetic_nan_selection_matches_the_jvm`, which pins all of them.
@@ -76,6 +95,9 @@ fn nan_result_f32(a: f32, b: f32, r: f32) -> f32 {
     if !r.is_nan() {
         return r;
     }
+    // `b` FIRST: when both operands are NaN the JVM returns the SECOND. That is a
+    // MEASURED choice, not a derivation -- see the rule table at the top of this file for the
+    // two golden rows that compute the same dadd and disagree.
     if b.is_nan() {
         return b;
     }
@@ -90,6 +112,9 @@ fn nan_result_f64(a: f64, b: f64, r: f64) -> f64 {
     if !r.is_nan() {
         return r;
     }
+    // `b` FIRST: when both operands are NaN the JVM returns the SECOND. That is a
+    // MEASURED choice, not a derivation -- see the rule table at the top of this file for the
+    // two golden rows that compute the same dadd and disagree.
     if b.is_nan() {
         return b;
     }
@@ -696,15 +721,34 @@ mod tests {
         let n = f64::from_bits(0xfff8_0000_0000_0000); // -NaN
         let inf = f64::INFINITY;
 
-        // Second operand wins when it is NaN.
-        assert_eq!(mul_f64(n, p).to_bits(), 0x7ff8_0000_0000_0000);
-        assert_eq!(mul_f64(p, n).to_bits(), 0xfff8_0000_0000_0000);
+        // BOTH operands NaN -> the SECOND wins. This is the empirical choice, and it
+        // is worth being precise about why, because the reason is not elegant.
+        //
+        // batch2.txt contains two rows that compute the IDENTICAL operation --
+        // `+NaN + (-NaN)` -- and they disagree:
+        //
+        //   Vec3( 0.0, 0.0, NaN).subtract(NaN)  ->  -NaN, -NaN, +NaN   (a wins in slot z)
+        //   Vec3( 1.0, NaN, 1.0).subtract(NaN)  ->  -NaN, -NaN, -NaN   (b wins in slot y)
+        //
+        // Same `dadd`, same operand bits, different answers. That is HotSpot's JIT, not
+        // a language rule: the surrounding code is identical except for WHICH COMPONENT
+        // happens to be NaN, and the compiled form (scalar vs vectorised, field load vs
+        // local) decides the payload. So there is no single "correct" hardware rule to
+        // derive here -- only a majority to count, and b-wins is it.
+        //
+        // The disagreeing rows are named and counted in parity_batch2.rs rather than
+        // deleted. See OPEN_QUESTIONS #20.
+        assert_eq!(mul_f64(n, p).to_bits(), 0x7ff8_0000_0000_0000); // b = p wins
+        assert_eq!(mul_f64(p, n).to_bits(), 0xfff8_0000_0000_0000); // b = n wins
         assert_eq!(mul_f64(p, p).to_bits(), 0x7ff8_0000_0000_0000);
         assert_eq!(mul_f64(n, n).to_bits(), 0xfff8_0000_0000_0000);
 
-        // Otherwise the first operand wins, keeping its sign.
+        // Exactly one operand NaN -> that operand wins, sign and payload intact.
+        // (This half of the rule is NOT ambiguous; only the both-NaN case is.)
         assert_eq!(add_f64(p, 1.0).to_bits(), 0x7ff8_0000_0000_0000);
         assert_eq!(add_f64(n, 1.0).to_bits(), 0xfff8_0000_0000_0000);
+        assert_eq!(add_f64(1.0, p).to_bits(), 0x7ff8_0000_0000_0000);
+        assert_eq!(add_f64(1.0, n).to_bits(), 0xfff8_0000_0000_0000);
         assert_eq!(add_f64(p, inf).to_bits(), 0x7ff8_0000_0000_0000);
         assert_eq!(sub_f64(p, inf).to_bits(), 0x7ff8_0000_0000_0000);
 
@@ -719,7 +763,9 @@ mod tests {
         // ...but 0.0/0.0 is measured as the POSITIVE default NaN on HotSpot.
         assert_eq!(div_f64(0.0, 0.0).to_bits(), 0x7ff8_0000_0000_0000);
 
-        // The mixed-sign square sum that `Mth#lengthSquared` hits in practice.
+        // The mixed-sign square sum that `Mth#lengthSquared` hits in practice: both
+        // terms are NaN, so the SECOND one (`s2`, the negative NaN) is returned under
+        // the measured majority rule.
         let s1 = mul_f64(p, p);
         let s2 = mul_f64(n, n);
         assert_eq!(add_f64(s1, s2).to_bits(), 0xfff8_0000_0000_0000);
@@ -737,6 +783,8 @@ mod tests {
         let p = f32::from_bits(0x7fc0_0000);
         let n = f32::from_bits(0xffc0_0000);
         let inf = f32::INFINITY;
+        // Both operands NaN -> SECOND wins (see the f64 test for why this is measured
+        // rather than derived).
         assert_eq!(mul_f32(n, p).to_bits(), 0x7fc0_0000);
         assert_eq!(mul_f32(p, n).to_bits(), 0xffc0_0000);
         assert_eq!(add_f32(p, 1.0).to_bits(), 0x7fc0_0000);

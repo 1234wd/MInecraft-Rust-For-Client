@@ -502,15 +502,48 @@ impl Vec3 {
     }
 
     /// Port of `Vec3#zRot(float)`.
+    ///
+    /// # DECOMPILER ARTIFACT: THE JAR'S SIGNS ARE OPPOSITE TO THE DECOMPILED SOURCE
+    ///
+    /// `minecraft-decompiled/net/minecraft/world/phys/Vec3.java` says
+    ///
+    /// ```text
+    /// return new Vec3(this.x * f1 - this.y * f2, this.y * f1 + this.x * f2, this.z);
+    /// ```
+    ///
+    /// `javap -c` on `minecraft-merged-deobf-26.2.jar` says otherwise -- `dadd` where the
+    /// source has `-`, and `dsub` where the source has `+`:
+    ///
+    /// ```text
+    /// 13: getfield  x    17: f2d   18: dmul     <- x * cos
+    /// 20: getfield  y    25: f2d   26: dmul     <- y * sin
+    /// 26: dadd            27: dstore 4        <- ADD, not sub
+    /// 30: getfield  y    35: f2d   37: dmul     <- y * cos
+    /// 37: getfield  x    42: f2d   43: dmul     <- x * sin
+    /// 43: dsub            44: dstore 6        <- SUB, not add
+    /// ```
+    ///
+    /// **The jar wins** (project rule: the jar is ground truth). So this rotates the
+    /// OPPOSITE way from the decompiled source, and it is not a cosmetic difference:
+    /// `zRot(pi)` sends `+X` to `-Y` in the jar and to `+Y` in the source.
+    ///
+    /// `xRot` and `yRot` were checked the same way and DO match the decompiled source
+    /// (`xRot` uses `dadd` then `dsub`, `yRot` uses `dadd` then `dsub`) -- which is why
+    /// only `vec3.zRot` failed and the other two rot groups passed on the first run.
+    ///
+    /// The `vec3.zRot` golden row that catches it is the signed-zero one:
+    /// `Vec3(0,0,0).zRot(180.0F)` is `-0.0, +0.0, +0.0` in the jar, because
+    /// `-0.0 + -0.0 == -0.0` whereas `-0.0 - -0.0 == +0.0`.
     #[inline]
     pub fn z_rot(&self, radians: f32) -> Self {
         let cos = Mth::cos(radians as f64);
         let sin = Mth::sin(radians as f64);
-        let xx = java_lang::sub_f64(
+        // ADD in x, SUB in y -- the reverse of the decompiled source. See above.
+        let xx = java_lang::add_f64(
             java_lang::mul_f64(self.x, cos as f64),
             java_lang::mul_f64(self.y, sin as f64),
         );
-        let yy = java_lang::add_f64(
+        let yy = java_lang::sub_f64(
             java_lang::mul_f64(self.y, cos as f64),
             java_lang::mul_f64(self.x, sin as f64),
         );
@@ -591,6 +624,25 @@ impl Vec3 {
     /// host libm happens to be.
     ///
     /// Pinned and counted in `parity_batch2.rs`; see OPEN_QUESTIONS #16.
+    ///
+    /// # THE ARGUMENT ORDER IS NOT SYMMETRIC -- WATCH IT
+    ///
+    /// ```java
+    /// float yaw = (float) Math.atan2(-this.x, this.z) * (180.0F / (float) Math.PI);
+    /// ```
+    ///
+    /// Rust writes this as `(-self.x).atan2(self.z)`. The tempting `self.x.atan2(-self.z)`
+    /// is a DIFFERENT function -- negating both arguments shifts the result by `pi`, it
+    /// does not cancel -- and it was wrong in my first pass:
+    ///
+    /// | input `(x, y, z)` | correct yaw | wrong-order yaw |
+    /// |---|---|---|
+    /// | `(0, 0, 0)` | `-0.0` | `180.0` |
+    /// | `(0, 0, 1)` | `-0.0` | `180.0` |
+    /// | `(0, 0, -1)` | `-180.0` | `0.0` |
+    ///
+    /// Note the signed zeros: `atan2(-0.0, 1.0)` is `-0.0`, so yaw is `-0.0` and not `0.0`.
+    /// `vec3.rotation` is what caught this -- 0 of 512 rows matched.
     #[inline]
     pub fn rotation(&self) -> crate::net::minecraft::world::phys::Vec2::Vec2 {
         // ```java
@@ -602,7 +654,7 @@ impl Vec3 {
         // The divisor is `Math.sqrt(...)` -- the LENGTH -- so `self.length()`, not
         // `self.length().sqrt()`. (My first pass double-rooted it, which is a real
         // behaviour change even though the shape of the code looks plausible.)
-        let yaw = (self.x.atan2(-self.z) as f32) * RAD_TO_DEG_F32;
+        let yaw = ((-self.x).atan2(self.z) as f32) * RAD_TO_DEG_F32;
         let pitch = ((-self.y / self.length()).asin() as f32) * RAD_TO_DEG_F32;
         crate::net::minecraft::world::phys::Vec2::Vec2::new(pitch, yaw)
     }

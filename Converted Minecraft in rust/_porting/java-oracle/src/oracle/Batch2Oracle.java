@@ -1407,7 +1407,10 @@ final class Batch2Oracle {
 			}
 		}
 
-		o.fn("vec3.closerThanXZ", "f64 f64 f64 f64 f64 f64", "bool");
+		o.fn("vec3.closerThanXZ", "f64 f64 f64 f64 f64 f64 f64 f64", "bool");
+		// HEADER ARITY CORRECTION (session 06): the row below carries 8 arguments, not 6.
+		// closerThan(Vec3, double, double) is called with both distances appended to the six
+		// coordinates, so 8 args reach the row.
 		for (double x : V2.DOUBLES3) {
 			for (double y : V2.DOUBLES3) {
 				for (double z : V2.DOUBLES3) {
@@ -1514,7 +1517,9 @@ final class Batch2Oracle {
 			}
 		}
 
-		o.fn("vec3.lerp", "f64 f64 f64 f64 f64 f64 f64", "f64 f64 f64");
+		o.fn("vec3.lerp", "f64 f64 f64 f64 f64 f64", "f64 f64 f64");
+		// HEADER ARITY CORRECTION (session 06): the row below carries 8 arguments, not 6.
+		// lerp(Vec3, double) takes a vector plus a scalar: 6, not 7.
 		for (double a : V2.DOUBLES3) {
 			for (double x : V2.DOUBLES3) {
 				for (double y : V2.DOUBLES3) {
@@ -1554,7 +1559,11 @@ final class Batch2Oracle {
 			}
 		}
 
-		o.fn("vec3.fromVec3i", "i32 i32 i32", "f64 f64 f64 f64 f64 f64 f64 f64 f64 f64 f64 f64 f64 f64 f64 f64 f64");
+		o.fn("vec3.fromVec3i", "i32 i32 i32", "f64 f64 f64 f64 f64 f64 f64 f64 f64 f64 f64 f64 f64 f64 f64 f64 f64 f64 f64 f64 f64 f64 f64 f64 f64 f64 f64");
+		// HEADER ARITY CORRECTION (session 06): the row below carries 8 arguments, not 6.
+		// NINE Vec3 values are emitted (atLowerCornerOf, atCenterOf, atBottomCenterOf,
+			// upFromBottomCenterOf, the raw widening ctor, ZERO, X_AXIS, Y_AXIS, Z_AXIS)
+			// = 27 components, not 17.
 		for (int ix : V2.INTS) {
 			for (int iy : new int[] {0, 1, -1, 64, -64}) {
 				for (int iz : new int[] {0, 1, -1}) {

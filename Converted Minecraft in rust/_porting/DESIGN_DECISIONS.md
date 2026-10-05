@@ -584,3 +584,81 @@ the 1024-entry table on both ends:
 Only `alpha` in `[0, 1]` is safe. **A clamping "port" would return a colour where the game
 throws**, which is exactly the kind of well-meaning fix this project forbids. The Rust port
 must reproduce the throw. `argb.linearLerpThrows` records which alphas throw.
+
+---
+
+## `Vec3#zRot`: the DECOMPILED SOURCE HAS THE SIGNS SWAPPED (session 06)
+
+Found while porting `Vec3`, and the clearest example yet of why the jar is ground truth.
+
+`minecraft-decompiled/net/minecraft/world/phys/Vec3.java` says
+
+```java
+return new Vec3(this.x * f1 - this.y * f2, this.y * f1 + this.x * f2, this.z);
+```
+
+`javap -c` on `minecraft-merged-deobf-26.2.jar` says the opposite in BOTH components:
+
+```text
+13: getfield  x    17: f2d   18: dmul     <- x * cos
+20: getfield  y    25: f2d   26: dmul     <- y * sin
+26: dadd            27: dstore 4        <- ADD, not sub
+30: getfield  y    35: f2d   37: dmul     <- y * cos
+37: getfield  x    42: f2d   43: dmul     <- x * sin
+43: dsub            44: dstore 6        <- SUB, not add
+```
+
+So the jar rotates the **opposite way** from the source. `zRot(pi)` sends `+X` to `-Y` in
+the jar and to `+Y` in the source.
+
+**It is not a cosmetic difference, and a unit-vector assertion would not catch it** -- both
+versions produce a unit vector. The golden row that caught it is a SIGNED-ZERO one:
+`Vec3(0,0,0).zRot(180.0F)` is `-0.0, +0.0, +0.0` in the jar, because `-0.0 + -0.0 == -0.0`
+whereas `-0.0 - -0.0 == +0.0`.
+
+`xRot` and `yRot` were disassembled the same way and DO match the decompiled source (`dadd`
+then `dsub` in both). Only `zRot` is wrong. That is why `vec3.xRot` and `vec3.yRot` passed on
+the first run and `vec3.zRot` did not.
+
+**Rule this suggests:** for any method whose result is a rotation, a permutation or a
+normalised direction, do not accept "it looks right" -- disassemble. Signs and operand
+orders are exactly what a decompiler gets wrong and exactly what a length/uniqueness check
+cannot see.
+
+---
+
+## `atan2(-x, z)` IS NOT `atan2(x, -z)` (session 06)
+
+My first `Vec3#rotation` wrote Java's `Math.atan2(-this.x, this.z)` as
+`self.x.atan2(-self.z)`. That looks equivalent and is not: negating BOTH arguments shifts
+the result by `pi`, it does not cancel.
+
+| input `(x, y, z)` | correct yaw | wrong-order yaw |
+|---|---|---|
+| `(0, 0, 0)` | `-0.0` | `180.0` |
+| `(0, 0, 1)` | `-0.0` | `180.0` |
+| `(0, 0, -1)` | `-180.0` | `0.0` |
+
+`vec3.rotation` reported **0 of 512 rows** matching, which is what made it obvious this was
+an argument-order bug rather than a transcendental-precision problem. It is worth
+separating those two causes explicitly: **0/512 means wrong, ~400/512 means imprecise.**
+A count near zero is a bug report; a count near the total is a tolerance question.
+
+---
+
+## `Float.MIN_VALUE` HAS NO RUST EQUIVALENT (session 06)
+
+`Vec2#MIN` is `new Vec2(Float.MIN_VALUE, Float.MIN_VALUE)`, and Java's `Float.MIN_VALUE` is
+`0x00000001` -- the smallest positive **SUBNORMAL**. The three Rust constants that look
+like candidates are all wrong:
+
+| Rust | bits | what it is |
+|---|---|---|
+| `f32::MIN` | `0xff7fffff` | most NEGATIVE finite |
+| `f32::MIN_POSITIVE` | `0x00800000` | smallest positive **NORMAL** |
+| `f32::EPSILON` | `0x34000000` | gap at 1.0 |
+
+`f32::MIN_POSITIVE` is the trap: it reads like the right name and is 2^123 times too large.
+It took a golden row to catch it. Where Java has no Rust spelling, the BITS get written out
+with a comment saying why, because a plausible-looking constant is worse than an obviously
+odd one.
