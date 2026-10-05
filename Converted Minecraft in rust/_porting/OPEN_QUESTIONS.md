@@ -436,3 +436,88 @@ Options, in order of effort per unit of exactness:
 
 Recommendation: option 1 now, and revisit if a gaussian draw ever shows up in a
 gameplay-visible divergence. This is your call on effort, not on principle.
+
+**SUPERSEDED IN SESSION 08.** Option 1 as written was "accept 255/256", but the host libm was
+not usable at all: the reviewer measured `nextGaussian` at 248/256 on Windows and 256/256 on
+Linux, so the port's output depended on the OS. `Math.log` is now pure Rust (FdLibm `e_log` in
+`jvm_math`), which is OS-independent and 1 ULP from `_dlog` on 2.6% of inputs. Measured cost and
+the reasoning are in DESIGN_DECISIONS (`log is pure Rust now, and it is WORSE on Windows`).
+
+## 23. NEW (session 09) - candidate (c) for `Math.log`: a correctly-rounded `log`
+
+**Status: open, explicitly deferred until after Batch 2. Do not start before ARGB/Identifier.**
+
+The evidence that suggests this is worth trying is short and specific:
+
+* Linux glibc's `ln` matched HotSpot's `_dlog` on **256 of 256** gaussian draws (reviewer,
+  session 08). glibc's `log` is correctly rounded for the overwhelming majority of inputs.
+* So HotSpot's `_dlog` is *probably* correctly rounded over that range too -- i.e. it may be
+  aiming at "the correctly rounded answer", not at FdLibm's slightly different one.
+* FdLibm's `e_log` is a faithful port of fdlibm, which is **not** correctly rounded. That is the
+  whole reason it misses on 2.6% of inputs.
+
+So a correctly-rounded `log` could match `_dlog` far better than FdLibm does. Candidate (c): a
+pure-Rust port of **CORE-MATH's `cr_log`** (MIT licence, so no GPLv2 + Classpath Exception
+obligation, unlike the FdLibm work).
+
+Things to measure, all of them in the existing harness:
+
+1. Mismatches against `Math.log` on the 41,229-value `jvm_math.log` corpus. FdLibm gets 98.16%;
+   the bar to beat is that, and the thing to beat is musl's 98.00%.
+2. Mismatches on the 1,536 gaussian-domain rows. FdLibm gets 93.36%.
+3. **How many inputs does it get right that FdLibm gets wrong?** That is the number that decides
+   it. If it is a different set rather than a superset, both stay and it is a wash.
+4. Subnormals and the exact powers of two, because a correctly-rounded implementation usually
+   needs special handling there and that is where FdLibm's port already had one real bug.
+
+If (c) turns out to match `_dlog` on 100% of the gaussian domain, then the 28/320 `nextGaussian`
+divergence introduced in session 08 goes back to zero and the trade documented in DESIGN_DECISIONS
+can be retired. That is the prize.
+
+Also note the sequencing argument for doing this *after* Batch 2: `log` is reached from exactly
+one ported method, `MarsagliaPolarGaussian#nextGaussian`. Two intrinsic ports (`_dlog`,
+`_dpow`) and four game files are worth more attention than one.
+
+## 24. NEW (session 09) - `Vec2.rs` is byte-CORRUPTED at HEAD and the edit tool refuses it
+
+**Status: open, cosmetic, blocking only the cleanup the reviewer asked for.**
+
+`net/minecraft/world/phys/Vec2.rs` contains **three NUL bytes**, so both `git diff` and the
+`read`/`edit` tools classify it as binary:
+
+| offset | line | column | renders as |
+|---|---|---|---|
+| 3458 | 80 | 70 | `(<NUL>x00000001)` should be `(0x00000001)` |
+| 3561 | 83 | 5 | `(<NUL>x00800000)` should be `(0x00800000)` |
+| 11849 | 323 | 34 | `(<NUL>x00800000, ...)` should be `(0x00800000, ...)` |
+
+Separately, three occurrences of `f32::` are missing their `f` and read `32::` -- lines 82, 322
+and 324. All six defects are in **doc comments only**, so nothing in the build is wrong; the
+symptom is `warning: duplicated attribute` from a stray duplicate `#[test]` on lines 321 and 325,
+which is what the reviewer noticed.
+
+**Why it is not fixed here.** Session 09's rule is that `.rs` files are changed only with the edit
+tool, and if the edit tool cannot express an edit then the edit is logged and skipped rather than
+worked around with a script. The edit tool cannot read this file at all -- it refuses as binary.
+Session 08 already tried the script route and made it worse: `[System.IO.File]::WriteAllLines`
+with no encoding argument ate a byte and turned a clean file into a binary one.
+
+What is needed is a decision, not an effort:
+
+1. **Rewrite the file wholesale** with the `write` tool, hand-transcribing all ~14 KB. Works, but
+   a 14 KB hand transcription is exactly the class of error this project forbids, and it would be
+   done blind because the read tool also refuses.
+2. **One deliberate, documented exception** to the edit-tool rule for byte-level repair, using
+   the `write` tool to emit the corrected text and `git diff --stat` to confirm the change is
+   confined to the six damaged spots. Lowest risk of the three.
+3. **Leave it.** The build is clean apart from one cosmetic warning, and the file is not on the
+   porting path.
+
+Recommendation: option 2, one time, with the diff reviewed. But it needs the reviewer's explicit
+okay because it bends a rule that exists precisely because of this file.
+
+**How the corruption got in is still unexplained**, and that matters more than the fix. It is not
+session 08's `WriteAllLines` -- that was reverted with `git checkout`, and these bytes are in the
+committed tree at `ec2c610`. Candidates: an earlier session's PowerShell write with a non-UTF8
+encoding, or `core.autocrlf` mangling a NUL during checkout. Worth knowing, because if it is
+recurring then other files may be quietly damaged too. A cheap audit: `git grep -lP '\x00' -- '*.rs'`.
