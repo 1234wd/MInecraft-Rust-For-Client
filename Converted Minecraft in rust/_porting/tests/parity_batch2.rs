@@ -592,65 +592,56 @@ fn got_component(v: &Vec3, k: usize) -> f64 {
 /// entity yaw/pitch tolerance is acceptable. See OPEN_QUESTIONS #16.
 #[test]
 fn vec3_rotation() {
+    // 512 / 512 EXACT. This test USED TO count mismatches and assert only the 112
+    // axis-aligned rows, because `rotation()` called the host's `atan2`/`asin` and HotSpot's
+    // differed by 1 ULP on 136 yaw rows and 179 pitch rows. Session 07 measured that neither
+    // is a HotSpot intrinsic -- both delegate to `StrictMath` == `FdLibm.java` -- and routed
+    // them through `javacompat::jvm_math`. So this is now a plain strict comparison, and it
+    // must stay strict: a regression here is a real bit difference, not a tolerated host
+    // quirk. `jvm_math`'s own guard test fails if anything starts calling libm again.
     let g = Golden::load("batch2.txt");
     let rows = g.rows("vec3.rotation");
-    let total = rows.len();
-    let (mut yaw_ok, mut pitch_ok, mut axis_rows) = (0usize, 0usize, 0usize);
-    let mut pitch_samples: Vec<String> = Vec::new();
+    assert!(!rows.is_empty(), "vec3.rotation group is empty -- the corpus did not load");
 
+    let mut axis_rows = 0usize;
     for r in rows {
         let v = Vec3::new(r.arg(0).as_f64(), r.arg(1).as_f64(), r.arg(2).as_f64());
         let got = v.rotation(); // Vec2 { x: pitch, y: yaw }
-        let (want_pitch, want_yaw) = (r.exp(0).as_f32(), r.exp(1).as_f32());
-        let pitch_same = got.x.to_bits() == want_pitch.to_bits();
-        let yaw_same = got.y.to_bits() == want_yaw.to_bits();
-        if pitch_same {
-            pitch_ok += 1;
-        }
-        if yaw_same {
-            yaw_ok += 1;
-        }
-        if !pitch_same && pitch_samples.len() < 4 {
-            pitch_samples.push(format!(
-                "in=({:e},{:e},{:e}) got {:e} want {:e} ({} ulp)",
-                v.x, v.y, v.z, got.x, want_pitch,
-                (got.x.to_bits() as i64 - want_pitch.to_bits() as i64).abs()
-            ));
-        }
 
-        // THE AXIS-ALIGNED ROWS ARE ASSERTED. When the expected yaw is exactly one of
-        // -0.0, 0.0, 180.0 or -180.0 the answer is a SIGN CONVENTION, not a transcendental
-        // result: `atan2(-0.0, 1.0)` is `-0.0` and `atan2(-0.0, -1.0)` is `-pi`. Those pin
-        // the argument order (`atan2(-x, z)`, not `atan2(x, -z)`) and the signed-zero
-        // handling, which are the two real bugs this method had. They are immune to
-        // `atan2`'s last-ULP disagreement, so they are a genuine regression guard.
-        if want_yaw.to_bits() == (-0.0f32).to_bits()
-            || want_yaw.to_bits() == 0.0f32.to_bits()
-            || want_yaw.to_bits() == 180.0f32.to_bits()
-            || want_yaw.to_bits() == (-180.0f32).to_bits()
+        // `assert_f32_bits_at` applies the NaN policy (NaN equals NaN where the bits are
+        // not observable) and still requires +0.0 == -0.0, which matters enormously here:
+        // `atan2(-0.0, 1.0)` is `-0.0`, so the axis-aligned yaw rows ARE signed-zero rows.
+        assert_f32_bits_at("vec3.rotation", r, 0, "pitch", got.x);
+        assert_f32_bits_at("vec3.rotation", r, 1, "yaw", got.y);
+
+        // Count the axis-aligned rows anyway, and assert they EXIST. They are the rows that
+        // pin the argument order (`atan2(-x, z)`, not `atan2(x, -z)`, which differs by pi)
+        // and the signed-zero convention -- the two real bugs this method ever had. If a
+        // future corpus stopped containing them the guard would be vacuous, so say so.
+        let want_yaw = r.exp(1).as_f32().to_bits();
+        if want_yaw == (-0.0f32).to_bits()
+            || want_yaw == 0.0f32.to_bits()
+            || want_yaw == 180.0f32.to_bits()
+            || want_yaw == (-180.0f32).to_bits()
         {
             axis_rows += 1;
-            assert_eq!(
-                got.y.to_bits(),
-                want_yaw.to_bits(),
-                "axis-aligned yaw regressed for ({:e},{:e},{:e}): got {:e} want {:e}",
-                v.x, v.y, v.z, got.y, want_yaw
-            );
         }
     }
 
-    println!(
-        "vec3.rotation ({total} rows):\n  yaw   {yaw_ok}/{total} bit-exact ({} differ via host atan2)\n  pitch {pitch_ok}/{total} bit-exact ({} differ via host asin)\n  axis-aligned yaw rows asserted: {axis_rows}",
-        total - yaw_ok,
-        total - pitch_ok
+    assert!(
+        axis_rows > 0,
+        "no axis-aligned yaw rows in the corpus -- the signed-zero / argument-order guard \
+         is vacuous"
     );
-    for s in &pitch_samples {
-        println!("  pitch diverged: {s}");
-    }
-    assert!(axis_rows > 0, "no axis-aligned yaw rows in the corpus -- the guard is vacuous");
+    println!(
+        "vec3.rotation: {}/{} rows bit-exact on BOTH pitch and yaw ({} axis-aligned)",
+        rows.len(),
+        rows.len(),
+        axis_rows
+    );
 }
 
-/// Goes through `rotation()`, so it inherits the `atan2`/`asin` divergence above.
+/// Goes through `rotation()`. This was the group that PROVED the old 1-ULP yaw/pitch\n/// divergence was harmless downstream: it scored 512/512 even when `rotation()` itself\n/// scored 376/512, because the difference was absorbed by the following `Mth` table\n/// lookups and `float` products. Worth knowing WHY it was harmless -- it means a 1-ULP\n/// yaw error is not automatically a gameplay bug, but `rotation()` read directly (entity\n/// yaw/pitch) is.
 #[test]
 fn vec3_add_local_coordinates() {
     let g = Golden::load("batch2.txt");

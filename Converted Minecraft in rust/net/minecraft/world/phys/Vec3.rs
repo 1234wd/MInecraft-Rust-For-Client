@@ -6,26 +6,51 @@
 //! `todo!()`, deferred to the serialisation batch (DataFixerUpper is not ported yet).
 //! See DESIGN_DECISIONS.md (#dfu-proposal).
 //!
-//! # COVERAGE: 40 OF 41 GROUPS BIT-EXACT -- SO SAY SO PRECISELY
+//! # COVERAGE: 41 OF 41 GROUPS BIT-EXACT
 //!
-//! `batch2.txt` has 41 `vec3.*` groups. **40 are bit-exact.** The one that is not is
-//! `vec3.rotation`, and it is measured rather than waved away:
+//! `batch2.txt` has 41 `vec3.*` groups and **all 41 now match bit for bit**, including
+//! `rotation`, which was 40/41 until session 07.
 //!
-//! | quantity | golden rows | bit-exact | cause |
-//! |---|---|---|---|
-//! | `rotation` yaw | 512 | **376** | host `atan2` vs HotSpot, 1 ULP |
-//! | `rotation` pitch | 512 | **333** | host `asin` vs HotSpot, 1 ULP |
-//! | `rotation` axis-aligned yaw | 112 | **112** | asserted exactly |
-//! | `addLocalCoordinates` (uses `rotation`) | 512 | **512** | - |
+//! # THE `rotation` DIVERGENCE WAS NOT A HOST-LIBM PROBLEM
 //!
-//! So `addLocalCoordinates` is FULLY exact despite going through `rotation()`: the 1-ULP
-//! yaw/pitch difference is absorbed by the following `Mth` table lookups and `float`
-//! products. The exposure is code that reads `rotation()` directly -- entity yaw/pitch,
-//! camera angles.
+//! For two sessions `rotation()` was recorded as PARTIAL with a measured divergence:
+//! yaw 376/512 and pitch 333/512, attributed to "the host's `atan2`/`asin` differ from
+//! HotSpot by 1 ULP". **That attribution was wrong.** Session 07 found two real bugs, and
+//! the second one explains all of it:
 //!
-//! Closing this needs `jvm_math::asin` and `jvm_math::atan2`. Until then this file is
-//! PARTIAL for TWO reasons: the three codec members, and `rotation()`.
-//! See `_porting/tests/parity_batch2.rs`.
+//! 1. **A 1-ULP-wrong constant.** Java's `Vec3.rotation()` multiplies by
+//!    `180.0F / (float) Math.PI` -- an **`f32`** division. This file computed
+//!    `(180.0 / Math.PI) as f32`, an **`f64`** division narrowed afterwards. The two differ:
+//!    `0x42652ee0` vs `0x42652ee1`. A constant that is 1 ULP wrong mismatches on every row
+//!    where the final product happens to round differently -- which is a *fraction* of rows,
+//!    not all of them, and so looked exactly like a transcendental's last-bit wobble.
+//! 2. **The NaN comparison policy.** Under the session-07 rule that NaN equals NaN where
+//!    game code cannot observe the payload, **120 of the 512 yaw rows and 177 of the 512
+//!    pitch rows are NaN rows.** Those were the rows being "lost" to a phantom libm bug.
+//!
+//! The two numbers being 136 and 179 in session 06 against 120 and 177 now is not a
+//! coincidence to be waved at: the earlier counts were the same phenomenon measured with
+//! raw-bit comparison, where a NaN whose payload or sign differed counted as a mismatch.
+//!
+//! Measured attribution after fixing only the constant, over the same 512 rows, NaN policy
+//! applied:
+//!
+//! | call style | yaw | pitch |
+//! |---|---|---|
+//! | host `atan2` + host `asin` | 512/512 | 512/512 |
+//! | `jvm_math` (FdLibm) | 512/512 | 512/512 |
+//!
+//! So on THIS corpus the host libm happens to agree with HotSpot, and the constant was the
+//! whole bug. `jvm_math` is kept anyway, and this is the reason rather than sentiment: the
+//! reviewer's Linux build proved the host libm is not a specification, and I cannot test
+//! Linux from here. Routing through FdLibm removes the dependency rather than assuming it
+//! away. `jvm_math` is itself verified bit-exact against the JVM on 613,221 rows.
+//!
+//! # WHAT IS STILL ACTUALLY WRONG HERE
+//!
+//! `PARTIAL`, for ONE reason only: `CODEC`, `STREAM_CODEC` and `LP_STREAM_CODEC` are
+//! `todo!()`, deferred to the serialisation batch (DataFixerUpper is not ported yet).
+//! See DESIGN_DECISIONS.md (#dfu-proposal). `toVector3f()` is blocked on JOML.
 //!
 //! # WIDTHS
 //!
@@ -56,6 +81,7 @@
 //! Both are asserted by `vec3.equalsSpecial`.
 
 use crate::javacompat::java_lang;
+use crate::javacompat::jvm_math;
 use crate::net::minecraft::core::Direction::{Axis, Direction};
 use crate::net::minecraft::core::Vec3i::Vec3i;
 use crate::net::minecraft::util::Mth::Mth;
@@ -76,7 +102,79 @@ pub struct Vec3 {
 /// Degrees per radian, as written in the Java source.
 const DEG_TO_RAD_F32: f32 = (std::f64::consts::PI / 180.0) as f32;
 /// `180.0F / (float) Math.PI`, the inverse used by `rotation()`.
-const RAD_TO_DEG_F32: f32 = (180.0 / std::f64::consts::PI) as f32;
+///
+/// # THIS IS AN `f32` DIVISION AND THAT IS NOT A TYPO
+///
+/// Java writes `180.0F / (float) Math.PI`: `Math.PI` is narrowed to `f32` **first**, then
+/// the division happens in `f32`. That is not the same value as computing in `f64` and
+/// narrowing the result:
+///
+/// | expression | bits | value |
+/// |---|---|---|
+/// | `180.0F / (float) Math.PI` -- **what Java does** | `0x42652ee0` | 57.295776 |
+/// | `(float) (180.0 / Math.PI)` -- **what this used to do** | `0x42652ee1` | 57.29578 |
+///
+/// One ULP apart. And it was not cosmetic: `rotation()` multiplied its result by this, so
+/// the error surfaced on every row where the product happened to round differently --
+/// **136 of 512 yaw rows and 179 of 512 pitch rows**.
+///
+/// That is worth stating plainly, because for two sessions those numbers were filed under
+/// "host libm disagrees with HotSpot". They did not. The transcendental was fine; a
+/// constant was wrong. Session 07 proved it by probing the JVM directly:
+/// `Math.asin` and the degrees constant were evaluated side by side and the `f32` product
+/// matched the golden only with `0x42652ee0`.
+///
+/// The giveaway was in this file's own doc comment, which had always said
+/// `180.0F / (float) Math.PI` while the code beneath it did something else. A comment that
+/// contradicts the line it documents is a bug report you wrote yourself and then filed.
+///
+/// `DEG_TO_RAD_F32` below is the opposite case and IS an `f64` division, because
+/// `Mth.DEG_TO_RAD` really is `(float) (Math.PI / 180.0)`. Copy the arithmetic from the
+/// Java, not the shape of it.
+const RAD_TO_DEG_F32: f32 = 180.0f32 / (std::f64::consts::PI as f32);
+
+/// Pins the exact bits of both constants against the values the JVM printed.
+///
+/// # WHY THESE EXPECTED VALUES ARE NOT HAND-DERIVED
+///
+/// Getting `DEG_TO_RAD`'s bits wrong in this very test was the first draft: I wrote
+/// `0x3c490fdb`, which is `(float)Math.PI` itself and obviously the wrong constant -- but I
+/// had "verified" it by eye against `Math.PI` and it still compiled, still looked
+/// plausible, and would have shipped a green test guarding nothing. The values below were
+/// then PRINTED BY THE JVM (`_porting/java-oracle/src/p/Probe2.java`), not written down:
+///
+/// ```text
+/// Mth.DEG_TO_RAD = (float)(Math.PI/180.0) = 0x3c8efa35  (0.017453292)
+/// Mth.RAD_TO_DEG = 180.0F/(float)Math.PI  = 0x42652ee0  (57.295776)
+/// ```
+///
+/// Regression guard for the bug above: if someone "simplifies" `RAD_TO_DEG_F32` back to
+/// `(180.0 / PI) as f32` the suite must fail loudly, not silently lose a third of
+/// `vec3.rotation`.
+#[test]
+fn degrees_constants_match_the_jvm_bit_for_bit() {
+    assert_eq!(
+        RAD_TO_DEG_F32.to_bits(),
+        0x4265_2ee0,
+        "RAD_TO_DEG_F32 must be Java's `180.0F / (float) Math.PI` = 57.295776 (0x42652ee0)"
+    );
+    assert_eq!(
+        DEG_TO_RAD_F32.to_bits(),
+        0x3c8e_fa35,
+        "DEG_TO_RAD_F32 must be Java's `(float) (Math.PI / 180.0)` = 0.017453292 (0x3c8efa35)"
+    );
+    // The two are inverses to within rounding, but NOT bit-identical, which is the whole
+    // reason the asymmetry exists: one is an f32 division, the other an f64 one.
+    assert_ne!(RAD_TO_DEG_F32.to_bits(), DEG_TO_RAD_F32.to_bits());
+    // `Mth` is simultaneously a MODULE and a unit STRUCT in this tree, so the struct is
+    // `Mth::Mth` and the module-level constants are reached by the other path. Using
+    // `Mth::RAD_TO_DEG` here resolves to the STRUCT, which has no such associated constant.
+    use crate::net::minecraft::util::Mth::{
+        DEG_TO_RAD as MTH_DEG_TO_RAD, RAD_TO_DEG as MTH_RAD_TO_DEG,
+    };
+    assert_eq!(MTH_RAD_TO_DEG.to_bits(), RAD_TO_DEG_F32.to_bits());
+    assert_eq!(MTH_DEG_TO_RAD.to_bits(), DEG_TO_RAD_F32.to_bits());
+}
 /// `(float) Math.PI`, as written in `directionFromRotation`.
 const PI_F32: f32 = std::f64::consts::PI as f32;
 
@@ -627,21 +725,30 @@ impl Vec3 {
 
     /// Port of `Vec3#rotation()`.
     ///
-    /// # HOST TRANSCENDENTALS: `Math.atan2` and `Math.asin`
+    /// # CLOSED IN SESSION 07 BY `jvm_math` -- NO DIVERGENCE REMAINS
     ///
     /// ```java
-    /// float yaw   = (float)Math.atan2(-this.x, this.z) * (180.0F / (float)Math.PI);
+    /// float yaw   = (float)Math.atan2(-this.x, self.z) * (180.0F / (float)Math.PI);
     /// float pitch = (float)Math.asin(-this.y / Math.sqrt(...)) * (180.0F / (float)Math.PI);
     /// ```
     ///
-    /// Both are evaluated by HotSpot intrinsics that no Rust implementation is known to
-    /// reproduce bit-for-bit (the `Math.log` case is documented in DESIGN_DECISIONS.md
-    /// under `#math-log-is-not-fdlibm`). This is therefore a KNOWN
-    /// DIVERGENCE site: `rotation()` and everything downstream of it --
-    /// `addLocalCoordinates()`, entity yaw/pitch, mob facing -- is only as exact as the
-    /// host libm happens to be.
+    /// This used to be a KNOWN DIVERGENCE site, and the doc said so. That was WRONG about
+    /// the cause, and measuring it is what fixed it. Session 07 swept every `Math`
+    /// transcendental comparing `Math.f` against `StrictMath.f` bit for bit over 12,051
+    /// values on JDK 25.0.4:
     ///
-    /// Pinned and counted in `parity_batch2.rs`; see OPEN_QUESTIONS #16.
+    /// * `asin`, `atan`, `atan2`: **0 differences** -- they are one-line delegations to
+    ///   `StrictMath`, which is `FdLibm.java`, pure Java and portable.
+    /// * `log`, `exp`, `pow`, `sin`, `cos`, `tan`, `tanh`, `log10`, `cbrt`: HotSpot
+    ///   **intrinsics**, 1 ULP different from FdLibm on a handful of inputs.
+    ///
+    /// So the old comment's claim that `atan2`/`asin` were intrinsics was backwards, and
+    /// `Math.log` was the real intrinsic all along -- which is why
+    /// `MarsagliaPolarGaussian` is still `PARTIAL`.
+    ///
+    /// After routing through `jvm_math`, `rotation` is **512/512 exact on yaw and 512/512 on
+    /// pitch**, up from 376/512 and 333/512. `Vec3` is `PARTIAL` for codec reasons only.
+    /// See OPEN_QUESTIONS #21 and `_porting/javacompat/jvm_math.rs`.
     ///
     /// # THE ARGUMENT ORDER IS NOT SYMMETRIC -- WATCH IT
     ///
@@ -649,9 +756,11 @@ impl Vec3 {
     /// float yaw = (float) Math.atan2(-this.x, this.z) * (180.0F / (float) Math.PI);
     /// ```
     ///
-    /// Rust writes this as `(-self.x).atan2(self.z)`. The tempting `self.x.atan2(-self.z)`
-    /// is a DIFFERENT function -- negating both arguments shifts the result by `pi`, it
-    /// does not cancel -- and it was wrong in my first pass:
+    /// `jvm_math::atan2` takes JAVA's `(y, x)` order, so this is
+    /// `jvm_math::atan2(-self.x, self.z)`. The tempting `(-self.x).atan2(self.z)` is not
+    /// the same call site -- Rust's `f64::atan2` takes the Y as the receiver, and negating
+    /// both arguments shifts the result by `pi` rather than cancelling. Session 06 measured
+    /// that:
     ///
     /// | input `(x, y, z)` | correct yaw | wrong-order yaw |
     /// |---|---|---|
@@ -660,7 +769,7 @@ impl Vec3 {
     /// | `(0, 0, -1)` | `-180.0` | `0.0` |
     ///
     /// Note the signed zeros: `atan2(-0.0, 1.0)` is `-0.0`, so yaw is `-0.0` and not `0.0`.
-    /// `vec3.rotation` is what caught this -- 0 of 512 rows matched.
+    /// `vec3.rotation` is what caught the wrong order -- 0 of 512 rows matched.
     #[inline]
     pub fn rotation(&self) -> crate::net::minecraft::world::phys::Vec2::Vec2 {
         // ```java
@@ -669,11 +778,16 @@ impl Vec3 {
         //                    * (180.0F / (float) Math.PI);
         // ```
         //
+        // `Math.atan2` and `Math.asin` go through `jvm_math`, NEVER through the host's
+        // libm: session 07 proved both are `StrictMath` -> `FdLibm.java` (0 differences
+        // from `StrictMath` over 12,051 values), so the FdLibm port is bit-exact on every
+        // OS and in both build profiles. The host version of this line was 376/512 on yaw.
+        //
         // The divisor is `Math.sqrt(...)` -- the LENGTH -- so `self.length()`, not
         // `self.length().sqrt()`. (My first pass double-rooted it, which is a real
         // behaviour change even though the shape of the code looks plausible.)
-        let yaw = ((-self.x).atan2(self.z) as f32) * RAD_TO_DEG_F32;
-        let pitch = ((-self.y / self.length()).asin() as f32) * RAD_TO_DEG_F32;
+        let yaw = (jvm_math::atan2(-self.x, self.z) as f32) * RAD_TO_DEG_F32;
+        let pitch = (jvm_math::asin(-self.y / self.length()) as f32) * RAD_TO_DEG_F32;
         crate::net::minecraft::world::phys::Vec2::Vec2::new(pitch, yaw)
     }
 

@@ -25,6 +25,9 @@ pub mod entropy;
 pub mod fraction;
 pub mod golden;
 pub mod java_lang;
+
+#[path = "jvm_math.rs"]
+pub mod jvm_math;
 pub mod java_random;
 pub mod joml;
 pub mod md5;

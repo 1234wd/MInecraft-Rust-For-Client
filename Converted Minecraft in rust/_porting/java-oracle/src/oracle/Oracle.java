@@ -159,6 +159,9 @@ public final class Oracle {
 		if (only == null || only.equals("core")) {
 			stage("core", () -> CoreOracle.emit(testData.resolve("core.txt")));
 		}
+		if (only == null || only.equals("jvm_math")) {
+			stage("jvm_math", () -> JvmMathOracle.emitTo(testData.resolve("jvm_math.txt")));
+		}
 		if (only == null || only.equals("batch2")) {
 			stage("batch2", () -> Batch2Oracle.emit(testData.resolve("batch2.txt")));
 		}

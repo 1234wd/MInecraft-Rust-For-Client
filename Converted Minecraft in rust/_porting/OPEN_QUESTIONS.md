@@ -121,20 +121,20 @@ placeholder behind. It is `#[doc(hidden)]` and exists only for the parity tests.
 `WorldgenRandom` per seed and lose the exact loop replication?
 ---
 
-## 11. ANSWERED (session 03) — NaN policy
+## 11. ANSWERED (session 03) ï¿½ NaN policy
 
 As directed: exact NaN sign and payload are matched only where game code can observe
 them (`floatToRawIntBits`/`doubleToRawLongBits` results, hashing, serialisation,
 network). Everywhere else the parity test asserts only that both sides are NaN.
 
 `javacompat::nan_policy` implements the policy and documents that **the JVM's own NaN
-sign is CPU-dependent** — x86-64 raises the negative real indefinite for an invalid
+sign is CPU-dependent** ï¿½ x86-64 raises the negative real indefinite for an invalid
 operation, AArch64 raises the positive default. **We target x86-64 HotSpot**, and the
 oracle measures exactly that.
 
 Closed because it was a policy question with a defensible answer, not a fork in the road.
 
-## 12. ANSWERED (session 03) — entropy injection
+## 12. ANSWERED (session 03) ï¿½ entropy injection
 
 Done: `javacompat::entropy` is the single funnel for `System.nanoTime`,
 `currentTimeMillis` and thread-local entropy. `RandomSupport#generateUniqueSeed` now
@@ -143,14 +143,14 @@ calls `entropy::nano_time()` instead of `SystemTime::now()` directly.
 This closes question 1 as far as it can be closed. The residual divergence is
 **documented, not eliminated**: Java's `nanoTime` counts from an arbitrary JVM-chosen
 origin and Rust cannot reproduce that number, so `generateUniqueSeed` returns a
-different value than vanilla on the same call. It is unobservable by construction —
+different value than vanilla on the same call. It is unobservable by construction ï¿½
 that is the point of the function. What is now guaranteed is that it is *injectable*,
 so tests are deterministic and the remaining clock reads are auditable in one file.
 
 If you want bit-identical `generateUniqueSeed` anyway, the only route is to drop
 `nanoTime` and take an explicit seed from the caller. **Say so and I will do it.**
 
-## 13. ANSWERED (session 03) — JOML
+## 13. ANSWERED (session 03) ï¿½ JOML
 
 Decided: port the subset from JOML 1.10.8's own bytecode into
 `_porting/javacompat/joml/`, do **not** use `glam`/`nalgebra`. The deciding factor is
@@ -161,7 +161,7 @@ it, and its FMA-contraction behaviour is not something we can audit.
 `invsqrt`, `fma`, `Vector3f::dot` and `Quaternionf::normalize/set` are ported and
 unit-tested. The rationale is in DESIGN_DECISIONS.md (#joml-subset-ported-not-swapped).
 
-## 14. STILL OPEN — the codec/serialisation decision needs a call from you
+## 14. STILL OPEN ï¿½ the codec/serialisation decision needs a call from you
 
 A full proposal is in DESIGN_DECISIONS.md (#dfu-proposal): port DataFixerUpper into
 `javacompat` (option A) versus write a minimal replacement (option B). **I recommend
@@ -179,7 +179,7 @@ start, because they are the ones that corrupt worlds *silently*:
 
 Batch 3 (NBT) does not need this decision and can start immediately.
 
-## 15. NEW (session 03) — `Util.java` does not compile under JDK 25
+## 15. NEW (session 03) ï¿½ `Util.java` does not compile under JDK 25
 
 `Util#makeEnumMap` contains
 
@@ -188,7 +188,7 @@ for (K key : (Enum[])keyType.getEnumConstants()) {   // K extends Enum<K>
 ```
 
 which JDK 25's javac rejects: `incompatible types: Enum cannot be converted to K`.
-This is a decompiler artefact — Mojang's real source has no such cast.
+This is a decompiler artefact ï¿½ Mojang's real source has no such cast.
 
 **Current handling:** `Util` is NOT in the oracle's compile list; the real
 `minecraft-merged-deobf` jar supplies it, since it is only reached for trivial
@@ -203,7 +203,9 @@ rule change and should be your call.
 
 ## 16. NEW (session 04) - transcribe HotSpot's `_dlog`, or accept 255/256 `Math.log`?
 
-**Status: open. Needs your call on effort, not on principle.**
+**Status: open. Needs your call on effort, not on principle.** *(Session 07 confirmed the
+premise and narrowed the options: `Math.log` IS a HotSpot intrinsic, so FdLibm will not do.
+See #22 for the three options and a recommendation.)*
 
 `MarsagliaPolarGaussian#nextGaussian` is the only ported method that calls
 `Math.log`, via `multiplier = sqrt(-2.0 * log(rs) / rs)`. It is currently
@@ -250,10 +252,23 @@ until a batch actually needs it, unless you want it done deliberately.
 
 Unlike `log`, `sqrt` **is** correctly rounded by IEEE-754, so `SQRTSD` gives the
 correctly-rounded answer and Rust's `f64::sqrt` matches everywhere in the corpus. Noted
-so nobody ports it "for consistency". Same question applies to every remaining
-transcendental; each needs measuring, not assuming. Which ones does the port actually
-reach, and do we want a blanket `javacompat::jvm_math` module covering the intrinsics
-HotSpot provides (`_dlog`, `_dexp`, `_dpow`, `_dtanh`, `_dcbrt`, `_dlog10`)?
+so nobody ports it "for consistency". Same question applies to every remaining transcendental; each needs measuring, not assuming.
+
+**ANSWERED IN SESSION 07.** The measurement was run over a 12,051-value corpus against
+`StrictMath` (i.e. FdLibm), and the split is clean rather than gradual:
+
+* **13 functions are IDENTICAL** and can be ported from `FdLibm.java` today: `asin`, `acos`,
+  `atan`, `atan2`, `sinh`, `cosh`, `hypot`, `log1p`, `expm1`, `sqrt`, `floor`, `ceil`, `rint`.
+* **9 are HotSpot intrinsics** and need the platform stub: `log`, `log10`, `exp`, `sin`,
+  `cos`, `tan`, `tanh`, `cbrt`, `pow`.
+
+So the blanket `jvm_math` module is the right shape, but it does NOT need to cover the
+intrinsics -- those are a separate, much larger job. `asin`, `atan` and `atan2` are ported and
+verified on 613,221 rows; the remaining IDENTICAL ones are `acos`, `sinh`, `cosh`, `hypot`,
+`log1p`, `expm1`, each the same job.
+
+`floor`, `ceil` and `rint` need no port at all -- they are exact integer-like operations, and
+`jvm_math`'s guard test treats them as non-violations for that reason.
 ---
 
 ## 18. NEW (session 05) - `Float.toString` on SUBNORMALS needs Java's `FloatingDecimal`
@@ -341,31 +356,83 @@ worth it.
 
 ---
 
-## 21. NEW (session 06) - `jvm_math` needs `atan2` AND `asin`; measured sizes
+## 21. CLOSED (session 07) - `jvm_math`: the premise was right, the diagnosis was wrong
 
-**Status: open. This is the #16 work with the numbers filled in.**
+**Status: closed, and the answer is not the one the question expected.**
 
-Measured on the 512-row `vec3.rotation` corpus:
+The question asked which of `asin`/`atan2` to port first, on the theory that the 136-yaw /
+179-pitch divergence in `vec3.rotation` came from the host's `atan2`/`asin` differing from
+HotSpot. Session 07 measured it, and the theory was wrong.
 
-| quantity | host `Math` | bit-exact | source |
-|---|---|---|---|
-| yaw | `atan2(-x, z)` | **376 / 512** | 136 rows differ |
-| pitch | `asin(-y / len)` | **333 / 512** | 179 rows differ |
+### What was measured
 
-All divergences are **1 ULP**, which is the signature of a correctly-rounded-but-different
-implementation rather than a wrong one.
+`Math.f` vs `StrictMath.f`, bit for bit, over a 12,051-value corpus on JDK 25.0.4:
 
-Encouragingly, `vec3.addLocalCoordinates` is **512/512 bit-exact** even though it goes
-through `rotation()` -- the 1-ULP yaw/pitch difference is absorbed by the following `Mth`
-table lookups and `float` products. So the divergence is confined to code that READS
-`rotation()` directly: entity yaw/pitch, `LivingEntity#setYawRot`, camera angles, and
-anything that serialises a rotation.
+* `asin`, `atan`, `atan2`: **0 differences** -- one-line delegations to `StrictMath`, which is
+  `FdLibm.java`.
+* `log`, `exp`, `pow`, `sin`, `cos`, `tan`, `tanh`, `log10`, `cbrt`: HotSpot **intrinsics**.
 
-What is asserted today: the 112 **axis-aligned** rows, where the expected yaw is exactly
-`-0.0`, `0.0`, `180.0` or `-180.0`. Those are sign conventions (`atan2(-0.0, 1.0)` is
-`-0.0`), not transcendental results, so they are immune to the ULP question and they pin
-the argument order -- which was one of the two real bugs in this method.
+And then, after `asin`/`atan`/`atan2` were ported from FdLibm and verified on 613,221 rows,
+`vec3.rotation` still did **not** reach 512/512 under strict comparison. Two further bugs:
 
-**Recommendation:** `asin` first (179 rows, single-argument, the simplest of the two), then
-`atan2`. `atan2` is the harder one because it has four quadrants plus the signed-zero and
-axis cases, and those are precisely the cases the current assertion protects.
+1. **A 1-ULP-wrong constant.** Java multiplies by `180.0F / (float) Math.PI` (an `f32`
+   divide); `Vec3.rs` had `(180.0 / Math.PI) as f32` (an `f64` divide, then narrowed).
+   `0x42652ee0` vs `0x42652ee1`.
+2. **The NaN comparison policy.** Of the 512 rows, **120 are NaN on yaw and 177 on pitch.**
+   Those were the rows being "lost".
+
+Attribution, measured after fixing only the constant, with the NaN policy applied:
+
+| call style | yaw | pitch |
+|---|---|---|
+| host `atan2` + host `asin` | 512/512 | 512/512 |
+| `jvm_math` (FdLibm) | 512/512 | 512/512 |
+
+So on this corpus the host libm was never the problem. See DESIGN_DECISIONS
+(`narrow-after-divide-is-not-divide-after-narrow`).
+
+### What was kept, and why
+
+`jvm_math` stays. Not because it was needed here -- it was not -- but because the reviewer's
+Linux build is direct evidence that the host libm is not a specification, and being
+accidentally right on Windows is not a property to rely on. The guard test in `jvm_math.rs`
+now fails the build if any ported file calls a host transcendental.
+
+`asin`, `atan` and `atan2` are PORTED and verified bit-exact against the JVM on 613,221 rows.
+`acos`, `sinh`, `cosh`, `hypot`, `log1p`, `expm1` are measured IDENTICAL and are the obvious
+next ports.
+
+`Vec3#rotation` is now **512/512 on both pitch and yaw**, asserted strictly rather than
+counted, and `Vec3` is PARTIAL for codec reasons only.
+
+### The lesson worth keeping
+
+"1 ULP on some rows" does not identify a cause. A wrong constant and an inexact
+transcendental produce identical symptoms, and the constant is cheaper to check and less
+often suspected. Check the constants first.
+
+## 22. NEW (session 07) - do we still need `jvm_math` for the five remaining `Mth` methods?
+
+**Status: open, but smaller than it was.**
+
+`Mth.mulAndTruncate`, `Mth.rayIntersectsAABB` and `Mth.rotationAroundAxis` are blocked on
+`AABB`/`Vec3i`/JOML, not on math, and were never a `jvm_math` question.
+
+The real remaining question is narrower: **`Math.log`**. `MarsagliaPolarGaussian#nextGaussian`
+is the only ported method that calls it, through
+`multiplier = sqrt(-2.0 * log(rs) / rs)`, and it is 255/256 exact. `log` IS a HotSpot
+intrinsic (7 of 12,051 sweep values differ from FdLibm, worst case 1 ULP), so the fix is the
+x86-64 `_dlog` stub -- which is table-driven, so a polynomial will not do.
+
+Options, in order of effort per unit of exactness:
+
+1. **Accept 255/256 and pin it** with an allowlist. Cheap, and the single bad row is a draw
+   from `radiusSquared` with probability ~0.4%, reached once every few thousand gaussian
+   draws. But it is a real behavioural difference that can compound in entity AI.
+2. **Transcribe `_dlog`** from HotSpot's x86-64 stub. Weeks, and it is x86-64 specific, so
+   the ARM question then has to be answered too.
+3. **Reduce to FdLibm's `log`** and accept 1 ULP on 7/12,051 inputs -- i.e. *worse* than the
+   host, since the host currently matches HotSpot on 255 of 256. Not worth doing.
+
+Recommendation: option 1 now, and revisit if a gaussian draw ever shows up in a
+gameplay-visible divergence. This is your call on effort, not on principle.

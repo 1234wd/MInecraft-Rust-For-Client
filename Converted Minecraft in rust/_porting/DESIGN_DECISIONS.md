@@ -662,3 +662,82 @@ like candidates are all wrong:
 It took a golden row to catch it. Where Java has no Rust spelling, the BITS get written out
 with a comment saying why, because a plausible-looking constant is worse than an obviously
 odd one.
+
+## `narrow-after-divide-is-not-divide-after-narrow` (session 07)
+
+**Java's `180.0F / (float) Math.PI` and Rust's `(180.0 / Math.PI) as f32` are different
+numbers.** They are 1 ULP apart, and it is not a rounding curiosity -- it cost two sessions
+of being blamed on the wrong subsystem.
+
+| expression | bits | value |
+|---|---|---|
+| `180.0F / (float) Math.PI` -- Java, and what we must write | `0x42652ee0` | 57.295776 |
+| `(180.0 / Math.PI) as f32` -- the f64 divide, then narrow | `0x42652ee1` | 57.29578 |
+
+The asymmetry is deliberate in vanilla and easy to miss, because `Mth` does BOTH styles and
+they are one line apart:
+
+```java
+public static final float DEG_TO_RAD = (float) (Math.PI / 180.0);  // f64 divide, then narrow
+public static final float RAD_TO_DEG = 180.0F / (float)Math.PI;    // f32 divide
+```
+
+So there is no rule of thumb. Each site has to be copied from the Java, and "copy the
+arithmetic, not the shape of it" is the whole content of this decision.
+
+### Why it was so expensive
+
+`Vec3#rotation` multiplies its result by `RAD_TO_DEG`. With the constant 1 ULP wrong, the
+product is wrong on exactly those rows where the final `f32` multiply rounds differently --
+about a third of them. A constant bug and a transcendental's last-bit wobble produce the
+*same signature*: most rows right, some rows 1 ULP out. So the divergence got filed under
+"host `atan2`/`asin` disagree with HotSpot", where it sat for two sessions, and a 190,000-row
+investigation into `Math` vs `StrictMath` was aimed at the wrong subsystem.
+
+Two rules come out of it:
+
+1. **When a divergence's cause is "1 ULP on some rows", suspect a constant before you suspect
+   a transcendental.** A wrong constant and an inexact implementation are indistinguishable
+   from the symptom alone. Check the constants first, because they are cheap to check and
+   they get blamed less often.
+2. **The doc comment is evidence.** `Vec3.rs` had always documented that constant as
+   `180.0F / (float) Math.PI` while the line beneath it did something else. That
+   contradiction was sitting in the file the whole time. A comment that disagrees with the
+   code it describes is a bug report you wrote and then filed under the wrong heading.
+
+`degrees_constants_match_the_jvm_bit_for_bit` in `Vec3.rs` now pins both constants to the
+bits the JVM printed, so this cannot recur silently. Note that writing that test required
+care too: the first draft asserted `DEG_TO_RAD == 0x3c490fdb`, which is `(float) Math.PI`
+itself -- confidently wrong, and green-looking. The expected values were then *printed by the
+JVM* rather than written down. A hand-written constant in a test is just the bug again,
+wearing a hat.
+
+## `Math` vs `StrictMath`, MEASURED (session 07)
+
+The premise behind the old `Vec3#rotation` story was that `asin`/`atan2` might be HotSpot
+intrinsics. They are not. Measured on **JDK 25.0.4** (Eclipse Adoptium, x86-64), comparing
+`Math.f` against `StrictMath.f` bit for bit over a 12,051-value corpus:
+
+| route | functions |
+|---|---|
+| **IDENTICAL -> port from `FdLibm.java`** | `asin`, `acos`, `atan`, `atan2`, `sinh`, `cosh`, `hypot`, `log1p`, `expm1`, `sqrt`, `floor`, `ceil`, `rint` |
+| **DIFFERS -> HotSpot intrinsic** | `log`, `log10`, `exp`, `sin`, `cos`, `tan`, `tanh`, `cbrt`, `pow` |
+
+Mismatch counts for the intrinsics, worst case 1 ULP each: `log` 7, `log10` 11, `exp` 8,
+`sin` 187, `cos` 188, `tan` 211, `tanh` 79, `cbrt` 1024, `pow` 51,268 of 145 million.
+
+Consequences:
+
+* `Math.log` is confirmed as an intrinsic, so `#16` stays open and
+  `MarsagliaPolarGaussian` stays PARTIAL. `log` is the expensive one -- the x86-64 `_dlog`
+  is table-driven, so a polynomial will not do.
+* `asin`, `atan` and `atan2` are ported from `FdLibm.java` in
+  `_porting/javacompat/jvm_math.rs`, and verified bit-exact against the JVM on **613,221
+  rows** (`asin` 29,201, `atan` 29,201, `atan2` 554,819) via `_porting/test-data/jvm_math.txt`.
+* The **direct-call guard** in `jvm_math.rs` fails the build if any file under `net/` calls a
+  host transcendental. `sqrt`, `abs`, `floor`, `ceil`, `round` and `powi` are deliberately
+  NOT violations: they are exact, not approximations. `Mth`'s `sin`/`cos` lookup tables are
+  vanilla's own and fine.
+* `jvm_math.txt` carries BOTH `Math` and `StrictMath` for every row, and the test asserts
+  they agree. If HotSpot ever starts intrinsifying one of these three, the failure names the
+  function instead of surfacing later as an unexplained bit difference somewhere else.

@@ -319,3 +319,97 @@ The lock is now at module scope: 0 failures in 8 consecutive runs.
 **Next:** port the nine remaining batch-2 classes against `batch2.txt`, in dependency
 order: `Vec3` then `AABB` then `BlockPos` then `ChunkPos`/`SectionPos` then `Vec2`,
 `ARGB`, `Identifier`, `Direction.Plane`, then the five `Mth` methods.
+
+---
+
+# Session 07 - reviewer findings, and a two-session misdiagnosis finally corrected
+
+Baseline `7cfb914`, 176 tests green in debug on Windows. Ended at 188 green in BOTH debug and
+release.
+
+## 1b fixes (reviewer, from a Linux build of `7cfb914`)
+
+* **NaN policy is now the default.** `golden.rs`'s `f64_bits_match` / `f32_bits_match` treat
+  any NaN as equal to any NaN unless the group is in `NAN_BITS_OBSERVABLE` -- which is
+  **empty**, and that is a claim with a guard test, not an accident: every ported `hashCode`
+  goes through `floatToIntBits`/`doubleToLongBits`, which canonicalise, so none can observe a
+  payload. `+0.0` vs `-0.0` is still a hard failure everywhere.
+  This alone fixed the reviewer's release-mode `lerp2` failure.
+* **Required-divergence tests became allowlists.** `parity_random`'s two
+  "must diverge on exactly rows [...]" assertions now fail only on a mismatch OUTSIDE the
+  allowlist, and print the count. The helper was renamed
+  `expected_gaussian_log_divergences` -> `allowed_gaussian_log_divergences`, because a ceiling
+  is not a target. These tests can no longer prove `Math.log` parity is still BROKEN -- that
+  is `jvm_math`'s job, and the printed count is the evidence.
+* **Release mode is a gate.** Both profiles run before every commit.
+* **Repo hygiene.** `.gitignore` added; 32 files untracked (29 third-party jars including the
+  proprietary Mojang `authlib`, `logs/latest.log`, a `__pycache__` entry, and
+  `move_groups.py`, deleted outright). The jars stay on disk for local oracle runs.
+* Two stray doubled backslashes inside `parity_random`'s message literals removed -- they were
+  rendering as literal backslashes mid-message.
+
+## `api_list.py` (#19)
+
+Read-only `javap -p` reporter. Two parser bugs found while writing it, both the kind a regex
+invites: return types came out as `void`/`?` until modifiers were stripped by vocabulary rather
+than pattern, and zero-arg methods were filed under "fields" because I classified on
+`args.is_empty()` instead of on whether the line had parentheses.
+
+Exact counts at last (methods / fields): `Vec2` 13/11, `Vec3` 57/10, `Rotations` 7/5,
+`Direction` 47/27, `ARGB` 49/3, `Identifier` 38/10, `AABB` 55/7, `BlockPos` 79/12,
+`ChunkPos` 44/16, `SectionPos` 55/19, `Mth` 76/26.
+
+One invented name still live in a document: `PORTING_PLAN.md` pointed at `mth.txt` groups
+`getSeedVec3i` / `lerpVec3`, which were renamed to `getSeed` / `lerp` in session 06. Fixed by
+hand. Newly-surfaced real gaps: `Vec3.toVector3f()` is absent from the port (blocked on JOML,
+not previously recorded anywhere) and `Vec3i` lacks `toShortString()`, `toMutable()`,
+`closerToCenterThan()`.
+
+## `jvm_math`, and the correction
+
+`Math` vs `StrictMath` measured over 12,051 values on JDK 25.0.4. Thirteen functions are
+IDENTICAL (FdLibm); nine are HotSpot intrinsics. `asin`/`atan`/`atan2` ported from FdLibm and
+verified **bit-exact on 613,221 rows**. A direct-call guard now fails the build if any file
+under `net/` calls a host transcendental.
+
+And then the point of the session: **`Vec3#rotation` still did not reach 512/512**, and the
+reason was not the transcendentals.
+
+* `RAD_TO_DEG_F32` was `(180.0 / Math.PI) as f32`. Java is `180.0F / (float) Math.PI` -- an
+  `f32` divide, not an `f64` divide narrowed afterwards. `0x42652ee1` vs `0x42652ee0`.
+* 120 of 512 yaw rows and 177 of 512 pitch rows are **NaN** rows, which the new NaN policy
+  treats as equal.
+
+Attribution after fixing only the constant, NaN policy applied: host libm **512/512** on both,
+FdLibm **512/512** on both. The host was never the problem.
+
+`jvm_math` is kept anyway, because the reviewer's Linux build proves the host libm is not a
+specification and being accidentally right on Windows is not a property worth relying on.
+
+Two lessons recorded in DESIGN_DECISIONS (`narrow-after-divide-is-not-divide-after-narrow`):
+check constants before suspecting transcendentals, and treat a comment that contradicts the
+code beneath it as a bug report. `Vec3.rs` had documented that constant correctly while
+computing something else, and the contradiction sat in the file for two sessions.
+
+Also worth recording: the first draft of the new constant-pinning test asserted
+`DEG_TO_RAD == 0x3c490fdb`, which is `(float) Math.PI` itself. Confidently wrong. The
+expected values were then printed by the JVM instead of written down.
+
+## Harness changes
+
+| change | forced by |
+|---|---|
+| NaN default + `NAN_BITS_OBSERVABLE` opt-in | reviewer's `--release` `lerp2` NaN-sign failure |
+| allowlists in `parity_random` | reviewer's Linux build found 0 mismatches where 8 were required |
+| `.gitignore` + 32 files untracked | reviewer item 6 |
+| `api_list.py` | invented names reaching documents unchallenged |
+| `jvm_math.txt` + `parity_jvm_math.rs` (613k rows) | `jvm_math` had no oracle at all |
+| dense `[-1,1]` sweep added to `JvmMathOracle` | the Rust branch-coverage test failed: "asin corpus lacks 0.5..0.975" -- the corpus was wrong, not the port |
+| `[[test]] parity_jvm_math` added to **mirror.py's template** | editing `Cargo.toml` directly works until the next `mirror.py` run silently drops it; the file already warned about this |
+| one-off Python patches (3 attempts, one reverted) | the `edit` tool mangled doubled backslashes in Rust string literals |
+
+## Not done
+
+`ARGB`, `Identifier`, `AABB`, `ChunkPos`. `BlockPos` remains the next session's anchor. The
+`#runtime-exceptions` rule still has no first case, because `ARGB` is where it was going to be
+written.
