@@ -1630,6 +1630,32 @@ final class Batch2Oracle {
 		return Out.join(Out.f64(x), Out.f64(y), Out.f64(z), Out.f64(a), Out.f64(b), Out.f64(c));
 	}
 
+	/**
+	 * Reads a {@code private static} field off a game class by reflection, failing loudly.
+	 *
+	 * <p>Used only for {@code ARGB}'s two sRGB tables, which are {@code private static final
+	 * byte[]} with no public accessor that enumerates them: {@code linearToSrgbChannel} takes a
+	 * float and loses the index to {@code Mth.floor}. Reading the bytes directly is the only way
+	 * to capture all 1024 entries of each, and half a table is worse than none, because
+	 * {@code meanLinear}, {@code linearChannelMean} and {@code linearLerp} all index up to 1023.
+	 *
+	 * <p>A rename in a future Minecraft version turns this into a hard failure with the field
+	 * name in the message, which is the intended behaviour: a golden that silently emits zeros
+	 * because a lookup returned null would be much worse than a stopped build.
+	 */
+	private static Object readPrivateStatic(Class<?> owner, String field) {
+		try {
+			java.lang.reflect.Field f = owner.getDeclaredField(field);
+			f.setAccessible(true);
+			return f.get(null);
+		} catch (ReflectiveOperationException | RuntimeException ex) {
+			throw new IllegalStateException(
+				"could not read " + owner.getName() + "#" + field
+					+ " -- if Minecraft renamed or retyped it, fix this oracle rather than the port",
+				ex);
+		}
+	}
+
 	// =========================================================================
 	// Vec2
 	// =========================================================================
@@ -2356,13 +2382,89 @@ final class Batch2Oracle {
 		}
 
 		// The sRGB lookup tables are built with Math.pow, i.e. a HOST TRANSCENDENTAL.
-		// Emitted in full so the divergence (if any) is measured rather than guessed.
+		//
+		// FIXED IN SESSION 09. The comment here used to say "Emitted in full", directly above a
+		// loop reading `for (int ch = 0; ch < 256; ch++)`. The tables are `new byte[1024]`. So
+		// this group covered a quarter of the domain while claiming to cover all of it, and
+		// nothing could tell the difference: 256 rows of plausible-looking data reads exactly
+		// like a passing group. That is the failure mode rule 2 at the top of this file warns
+		// about, wearing a different hat.
+		//
+		// The reachable-index probe stays, now honestly labelled: `linearToSrgbChannel` takes a
+		// float and does `LINEAR_TO_SRGB[Mth.floor(linear * 1023.0F)]`, so these rows pin the
+		// floor behaviour and the two argument scales, NOT the table.
 		o.fn("argb.srgbTables", "i32", "f32 i32 i32");
 		for (int ch = 0; ch < 256; ch++) {
 			o.row(Out.i32(ch), Out.join(
 				Out.f32(ARGB.srgbToLinearChannel(ch)),
 				Out.i32(ARGB.linearToSrgbChannel(ch / 1023.0F)),
 				Out.i32(ARGB.linearToSrgbChannel(ch / 255.0F))));
+		}
+
+		// THE TABLES THEMSELVES, all 1024 entries of each, read by reflection.
+		//
+		// Why reflection: both fields are `private static final byte[]`, and
+		// `linearToSrgbChannel` cannot recover index j -- it takes a float and loses the index
+		// to `floor`. So there is no public accessor that enumerates the table, and
+		// `meanLinear`, `linearChannelMean` and `linearLerp` all index it at up to 1023.
+		//
+		// Why they must be EMBEDDED in Rust rather than recomputed: the initialisers call
+		// `Math.pow`, which is a HotSpot intrinsic (measured: 51,268 of 145 million sweep values
+		// differ from FdLibm). A pure-Rust recomputation would be a THIRD unported intrinsic, and
+		// would be wrong in a way no test could distinguish from "the table is fine". So this
+		// follows the established `embedded-trig-tables` pattern from `Mth`, whose 65,536-entry
+		// SIN/COS tables are embedded for exactly the same reason.
+		// NOTE: no `o.fn` header here, deliberately. The two table groups below each get their own
+		// header immediately followed by their own loop, per rule 2 at the top of this file. An
+		// earlier version of this edit left an `argb.srgbTableBytes` header with no loop writing
+		// to it, and the golden file duly contained a group header followed immediately by the
+		// next one -- an empty group, which is indistinguishable from a passing one until a test
+		// claims it. `parity_batch2.rs` does fail on empty groups, which is how it got caught,
+		// but the fix belongs here rather than in the test.
+		//
+		// The two tables are DIFFERENT TYPES AND DIFFERENT LENGTHS, which the decompiled source
+		// makes easy to get wrong because they sit next to each other and look symmetric:
+		//
+		//   SRGB_TO_LINEAR   short[256]  values 0..1023 stored in a short. Indexed by an sRGB
+		//                                 CHANNEL (0..255), and divided by 1023.0F on read.
+		//   LINEAR_TO_SRGB   byte[1024]  values 0..255 in a SIGNED byte, which is why every
+		//                                 read is `LINEAR_TO_SRGB[...] & 0xFF`. Indexed by
+		//                                 `Mth.floor(linear * 1023.0F)`, hence 1024 entries.
+		//
+		// Types confirmed with `javap -p -cp <jar> net.minecraft.util.ARGB`:
+		//     private static final short[] SRGB_TO_LINEAR;
+		//     private static final byte[]  LINEAR_TO_SRGB;
+		//
+		// I guessed byte[] and then char[] and got a ClassCastException both times, which
+		// `section()` SWALLOWED and continued past -- so `argb.setBrightness` silently stopped
+		// being emitted and the golden file SHRANK by 6 KB. No test failed; the only evidence
+		// was a file getting smaller. ALWAYS read section-error.txt after an oracle run.
+		short[] srgbToLinear = (short[]) readPrivateStatic(ARGB.class, "SRGB_TO_LINEAR");
+		byte[] linearToSrgb = (byte[]) readPrivateStatic(ARGB.class, "LINEAR_TO_SRGB");
+		if (srgbToLinear.length != 256 || linearToSrgb.length != 1024) {
+			throw new IllegalStateException("expected SRGB_TO_LINEAR[256] and LINEAR_TO_SRGB[1024], got "
+				+ srgbToLinear.length + " and " + linearToSrgb.length
+				+ " -- both lengths are load-bearing and a different size means the jar changed");
+		}
+		// Two loops, two headers, because rule 2 at the top of this file: a header is followed
+		// immediately by the only loop that writes to it. One loop writing both would put every
+		// row under the LAST header and leave the other group empty -- and an empty group looks
+		// exactly like a passing one.
+		o.fn("argb.srgbToLinearTable", "", "i32");
+		for (int i = 0; i < 256; i++) {
+			// short is signed, but every value here is 0..1023 and therefore non-negative, so no
+			// mask is needed. Asserted below rather than assumed.
+			if (srgbToLinear[i] < 0) {
+				throw new IllegalStateException("SRGB_TO_LINEAR[" + i + "] = " + srgbToLinear[i]
+					+ " is negative; the 0..1023 assumption this emitter relies on is wrong");
+			}
+			o.row(Out.i32(i), Out.i32(srgbToLinear[i]));
+		}
+		o.fn("argb.linearToSrgbTable", "", "i32");
+		for (int i = 0; i < 1024; i++) {
+			// `& 0xFF`: Java's byte is signed and these values go above 127, so the mask is
+			// what makes the emitted number the unsigned one the Rust side will store.
+			o.row(Out.i32(i), Out.i32(linearToSrgb[i] & 0xFF));
 		}
 
 		// setBrightness: pure arithmetic plus Math.round, so it SHOULD be exact. The six

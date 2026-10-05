@@ -58,6 +58,18 @@ Converted Minecraft in rust/_porting/java-oracle/logs/
 # not, and neither was noticed until the reviewer diffed the tree.
 Converted Minecraft in rust/logs/
 
+# `section-error.txt` is written by the oracle's `section()` helper, which catches Throwable so
+# one broken section cannot stop the rest -- and then appends the stack trace HERE.
+#
+# It matters more than a normal log file because of what it hides. Session 09 added a group to
+# Batch2Oracle, got the array type wrong twice, and `section()` swallowed both ClassCastExceptions
+# and continued: `argb.setBrightness` silently stopped being emitted and the golden file SHRANK
+# by 6 KB. No test failed. The only evidence was a file getting smaller and a trace sitting in
+# this file.
+#
+# So: if a golden regeneration produces a SMALLER file, or a group goes missing, read this first.
+Converted Minecraft in rust/_porting/java-oracle/section-error.txt
+
 # Editor / OS noise. No separators except the trailing `/`, so these match at any depth.
 .vscode/
 .idea/
