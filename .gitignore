@@ -1,3 +1,27 @@
+# =============================================================================
+# .gitignore -- repo ROOT. The paths below are relative to THIS directory, which
+# is the parent of "Converted Minecraft in rust/".
+#
+# # A PATTERN CONTAINING A SEPARATOR IS ANCHORED TO THE .gitignore's OWN DIRECTORY.
+#
+# That rule is the whole reason session 07's cleanup silently did nothing. The first
+# version of this file carried
+#
+#     _porting/java-oracle/lib/
+#
+# which looks right and matches nothing, because the real path is
+#
+#     Converted Minecraft in rust/_porting/java-oracle/lib/
+#
+# `git rm --cached` staged the deletions, then `git add -A` saw a path that no
+# ignore rule covered and put the 29 jars straight back. Session 07's report claimed
+# they were untracked. They were not. Session 08's reviewer found them on GitHub.
+#
+# So: patterns with a separator get the `Converted Minecraft in rust/` prefix, and
+# every claim about git state is proved with `git check-ignore` and `git ls-files`
+# output in the session report rather than asserted.
+# =============================================================================
+
 # Build output. `target/` is large, machine-specific, and fully reproducible from
 # Cargo.lock; committing it makes every diff meaningless.
 target/
@@ -5,6 +29,7 @@ target/
 
 # Python bytecode. `_porting/tools/*.py` are READ-ONLY reporters (see the rule in
 # SESSION_LOG.md) but they still get run, and CPython writes these next to them.
+# No separator, so these match at ANY depth.
 __pycache__/
 *.pyc
 *.pyo
@@ -12,7 +37,8 @@ __pycache__/
 # Compiled oracle classes. Rebuilt by every `run.ps1` invocation.
 *.class
 
-# The oracle's downloaded dependencies.
+# ---------------------------------------------------------------------------
+# The oracle's downloaded dependencies and its logs.
 #
 # `_porting/java-oracle/lib/*.jar` are THIRD-PARTY BINARIES, several of them tens of
 # megabytes, and one of them (`authlib`) is a PROPRIETARY Mojang library. None of it
@@ -22,10 +48,17 @@ __pycache__/
 #         -File "Converted Minecraft in rust/_porting/java-oracle/fetch_libs.ps1"
 #
 # `authlib` in particular must never be committed: it is not ours to redistribute.
-_porting/java-oracle/lib/
-_porting/java-oracle/logs/
+# ---------------------------------------------------------------------------
+Converted Minecraft in rust/_porting/java-oracle/lib/
+Converted Minecraft in rust/_porting/java-oracle/logs/
 
-# Editor / OS noise
+# The crate-root `logs/` too. The oracle writes to BOTH
+# `_porting/java-oracle/logs/` and `Converted Minecraft in rust/logs/`, and session 07
+# only covered the first -- which is how one `latest.log` survived while the other did
+# not, and neither was noticed until the reviewer diffed the tree.
+Converted Minecraft in rust/logs/
+
+# Editor / OS noise. No separators except the trailing `/`, so these match at any depth.
 .vscode/
 .idea/
 *.swp
