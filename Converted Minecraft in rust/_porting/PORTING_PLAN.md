@@ -87,8 +87,11 @@ net/minecraft/util/ByIdMap.java         net/minecraft/core/IdMapper.java
 **proof**
 - new oracle groups: `vec3i.*`, `direction.*`, `blockpos.*`, `chunkpos.*`, `vec3.*`,
   `aabb.*`, `argb.*`, `identifier.*` — all generated in `core.txt`
-- close out `mth.txt` groups `getSeedVec3i`, `lerpVec3`, `rayIntersectsAABB`,
+- close out `mth.txt` groups `getSeed`, `lerp`, `rayIntersectsAABB`,
   `rotationAroundAxis`, `mulAndTruncate`
+  (group names corrected in session 06: they were `getSeedVec3i` / `lerpVec3`, which are
+  names I invented and which **do not exist** in 26.2 -- verify with
+  `python _porting/tools/api_list.py Mth`)
 - empty `BLOCKED_ON_UNPORTED_TYPES` in `parity_core.rs`
 
 **watch out — all four of these bit us in session 03**
