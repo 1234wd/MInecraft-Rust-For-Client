@@ -741,3 +741,123 @@ Consequences:
 * `jvm_math.txt` carries BOTH `Math` and `StrictMath` for every row, and the test asserts
   they agree. If HotSpot ever starts intrinsifying one of these three, the failure names the
   function instead of surfacing later as an unexplained bit difference somewhere else.
+
+## `log` is pure Rust now, and it is WORSE on Windows (session 08)
+
+`Math.log` was the last host-libm dependency. It is gone. This records what that cost, because
+the cost is real and the alternative was worse.
+
+### Why the host libm had to go
+
+The reviewer built `d76b2a1` on Linux:
+
+> `nextGaussian` matches 248/256 draws on Windows and 256/256 on Linux. The same seed gives
+> different random numbers depending on the OS.
+
+`MarsagliaPolarGaussian` is reached from worldgen, mob AI and every `RandomSource`. A stream that
+depends on which libc the machine has is not a port, so there was no choice to make here.
+
+### Two pure-Rust candidates, measured
+
+| candidate | 41,229-value corpus | 1,536 gaussian-domain | worst gap |
+|---|---|---|---|
+| **(a) FdLibm `e_log`** -- kept | **40,472 (98.16%)** | **1,434 (93.36%)** | 1 ULP |
+| (b) `libm` 0.2.16 (musl's `log`) | 40,415 (98.00%) | 1,431 (93.16%) | 1 ULP |
+| host `f64::ln()` -- removed | 14,639 (50.1% of the smaller corpus) | 1,536 (**100%**, Windows only) | -- |
+
+FdLibm won on both corpora. `libm` was then **removed from `Cargo.toml`** rather than shipped
+unused, and the mirror template now has an empty `[dependencies]` section so the next person
+knows where a dependency is supposed to go.
+
+### What it costs, stated plainly
+
+On Windows the host `ln()` was **perfect** on the gaussian domain, which is the only domain the
+game reaches. So this change makes `nextGaussian` measurably worse on Windows:
+
+| | session 07 (host `ln`, Windows) | session 08 (FdLibm) |
+|---|---|---|
+| `nextGaussian` draws differing, legacy/single/threadsafe | 8 / 320 | **28 / 320** |
+| `nextGaussian` draws differing, xoroshiro | 0 / 320 | **5 / 320** |
+| `gaussianSteps` log-dependent steps differing | 20 | **85** |
+
+In exchange the answer is **identical on every platform**. That is the trade, made knowingly.
+The counts print on every test run, the divergent indices are pinned as allowlists rather than
+deleted, and the fix is transcribing HotSpot's `_dlog` (OPEN_QUESTIONS #22, backlog).
+
+### How the gap is pinned
+
+`_porting/tests/jvm_math_log_allowlist.txt` holds the 687 inputs where FdLibm and `_dlog` differ.
+Three properties are asserted, and together they are much stronger than "it is close":
+
+1. **Every mismatch is EXACTLY 1 ULP.** Not "at most". A regression that broke the subnormal
+   scaling fails here instantly -- and session 08's own first port of this function was
+   **2,257,518 ULP** off on subnormals.
+2. **Every mismatching input is on the allowlist**, and the allowlist is **derived from the
+   golden** by `log_allowlist_matches_the_golden`, which regenerates it under
+   `JVM_MATH_WRITE_ALLOWLIST=1`. It cannot drift from the data by transcription, and stale
+   entries fail the build.
+3. **The count is a ceiling, not a target.** Matching `_dlog` more often is a good day.
+
+Property 1 is what makes an allowlist legitimate at all: a list of tolerated differences is only
+meaningful if the tolerated differences are pinned in *magnitude* as well as *position*.
+
+## `hx < 0` on a `u32` is a silent wrong answer (session 08)
+
+FdLibm's `hx`, `hy` and `ix` are Java `int`s holding the high 32 bits of a double. Its tests
+therefore read `hx < 0` for "the sign bit is set". Ported to Rust as `u32`, **that comparison is
+constant false**, and the compiler says so:
+
+```text
+warning: comparison is useless due to type limits
+  if hx < 0 {
+```
+
+Had the warning been ignored, `atan` would have returned `+z` for every negative input -- a wrong
+answer, not a build failure, in a function that feeds yaw. `jvm_math::sign_bit` now exists for
+this, and every sign test in `jvm_math.rs` goes through it.
+
+This is the same family as session 07's `hx > 0` and is worth a standing note: **when porting a C
+or Java routine that does bit-level type punning, every signedness assumption in a comparison is a
+candidate for silent inversion.** The compiler catches most of them; none of them are caught by a
+golden that does not contain negatives.
+
+## A `.gitignore` pattern with a separator is ANCHORED (session 08)
+
+Session 07 reported "Untracked 32 files: 29 third-party jars, logs/latest.log". That was false, and
+the reviewer found all 29 jars -- including the proprietary Mojang `authlib` -- on GitHub.
+
+The `.gitignore` sat at the repo root and carried:
+
+```gitignore
+_porting/java-oracle/lib/
+```
+
+Git anchors a pattern containing a separator to the `.gitignore`'s own directory, so that could
+only ever match `<root>/_porting/...`. The real path is
+`Converted Minecraft in rust/_porting/java-oracle/lib/`. So `git rm --cached` staged the
+deletions, `git add -A` then saw paths no rule covered, and put every one of them back. The
+staged deletion and the subsequent `add` cancelled exactly, which is why the status output at the
+time read `D : 32` and looked like it had worked.
+
+Two things to carry forward:
+
+* **A pattern with a separator gets the full path prefix.** A pattern without one matches at any
+  depth, which is why `__pycache__/` and `*.pyc` worked and the jar rule did not.
+* **`git check-ignore` does not report TRACKED paths as ignored without `--no-index`.** My first
+  verification attempt therefore printed "NOT IGNORED" for all three paths and looked like the fix
+  had failed. With `--no-index` they all matched.
+
+And the standing rule from the reviewer, adopted: **any claim about git state in a report must be
+accompanied by the command output that proves it.** Session 07 asserted a fact about the index that
+was false, and nothing in the loop was capable of checking it.
+
+## `[System.IO.File]::WriteAllLines` IS NOT UTF-8 (session 08)
+
+While trying to remove a stray duplicate `#[test]` attribute from `Vec2.rs` I used
+`[System.IO.File]::WriteAllLines($p, $lines)` with no encoding argument. That writes in the
+system's default encoding and **ate a byte**: `f32::MIN_POSITIVE` became `32::MIN_POSITIVE`, and
+`git diff` started reporting the file as binary.
+
+Every PowerShell write in this project must pass `(New-Object System.Text.UTF8Encoding($false))`.
+The bug was caught only because `git diff` changed its "Binary files differ" wording, which is a
+poor reason to catch anything -- treat any unexpected `WriteAllLines` in this repo as suspect.

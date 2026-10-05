@@ -472,6 +472,173 @@ pub fn atan2(y: f64, x: f64) -> f64 {
     }
 }
 
+// ============================================================================
+// Math.log -- and why this one is a compromise, not a port
+// ============================================================================
+//
+// # THE SITUATION, WHICH IS DIFFERENT FROM EVERY OTHER FUNCTION HERE
+//
+// `asin`, `atan` and `atan2` in this file are ports of FdLibm AND they match HotSpot, because
+// `Math.asin` is a one-line delegation to `StrictMath`. `Math.log` is not: it is HotSpot's
+// `_dlog` INTRINSIC, separate hand-written assembly that is close to FdLibm but not equal to
+// it. Measured over the 29,201-value corpus: `Math.log` and `StrictMath.log` differ on 757 of
+// them, every one by 1 ULP.
+//
+// So there is no port of `log` that is bit-exact with the game. The only exact options are
+// transcribing HotSpot's x86-64 `_dlog` (backlog, see OPEN_QUESTIONS #22) or calling the host
+// libm. The host libm is not available as an option either, and this session is the reason:
+//
+//     reviewer, on `d76b2a1`: "`nextGaussian` matches 248/256 draws on Windows and 256/256 on
+//     Linux. The same seed gives different random numbers depending on the OS."
+//
+// That is disqualifying on its own. A port whose output depends on which libc the machine
+// happens to have is not a port. So `log` here is pure Rust and therefore OS-independent, at
+// the cost of ~2.6% of inputs landing 1 ULP from `_dlog`.
+//
+// # TWO CANDIDATES WERE MEASURED, NOT GUESSED
+//
+// Both are pure Rust, both OS-independent. Against HotSpot's `Math.log`:
+//
+// | candidate                          | 29,201-value corpus | 1,536 gaussian-domain | worst gap |
+// |---|---|---|---|
+// | (a) FdLibm `e_log` -- KEPT         | **28,444** (97.43%) | **1,434** (93.36%)    | 1 ULP     |
+// | (b) `libm` 0.2.16 (musl's `log`)   | 28,410 (97.31%)     | 1,431 (93.16%)         | 1 ULP     |
+// | host `f64::ln()` -- REMOVED        | 14,639 (50.14%)     | 1,536 (100%, Windows)  | --        |
+//
+// FdLibm wins on both corpora, so it is the one kept. To reproduce: `cargo add libm@0.2.16`,
+// and the numbers above are the output of the same `parity_jvm_math` harness with both
+// candidates wired in.
+//
+// Read the host row carefully before calling this a pure win. On Windows the host `ln()` is
+// PERFECT on the gaussian domain, which is the only domain the game reaches. So this change
+// makes `nextGaussian` slightly WORSE on Windows, slightly BETTER on every other platform, and
+// IDENTICAL everywhere. That trade is worth making deliberately rather than by accident, which
+// is most of why it is written down.
+//
+// The residual mismatches are pinned as an ALLOWLIST in `parity_jvm_math.rs`
+// (`ALLOWED_LOG_MISMATCHES`): a mismatch on a listed row is tolerated, a mismatch anywhere else
+// fails, and the listed rows matching one day is a good day, not a failure.
+
+/// FdLibm's `TWO54`, `0x1p54`.
+const TWO54: f64 = f64::from_bits(0x4350_0000_0000_0000);
+const LN2_HI: f64 = f64::from_bits(0x3fe6_2e42_fee0_0000); // 0x1.62e42feep-1
+const LN2_LO: f64 = f64::from_bits(0x3dea_39ef_3579_3c76); // 0x1.a39ef35793c76p-33
+const LG1: f64 = f64::from_bits(0x3fe5_5555_5555_5593); // 0x1.5555555555593p-1
+const LG2: f64 = f64::from_bits(0x3fd9_9999_9997_fa04); // 0x1.999999997fa04p-2
+const LG3: f64 = f64::from_bits(0x3fd2_4924_9422_9359); // 0x1.2492494229359p-2
+const LG4: f64 = f64::from_bits(0x3fcc_71c5_1d8e_78af); // 0x1.c71c51d8e78afp-3
+const LG5: f64 = f64::from_bits(0x3fc7_4664_96cb_03de); // 0x1.7466496cb03dep-3
+const LG6: f64 = f64::from_bits(0x3fc3_9a09_d078_c69f); // 0x1.39a09d078c69fp-3
+const LG7: f64 = f64::from_bits(0x3fc2_f112_df3e_5244); // 0x1.2f112df3e5244p-3
+
+/// FdLibm's `e_log`, from OpenJDK 25's `java.base/java/lang/FdLibm.java`.
+///
+/// # THIS IS `StrictMath.log`, i.e. FdLibm -- NOT HotSpot's `Math.log`
+///
+/// Bit-exact against `StrictMath.log` on 29,201/29,201 values including every subnormal, and
+/// within 1 ULP of `Math.log` on all of them. See the section header for why that is the best
+/// available and what it costs.
+///
+/// # THE SUBNORMAL TRAP, WHICH COST A REAL BUG
+///
+/// FdLibm scales a subnormal up by `TWO54`, then at `__HI(x, hx | (i ^ 0x3ff00000))`
+/// overwrites only the HIGH half of `x`. The low half therefore comes from the **scaled** `x`.
+///
+/// A first port captured `lx` before the scaling and reused it. That is correct for every
+/// normal input -- the branch never runs -- and wrong by up to **2,257,518 ULP** for
+/// subnormals. Six of 29,201 rows disagreed with `StrictMath.log`, every one a subnormal.
+///
+/// It survived because the corpus that motivated the function contained none. `Math.log` is
+/// reached only from `MarsagliaPolarGaussian`, where the argument is `radiusSquared` in (0,2),
+/// which is never subnormal. "Verified on 256/256" was true and worthless -- the measurement
+/// was real, the corpus was too narrow to mean anything. Widening the corpus is what made the
+/// bug visible, the same lesson as `asin`'s missing 0.5..0.975 band.
+pub fn log(x: f64) -> f64 {
+    let bits = x.to_bits();
+    // FdLibm's `hx` is a SIGNED Int32, which is what routes -0.0 and every negative value into
+    // the first branch and makes `log(-0.0) == -Inf` rather than -0.0.
+    let mut hx = (bits >> 32) as u32;
+    let mut k: i32 = 0;
+    let mut x = x;
+
+    if (hx as i32) < 0x0010_0000 {
+        // x < 2^-1022, or negative, or +-0.
+        if (hx & 0x7fff_ffff) == 0 && (bits as u32) == 0 {
+            // log(+-0) = -Inf. FdLibm writes `-TWO54/0.0`; same value, and keeping its form
+            // makes the two side by side.
+            return -TWO54 / 0.0;
+        }
+        if (hx as i32) < 0 {
+            // log(negative) = NaN, produced as `(x-x)/0.0` exactly as FdLibm does.
+            return (x - x) / 0.0;
+        }
+        // Subnormal: scale up and remember it.
+        k -= 54;
+        x *= TWO54;
+        hx = (x.to_bits() >> 32) as u32;
+    }
+
+    if hx >= 0x7ff0_0000 {
+        // NaN or +Inf: `x + x` gives +Inf for infinity and quiets a signalling NaN.
+        return x + x;
+    }
+
+    k += ((hx >> 20) as i32) - 1023;
+    hx &= 0x000f_ffff;
+    // If the top two mantissa bits are 01 or 10, pre-scale by 2 so |f| lands in the
+    // polynomial's accurate range.
+    let i = (hx + 0x9_5f64) & 0x0010_0000;
+    // The OR with the retained mantissa bits is load-bearing -- `i ^ 0x3ff00000` alone discards
+    // the mantissa -- and the low word comes from the CURRENT (possibly scaled) `x`. See the
+    // subnormal note above before "simplifying" either half of this line.
+    x = f64::from_bits((((hx | (i ^ 0x3ff0_0000)) as u64) << 32) | (x.to_bits() & 0xffff_ffff));
+    k += (i >> 20) as i32;
+
+    let f = x - 1.0;
+    let dk = k as f64;
+
+    if (0x000f_ffff & (2 + hx)) < 3 {
+        // |f| < 2^-20: log(1+f) ~ f - f*f/2, no polynomial needed.
+        if f == 0.0 {
+            if k == 0 {
+                return 0.0;
+            }
+            return dk * LN2_HI + dk * LN2_LO;
+        }
+        let r = f * f * (0.5 - 0.333_333_333_333_333_33 * f);
+        if k == 0 {
+            return f - r;
+        }
+        return dk * LN2_HI - ((r - dk * LN2_LO) - f);
+    }
+
+    let s = f / (2.0 + f);
+    let z = s * s;
+    let w = z * z;
+    // SIGNED ints, and the test is `i > 0`, not `i != 0`. With unsigned wrapping arithmetic a
+    // negative `i` wraps to a large positive value and picks the wrong correction path for
+    // about a quarter of all inputs -- a different formula, not a rounding difference.
+    let mut i = (hx as i32).wrapping_sub(0x0006_147a);
+    let j = 0x0006_b851i32.wrapping_sub(hx as i32);
+    let t1 = w * (LG2 + w * (LG4 + w * LG6));
+    let t2 = z * (LG1 + w * (LG3 + w * (LG5 + w * LG7)));
+    let r = t2 + t1;
+    i |= j;
+
+    if i > 0 {
+        // |f| >= 2^-20
+        let hfsq = 0.5 * f * f;
+        if k == 0 {
+            return f - (hfsq - s * (hfsq + r));
+        }
+        return dk * LN2_HI - ((hfsq - (s * (hfsq + r) + dk * LN2_LO)) - f);
+    }
+    if k == 0 {
+        return f - s * (f - r);
+    }
+    dk * LN2_HI - ((s * (f - r) - dk * LN2_LO) - f)
+}
+
 // ===========================================================================
 // The direct-call guard
 // ===========================================================================
@@ -517,8 +684,20 @@ pub fn atan2(y: f64, x: f64) -> f64 {
 fn ported_code_never_calls_a_host_transcendental() {
     // Paths relative to the crate root, which is where CARGO_MANIFEST_DIR points.
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
-    let ported = root.join("net");
-    assert!(ported.is_dir(), "expected the ported tree at {}", ported.display());
+    // BOTH trees, and ALL of `_porting`. Session 07 scanned only `net/`, and the reviewer's
+    // Linux build then found `javacompat/java_lang/log.rs` still calling the host's `x.ln()`
+    // -- `nextGaussian` gave different random numbers on Windows than on Linux. Widening to
+    // `javacompat/` then found a second one, in `parity_random.rs`, where the test's own
+    // reimplementation of the gaussian loop called `rs.ln()`. That one matters twice over: an
+    // OS-dependent REFERENCE makes which side of the comparison is "wrong" depend on the
+    // machine.
+    //
+    // So the rule is the whole tree, minus this file. A guard that only watches the code you
+    // expect to be wrong reports "clean" while the bug is one directory over.
+    let scanned = [root.join("net"), root.join("_porting")];
+    for d in &scanned {
+        assert!(d.is_dir(), "expected a scanned tree at {}", d.display());
+    }
 
     const FORBIDDEN: &[&str] = &[
         // one-argument forms: `x.ln()`, `x.exp()`, ...
@@ -548,13 +727,16 @@ fn ported_code_never_calls_a_host_transcendental() {
     ];
 
     // Paths allowed to contain the above: this file, and the test itself.
+    // Only THIS FILE is exempt, because it necessarily names the host functions in order to
+    // check that nothing else does. Nothing else is: `java_lang/log.rs` is where the host
+    // `ln()` lived for six sessions, and it is now scanned like any other file.
     let exempt = |p: &std::path::Path| {
         let s = p.to_string_lossy().replace('\\', "/");
         s.ends_with("javacompat/jvm_math.rs")
     };
 
     let mut violations: Vec<String> = Vec::new();
-    let mut stack = vec![ported];
+    let mut stack: Vec<std::path::PathBuf> = scanned.to_vec();
     while let Some(dir) = stack.pop() {
         let entries = match std::fs::read_dir(&dir) {
             Ok(e) => e,

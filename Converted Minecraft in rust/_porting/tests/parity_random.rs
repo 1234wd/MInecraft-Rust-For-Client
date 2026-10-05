@@ -289,15 +289,35 @@ fn each(g: &Golden, method: &str, mut f: impl FnMut(&Row)) {
 /// match -- a better libm, or `jvm_math` one day -- and the suite still passes. Rows
 /// NOT listed must match exactly, and a mismatch on one of those fails the build.
 fn allowed_gaussian_log_divergences(prefix: &str) -> Vec<usize> {
-    // Measured, not guessed. Each entry is a PAIR of consecutive draws (v1*multiplier
-    // then the cached v2*multiplier) whose `radiusSquared` is one of the inputs where
-    // the host `ln` and HotSpot's `_dlog` intrinsic disagree by 1 ULP.
+    // Measured, not guessed, and RE-MEASURED in session 08 because the implementation of
+    // `Math.log` changed underneath it.
     //
-    //   legacy / single / threadsafe : pairs 6, 70, 142, 158
-    //   xoroshiro                    : none -- its `radiusSquared` corpus happens to
-    //                                 avoid every divergent input
+    // Each entry is a PAIR of consecutive draws (v1*multiplier, then the cached v2*multiplier)
+    // whose `radiusSquared` is one of the inputs where `jvm_math::log` (FdLibm) and HotSpot's
+    // `_dlog` intrinsic disagree by 1 ULP.
+    //
+    // # WHY THE SETS GREW, AND WHAT THAT COSTS
+    //
+    // Session 07 used the HOST `f64::ln()`, and on Windows that agrees with `_dlog` on 255 of
+    // 256 draws -- so only 8 indices diverged. Session 08 replaced it with pure Rust, because
+    // the host libm gave `nextGaussian` different results on Linux than on Windows (reviewer,
+    // Finding B). FdLibm agrees with `_dlog` on 93.4% of the gaussian domain rather than ~100%,
+    // so the divergent set grew from 8 to 28 (legacy/single/threadsafe) and from 0 to 5
+    // (xoroshiro). `gaussianSteps` log-dependent mismatches went from 20 to 85.
+    //
+    // That is a real, measured REGRESSION in parity on Windows, accepted deliberately in
+    // exchange for identical results on every platform. It is not hidden: the counts print on
+    // every run, and these lists are the exact measured sets. If a draw in here turns out to be
+    // gameplay-visible, the fix is transcribing HotSpot's `_dlog` -- OPEN_QUESTIONS #22.
+    //
+    // A CEILING, not a target: any of these matching one day is a good day and the suite still
+    // passes. A mismatch NOT in here fails the build.
     match prefix {
-        "legacy" | "single" | "threadsafe" => vec![12, 13, 140, 141, 284, 285, 316, 317],
+        "legacy" | "single" | "threadsafe" => vec![
+            8, 9, 12, 13, 48, 49, 78, 79, 106, 107, 136, 137, 140, 141, 150, 151, 190, 191,
+            250, 251, 280, 281, 284, 285, 312, 313, 316, 317,
+        ],
+        "xoroshiro" => vec![87, 288, 289, 300, 301],
         _ => Vec::new(),
     }
 }
@@ -721,7 +741,18 @@ fn gaussian_intermediates_match_step_by_step() {
                 let v2 = 2.0 * n2 - 1.0;
                 let rs = v1 * v1 + v2 * v2;
                 if !(rs >= 1.0 || rs == 0.0) {
-                    let lg = rs.ln();
+                    // PURE RUST as of session 08. This reimplementation is the test's own
+                    // reference for the gaussian sequence, so calling the host ln() made the
+                    // REFERENCE OS-dependent -- on Linux the host agrees with HotSpot's _dlog
+                    // and on Windows it does not, so which side of the comparison was "wrong"
+                    // depended on the machine. Both this and MarsagliaPolarGaussian now use
+                    // the same pure-Rust log, which makes the comparison deterministic.
+                    //
+                    // Nothing is lost by both sides agreeing here: log itself is verified
+                    // against the JVM on 41,229 rows in parity_jvm_math.rs, allowlist and all.
+                    // What THIS test is for is the sequence -- how many doubles are consumed,
+                    // what gets cached, what is discarded -- not the logarithm.
+                    let lg = minecraft_rust::javacompat::jvm_math::log(rs);
                     let q = (-2.0 * lg) / rs;
                     break (n1, n2, v1, v2, rs, lg, q, q.sqrt());
                 }
@@ -758,23 +789,18 @@ fn gaussian_intermediates_match_step_by_step() {
             // original 2-ULP divergence presented.
         }
 
-        // Every log-dependent step that differed, listed. Blank means perfect parity.
-        if prefix == "xoroshiro" {
-            assert!(
-                steps_mismatches.is_empty(),
-                "{prefix}.gaussianSteps diverged but should not: {steps_mismatches:?}"
-            );
-        } else {
-            // Count is 4 pairs of divergent `radiusSquared` values across the corpus,
-            // each contributing a log/q/multiplier/product cluster.
-            // ALSO AN ALLOWLIST, for the same reason. The old assertion REQUIRED the
-            // divergence to be present, which made a correct port look broken and a
-            // broken port on a lucky libc look fine. Now it is only reported; nothing is
-            // required, and `jvm_math` is what will make this zero for good.
-            println!(
-                "{prefix}.gaussianSteps: {} log-dependent steps differ from the golden",
-                steps_mismatches.len()
-            );
-        }
+        // Every log-dependent step that differed, listed and counted. All four generators are
+        // treated the same way now.
+        //
+        // `xoroshiro` used to get a SPECIAL CASE asserting it must NOT diverge, because its
+        // `radiusSquared` corpus happened to avoid every divergent input. That was luck, not a
+        // property: it held only for the host `ln()` on Windows, and session 08's switch to pure
+        // Rust made it diverge on 5 draws. A special case asserting the ABSENCE of a bug is the
+        // same mistake as one requiring its presence -- both encode a fact about the host -- so
+        // it is gone.
+        println!(
+            "{prefix}.gaussianSteps: {} log-dependent steps differ from the golden",
+            steps_mismatches.len()
+        );
     }
 }

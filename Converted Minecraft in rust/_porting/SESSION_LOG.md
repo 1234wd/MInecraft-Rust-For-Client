@@ -413,3 +413,100 @@ expected values were then printed by the JVM instead of written down.
 `ARGB`, `Identifier`, `AABB`, `ChunkPos`. `BlockPos` remains the next session's anchor. The
 `#runtime-exceptions` rule still has no first case, because `ARGB` is where it was going to be
 written.
+
+---
+
+# Session 08 - reviewer findings A and B
+
+Baseline `d76b2a1` (188 tests, both profiles green). Ended at **191 tests, both profiles green**.
+
+## Finding A: the jars were never actually removed
+
+The reviewer was right and my session-07 report was false. Root cause: `.gitignore` sat at the repo
+root and its jar pattern contained a separator, so git anchored it to the root and it matched
+nothing. `git rm --cached` staged 31 deletions and `git add -A` put every one back.
+
+Fixed the patterns, proved them with `git check-ignore -v --no-index`, then untracked. Proving it
+needed `--no-index`: `git check-ignore` does not report TRACKED paths as ignored without it, so my
+first verification said "NOT IGNORED" and looked like the fix had failed. Also found
+`Converted Minecraft in rust/logs/latest.log`, a second log directory the oracle writes to, which
+session 07 never covered.
+
+Adopted the reviewer's rule: any claim about git state in a report carries the command output that
+proves it.
+
+## Finding B: `Math.log`, and a subnormal bug in my own FdLibm port
+
+`java_lang/log.rs` called the host `x.ln()`, so `nextGaussian` differed between Windows and Linux.
+Replaced with pure Rust.
+
+Measuring the two candidates the reviewer asked for turned up something else first: **my existing
+`strict_log_f64` had a bug.** It captured the low word of `x` before FdLibm's `x *= TWO54`
+subnormal scaling. Correct for every normal input -- the branch never runs -- and **2,257,518 ULP**
+wrong for subnormals. 6 of 29,201 corpus rows disagreed with `StrictMath.log`.
+
+It survived because `Math.log` is only ever called with `radiusSquared` in (0,2), which is never
+subnormal. "Verified on 256/256" was true and worthless: the measurement was real, the corpus too
+narrow to mean anything. Caught only after widening the corpus -- the same lesson twice in two
+sessions as `asin`'s missing 0.5..0.975 band, which is now a standing argument for coverage tests.
+
+The implementation moved to `jvm_math::log` (one copy, not two -- the bug lived in one of two).
+
+### The measurement
+
+| candidate | 41,229-value corpus | 1,536 gaussian-domain |
+|---|---|---|
+| FdLibm `e_log` -- kept | 40,472 (98.16%) | 1,434 (93.36%) |
+| `libm` 0.2.16 (musl) | 40,415 (98.00%) | 1,431 (93.16%) |
+| host `ln()` -- removed | 14,639 on the smaller corpus | 1,536 (100%, Windows) |
+
+FdLibm won; `libm` was removed from `Cargo.toml` rather than shipped unused.
+
+### The cost, not hidden
+
+On Windows the host was **perfect** on the gaussian domain, so this is a real regression there:
+`nextGaussian` divergence went 8 -> 28 draws (legacy/single/threadsafe), 0 -> 5 (xoroshiro), and
+`gaussianSteps` log-dependent steps 20 -> 85. In exchange the result is identical on every
+platform. Both sets re-pinned as allowlists. `xoroshiro`'s special case asserting it must NOT
+diverge was deleted -- asserting the absence of a bug is the same mistake as requiring one.
+
+## Guard widened, and it immediately paid for itself twice
+
+`ported_code_never_calls_a_host_transcendental` scanned `net/`. Widened to the whole tree:
+
+* `javacompat/java_lang/log.rs` -- the host `ln()`, Finding B's actual cause.
+* `_porting/tests/parity_random.rs` -- the test's own reimplementation of the gaussian loop called
+  `rs.ln()`, so the test's REFERENCE was OS-dependent and which side was "wrong" depended on the
+  machine.
+
+## Self-inflicted, caught and reverted
+
+* A line-range patch on `log.rs` computed the wrong bounds and deleted three tests plus the closing
+  brace of `mod tests`. Caught by the compiler, recovered with `git checkout HEAD --`, redone with
+  the `edit` tool.
+* `[System.IO.File]::WriteAllLines` without an encoding argument corrupted `Vec2.rs` (ate the `f` in
+  `f32::MIN_POSITIVE`; `git diff` went binary). Restored from HEAD, left alone.
+* A stray duplicate `#[test]` in `Vec2.rs` produces a `duplicated attribute` warning. Pre-existing,
+  cosmetic, and not worth another encoding accident. Left, with the warning noted.
+
+## Harness changes
+
+| change | forced by |
+|---|---|
+| `.gitignore` patterns given full path prefixes; second `logs/` covered | Finding A |
+| `git check-ignore --no-index` used for verification | Finding A verification itself |
+| guard widened from `net/` to the whole crate | Finding B |
+| `jvm_math.log` added; `strict_log_f64` and `math_log_f64` delegate to it | Finding B |
+| `parity_random`'s gaussian reference switched to `jvm_math::log` | guard hit it |
+| `jvm_math.gaussianLog` + a dense subnormal block added to the oracle | `corpus_covers_every_fdlibm_branch` found only 23 subnormals in 29,201 |
+| `jvm_math_log_allowlist.txt` GENERATED from the golden, regenerable under `JVM_MATH_WRITE_ALLOWLIST=1` | 687 hand-typed indices would have been a transcription risk |
+| `GROUPS_ASSERTED_STRICTLY` / `GROUPS_ASSERTED_WITH_ALLOWLIST` + `every_golden_group_is_accounted_for` | a new golden group would otherwise be silently unchecked |
+| `sign_bit()` helper for FdLibm's signed `hx` tests | `warning: comparison is useless due to type limits` |
+| empty `[dependencies]` added to mirror.py's template | `cargo add libm` then `mirror.py --check` DRIFT |
+| `xoroshiro`'s "must not diverge" special case deleted | it diverged once `log` changed |
+
+## Not done
+
+`ARGB`, `Identifier`, `AABB`, `ChunkPos`. The session went to the two reviewer findings, and
+`#runtime-exceptions` still has no first case -- now deferred three sessions running. That is the
+one thing I would change about how this session was spent.

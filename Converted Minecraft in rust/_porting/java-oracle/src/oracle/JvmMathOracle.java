@@ -110,6 +110,39 @@ final class JvmMathOracle {
                 out.add(Double.doubleToRawLongBits(v));
             }
         }
+        // SUBNORMALS, densely. Added in session 08 for the same reason the [-1,1] sweep was
+        // added in session 07: a coverage test failed.
+        //
+        // `corpus_covers_every_fdlibm_branch` asserts the corpus reaches the subnormal branch of
+        // `e_log`, and found only 23 subnormal inputs in 29,201. Twenty-three happened to be
+        // enough to catch the real bug (the first port of `jvm_math::log` captured the low word
+        // of `x` before FdLibm's `x *= TWO54` scaling and was 2,257,518 ULP off on subnormals),
+        // but "happened to be enough" is not a property to build on -- 23 of 29,201 means the
+        // corpus is reaching that branch by accident.
+        //
+        // The game never calls `log` with a subnormal, since `MarsagliaPolarGaussian` passes
+        // `radiusSquared` in (0,2). That is exactly why the original 256-row corpus had none and
+        // why the bug survived a green suite.
+        for (int i = 1; i <= 3000; i++) {
+            // Raw subnormal bit patterns: exponent field 0, non-zero mantissa.
+            out.add((long) i);
+            out.add((long) i << 20);
+            out.add(((long) i) | 0x8000_0000_0000_0000L);           // negative subnormal
+            out.add(0x000f_ffff_ffff_ffffL - i);                     // top of the subnormal range
+        }
+        // The extremes of the subnormal range and their neighbours, which are where the
+        // TWO54 scaling either underflows or lands exactly on 1.0.
+        out.add(0x0000_0000_0000_0001L); // smallest positive subnormal
+        out.add(0x000f_ffff_ffff_ffffL); // largest subnormal
+        out.add(0x8000_0000_0000_0001L);
+        out.add(0x800f_ffff_ffff_ffffL);
+        for (long k : new long[] {0x3ca, 0x3cb, 0x3cc, 0x3cd, 0x3ce, 0x3cf}) {
+            long b = k << 52;
+            out.add(b);
+            out.add(b | 1L);
+            out.add(b | 0xfffffffffffffL);
+            out.add(b | 0x8000000000000L);
+        }
         long[] a = new long[out.size()];
         for (int i = 0; i < a.length; i++) {
             a[i] = out.get(i);
@@ -155,6 +188,48 @@ final class JvmMathOracle {
                 double x = Double.longBitsToDouble(xb);
                 o.row(Out.join(Out.f64(y), Out.f64(x)),
                         Out.join(Out.f64(Math.atan2(y, x)), Out.f64(StrictMath.atan2(y, x))));
+            }
+        }
+
+        // --- log. `Math.log` is a HotSpot INTRINSIC here, so the two columns DIFFER and this
+        //     group is the one that pins which pure-Rust `log` is closest. FdLibm's `e_log`
+        //     (== `StrictMath.log`) is the obvious candidate and musl's `log` via the `libm`
+        //     crate is the other; neither is guaranteed to match `_dlog`.
+        //
+        //     This group is NOT claimed to be bit-exact. It is the measuring stick: see
+        //     `ALLOWED_LOG_MISMATCHES` in `_porting/tests/parity_jvm_math.rs`.
+        o.fn("jvm_math.log", "f64", "f64 f64");
+        for (long bits : CORPUS) {
+            double x = Double.longBitsToDouble(bits);
+            o.row(Out.f64(x), Out.join(Out.f64(Math.log(x)), Out.f64(StrictMath.log(x))));
+        }
+        emitGaussianLog(o);
+    }
+
+    /**
+     * The `radiusSquared` values that {@code MarsagliaPolarGaussian} actually feeds to
+     * {@code Math.log}, so a candidate {@code log} can be measured on the numbers the GAME
+     * uses rather than only on a synthetic sweep.
+     *
+     * <p>Re-derived here rather than read out of {@code random.txt} so this oracle file has
+     * no dependency on another oracle's output format. The three LCG variants are the ones
+     * vanilla ships; see {@code Mth#nextGaussian}.
+     */
+    static void emitGaussianLog(final Out o) {
+        o.fn("jvm_math.gaussianLog", "f64", "f64 f64");
+        // 256 draws is what random.txt carries; the generators are seeded exactly as the
+        // parity tests seed them, so these are the same inputs the game produces.
+        final long[] seeds = {
+            0L, 1L, 42L, -1L, 0x5DEECE66DL, 123456789L,
+        };
+        for (long seed : seeds) {
+            final java.util.Random rng = new java.util.Random(seed);
+            for (int i = 0; i < 256; i++) {
+                double rs = rng.nextDouble();
+                if (rs == 0.0 || rs >= 1.0 || Double.isNaN(rs)) {
+                    continue;
+                }
+                o.row(Out.f64(rs), Out.join(Out.f64(Math.log(rs)), Out.f64(StrictMath.log(rs))));
             }
         }
     }

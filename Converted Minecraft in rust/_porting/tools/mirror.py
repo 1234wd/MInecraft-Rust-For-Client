@@ -80,6 +80,18 @@ path = "_porting/tests/parity_batch2.rs"
 name = "parity_jvm_math"
 path = "_porting/tests/parity_jvm_math.rs"
 
+# Runtime dependencies. Currently EMPTY on purpose, and that is worth keeping that way.
+#
+# Session 08 measured musl's `log` (the `libm` crate) against FdLibm's as a candidate for
+# `Math.log`, FdLibm won on both corpora, and the dependency was removed again rather than
+# shipped unused. The numbers are in `_porting/javacompat/jvm_math.rs`.
+#
+# If you `cargo add` something, add it HERE TOO. `cargo add` writes only to Cargo.toml, and the
+# next `mirror.py` run rewrites that file from this template -- so a dependency added that way
+# disappears without warning, and `mirror.py --check` reports it as DRIFT. (Exactly what happened
+# with `libm` in session 08, and with the `parity_jvm_math` test target in session 07.)
+[dependencies]
+
 [profile.dev]
 # 7055 mirrored modules: keep debug info out of the way.
 debug = 0

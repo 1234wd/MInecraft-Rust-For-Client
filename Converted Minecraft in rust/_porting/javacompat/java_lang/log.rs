@@ -58,20 +58,10 @@
 //! relies on for parity needs the same treatment: reproduce the JVM's answer, not
 //! the mathematically best one.
 
-/// `2^-54`, used to scale subnormals into the normal range.
-const TWO54: f64 = 1.8014398509481984e16;
-
-const LN2_HI: f64 = 6.93147180369123816490e-01;
-const LN2_LO: f64 = 1.90821492927058770002e-10;
-
-// fdlibm's minimax polynomial coefficients for log(1+f), f in [sqrt(2)/2-1, sqrt(2)-1].
-const LG1: f64 = 6.666666666666735130e-01;
-const LG2: f64 = 3.999999999940941908e-01;
-const LG3: f64 = 2.857142874366239149e-01;
-const LG4: f64 = 2.222219843214978396e-01;
-const LG5: f64 = 1.818357216161805012e-01;
-const LG6: f64 = 1.531383769920937332e-01;
-const LG7: f64 = 1.479819860511658591e-01;
+/// `TWO54`, `LN2_HI`, `LN2_LO` and `LG1`..`LG7` moved to `jvm_math::log` in session 08, next to
+/// the algorithm that uses them. One copy of a bit-level port, not two: the copy that used to
+/// live here had a subnormal bug that survived a "verified 256/256" claim, and two copies is two
+/// places for the next one to hide.
 
 // =============================================================================
 // `Math.log` — what vanilla actually calls
@@ -95,7 +85,34 @@ const LG7: f64 = 1.479819860511658591e-01;
 /// `_porting/OPEN_QUESTIONS.md`; do not treat this function as exact.
 #[inline]
 pub fn math_log_f64(x: f64) -> f64 {
-    x.ln()
+    // PURE RUST as of session 08. This used to be `x.ln()`, i.e. the host libm, and the
+    // reviewer found the consequence on Linux:
+    //
+    //     "`nextGaussian` matches 248/256 draws on Windows and 256/256 on Linux. The same seed
+    //      gives different random numbers depending on the OS."
+    //
+    // `MarsagliaPolarGaussian` is reached from worldgen, mob AI and every `RandomSource`, so an
+    // OS-dependent stream is not a rounding curiosity -- it is a different world.
+    //
+    // What this costs, measured against HotSpot's `Math.log`:
+    //
+    // | candidate                       | 29,201-value corpus | 1,536 gaussian-domain |
+    // |---|---|---|
+    // | `jvm_math::log` (FdLibm) -- KEPT | 28,444 (97.43%)     | 1,434 (93.36%)        |
+    // | `libm` 0.2.16 (musl) -- rejected | 28,410 (97.31%)     | 1,431 (93.16%)        |
+    // | host `ln()` -- REMOVED          | 14,639 (50.14%)     | 1,536 (100%, Windows) |
+    //
+    // Be clear-eyed about the last row: on Windows the host was PERFECT on the gaussian domain,
+    // which is the only domain the game reaches. So this is a deliberate trade -- slightly worse
+    // on Windows, slightly better elsewhere, and IDENTICAL on every platform -- made knowingly
+    // rather than by accident. See `jvm_math`'s `Math.log` section for the full reasoning, and
+    // `parity_jvm_math.rs` for the allowlist pinning the residual 1-ULP rows.
+    //
+    // The name is a little dishonest now: this is FdLibm's `log`, not HotSpot's `_dlog`. It stays
+    // because this is where every caller already reaches for `Math.log`, and renaming it would
+    // hide the fact that Java's two log methods differ. `strict_log_f64` is the honest name for
+    // the same value and sits right next to it.
+    crate::javacompat::jvm_math::log(x)
 }
 
 // =============================================================================
@@ -125,97 +142,23 @@ pub fn math_log_f64(x: f64) -> f64 {
 ///
 /// Never. NaN, infinities, zeros, negatives and subnormals all return, matching Java.
 pub fn strict_log_f64(x: f64) -> f64 {
-    let bits = x.to_bits();
-    // fdlibm's `hx` is a SIGNED Int32. That matters: it is what routes -0.0 and every
-    // negative value into the first branch, and what makes `log(-0.0) == -Inf` instead
-    // of -0.0. Treating the high word as unsigned silently breaks both.
-    let mut hx = (bits >> 32) as u32;
-    let lx = bits as u32;
-    let mut k: i32 = 0;
-    let mut x = x;
-
-    // ---- extract exponent, handling subnormals ----
-    if (hx as i32) < 0x0010_0000 {
-        // x < 2^-1022, or negative, or +-0.
-        // NOTE the explicit parens: Rust's `==` binds tighter than `|`, so
-        // `(hx & mask) | lx == 0` would parse as `(hx & mask) | (lx == 0)`.
-        if ((hx & 0x7fff_ffff) | lx) == 0 {
-            // x == +-0  ->  log(+-0) = -Inf
-            return f64::NEG_INFINITY;
-        }
-        if (hx as i32) < 0 {
-            // x < 0  ->  NaN, produced as (x-x)/0.0 exactly as fdlibm does so the
-            // payload and sign behave identically.
-            return (x - x) / 0.0;
-        }
-        // Subnormal: scale up and remember it.
-        k -= 54;
-        x *= TWO54;
-        hx = (x.to_bits() >> 32) as u32;
-    }
-
-    if hx >= 0x7ff0_0000 {
-        // NaN or +Inf. fdlibm returns x+x: +Inf for infinity, and for NaN it quiets a
-        // signalling NaN and propagates the payload.
-        return x + x;
-    }
-
-    // ---- extract exponent and mantissa ----
-    k += ((hx >> 20) as i32) - 1023;
-    hx &= 0x000f_ffff;
-    // Round to nearest: if the top two mantissa bits are 01 or 10, pre-scale by 2 so
-    // |f| lands in the polynomial's accurate range.
-    let i = (hx + 0x9_5f64) & 0x0010_0000;
-    // fdlibm: SET_HIGH_WORD(x, hx | (i ^ 0x3ff00000)). The OR with the retained
-    // mantissa bits is load-bearing -- writing just `i ^ 0x3ff00000` discards the
-    // mantissa and gives wildly wrong results for most inputs.
-    x = f64::from_bits((((hx | (i ^ 0x3ff0_0000)) as u64) << 32) | lx as u64);
-    k += (i >> 20) as i32;
-
-    let f = x - 1.0;
-    let dk = k as f64;
-
-    if (0x000f_ffff & (2 + hx)) < 3 {
-        // |f| < 2^-20: log(1+f) ~ f - f*f/2, no polynomial needed.
-        if f == 0.0 {
-            if k == 0 {
-                return 0.0;
-            }
-            return dk * LN2_HI + dk * LN2_LO;
-        }
-        let r = f * f * (0.5 - 0.333_333_333_333_333_33 * f);
-        if k == 0 {
-            return f - r;
-        }
-        return dk * LN2_HI - ((r - dk * LN2_LO) - f);
-    }
-
-    let s = f / (2.0 + f);
-    let z = s * s;
-    let w = z * z;
-    // fdlibm uses SIGNED ints here and tests `i > 0`, not `i != 0`. Doing this with
-    // unsigned wrapping arithmetic silently picks the wrong correction path for about
-    // a quarter of all inputs, because a negative `i` wraps to a large positive value.
-    // That is not a rounding difference, it is a different formula.
-    let mut i = (hx as i32).wrapping_sub(0x0006_147a);
-    let j = 0x0006_b851i32.wrapping_sub(hx as i32);
-    let t1 = w * (LG2 + w * (LG4 + w * LG6));
-    let t2 = z * (LG1 + w * (LG3 + w * (LG5 + w * LG7)));
-    let r = t2 + t1;
-    i |= j;
-
-    if i > 0 {
-        // |f| >= 2^-20
-        let hfsq = 0.5 * f * f;
-        if k == 0 {
-            return f - (hfsq - s * (hfsq + r));
-        }
-        return dk * LN2_HI - ((hfsq - (s * (hfsq + r) + dk * LN2_LO)) - f);
-    }
-    if k == 0 {
-        return f - s * (f - r);
-    }
-    dk * LN2_HI - ((s * (f - r) - dk * LN2_LO) - f)
+    // MOVED TO `javacompat::jvm_math::log` IN SESSION 08; this is a delegation, not a second
+    // copy of the algorithm.
+    //
+    // Session 08 found a subnormal bug in the copy that used to live here: it captured the low
+    // word of `x` BEFORE FdLibm's `x *= TWO54` scaling. That is correct for every normal input --
+    // the branch never runs -- and wrong by up to 2,257,518 ULP for subnormals. Six of 29,201
+    // corpus rows disagreed with `StrictMath.log`, every one of them a subnormal.
+    //
+    // It survived because the corpus that motivated the function contained none: `Math.log` is
+    // reached only with `radiusSquared` in (0,2), which is never subnormal. So "verified on
+    // 256/256" was true and worthless -- the measurement was real, the corpus too narrow to mean
+    // anything.
+    //
+    // Two copies of a bit-level port is two places for the next bug to hide, and the algorithm
+    // belongs beside the other transcendentals anyway. `jvm_math` owns it; this name stays
+    // because it says which of Java's two logs this is.
+    crate::javacompat::jvm_math::log(x)
 }
 
 #[cfg(test)]
@@ -239,27 +182,45 @@ mod tests {
 
     /// The evidence behind the whole module, pinned.
     ///
-    /// On this exact input the three implementations form three different answers,
-    /// which is the cheapest possible demonstration that "use `f64::ln()`" and "match
-    /// Java" are different claims.
+    /// On this exact input, HotSpot's `Math.log` and FdLibm's `StrictMath.log` are two
+    /// different answers one ULP apart. That is the whole reason this module exists: matching
+    /// Java's `Math.log` and being FdLibm are not the same claim, and only one of them is
+    /// portable.
     ///
-    /// Values confirmed against HotSpot 25 via the oracle's `legacy.gaussianSteps`
-    /// group, pair k=5 (which took one rejection).
+    /// Values confirmed against HotSpot 25 via the oracle's `legacy.gaussianSteps` group, pair
+    /// k=5 (which took one rejection).
+    ///
+    /// # WHY THE HOST IS GONE FROM THIS TEST
+    ///
+    /// This used to assert THREE answers -- `Math.log`, `StrictMath.log`, and the host's
+    /// `rs.ln()` -- and the host happened to equal `Math.log` on this input, which made the
+    /// point nicely on Windows. It also meant the test called `.ln()`, and when the direct-call
+    /// guard was extended to `javacompat/` in session 08 it fired HERE. That is the guard
+    /// working: the assertion was about a function this port no longer uses.
+    ///
+    /// The portable half of the original claim is kept. The host `ln()` equals `Math.log` on this
+    /// input on Windows and on Linux both, but neither is something to rely on -- and the
+    /// `rs.ln()` call is itself the thing being removed.
     #[test]
-    fn math_log_and_strict_log_and_ln_are_three_different_answers() {
+    fn math_log_and_strict_log_are_different_answers() {
         // rs = 0x3fe81c47b8a72375
         let rs = f64::from_bits(0x3fe8_1c47_b8a7_2375);
 
-        // Math.log -- HotSpot's intrinsic. This is what vanilla computes. The host
-        // ln() happens to agree with it on this input.
-        assert_eq!(rs.ln().to_bits(), 0xbfd2_1e24_707c_9607);
-        assert_eq!(math_log_f64(rs).to_bits(), 0xbfd2_1e24_707c_9607);
+        // HotSpot 25's `Math.log` -- the intrinsic vanilla actually computes.
+        const MATH_LOG_RS: u64 = 0xbfd2_1e24_707c_9607;
+        // HotSpot 25's `StrictMath.log` -- FdLibm, one ULP away from the intrinsic here.
+        const STRICT_LOG_RS: u64 = 0xbfd2_1e24_707c_9608;
 
-        // StrictMath.log -- fdlibm, one ULP away from the intrinsic on this input.
-        assert_eq!(strict_log_f64(rs).to_bits(), 0xbfd2_1e24_707c_9608);
+        // `math_log_f64` IS FdLibm as of session 08, so it equals `StrictMath.log` rather than
+        // `Math.log`. That is the deliberate trade: OS-independent, but 1 ULP from the intrinsic
+        // on about 2.6% of inputs. Asserted here so the trade is visible in one place.
+        assert_eq!(math_log_f64(rs).to_bits(), STRICT_LOG_RS);
+        assert_eq!(strict_log_f64(rs).to_bits(), STRICT_LOG_RS);
 
-        // And the two really are different.
-        assert_ne!(strict_log_f64(rs).to_bits(), math_log_f64(rs).to_bits());
+        // And the intrinsic really is a different answer from FdLibm -- which is exactly why
+        // `math_log_f64` is named after `Math.log` while returning FdLibm's value. If a future
+        // `_dlog` port ever lands, THIS is the assertion that should change, deliberately.
+        assert_ne!(MATH_LOG_RS, STRICT_LOG_RS);
     }
 
     #[test]
