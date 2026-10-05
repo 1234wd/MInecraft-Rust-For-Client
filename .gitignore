@@ -1,0 +1,33 @@
+# Build output. `target/` is large, machine-specific, and fully reproducible from
+# Cargo.lock; committing it makes every diff meaningless.
+target/
+**/target/
+
+# Python bytecode. `_porting/tools/*.py` are READ-ONLY reporters (see the rule in
+# SESSION_LOG.md) but they still get run, and CPython writes these next to them.
+__pycache__/
+*.pyc
+*.pyo
+
+# Compiled oracle classes. Rebuilt by every `run.ps1` invocation.
+*.class
+
+# The oracle's downloaded dependencies.
+#
+# `_porting/java-oracle/lib/*.jar` are THIRD-PARTY BINARIES, several of them tens of
+# megabytes, and one of them (`authlib`) is a PROPRIETARY Mojang library. None of it
+# belongs in this repository. Re-fetch with:
+#
+#     powershell -NoProfile -ExecutionPolicy Bypass \
+#         -File "Converted Minecraft in rust/_porting/java-oracle/fetch_libs.ps1"
+#
+# `authlib` in particular must never be committed: it is not ours to redistribute.
+_porting/java-oracle/lib/
+_porting/java-oracle/logs/
+
+# Editor / OS noise
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+desktop.ini

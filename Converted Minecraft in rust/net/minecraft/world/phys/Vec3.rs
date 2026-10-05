@@ -6,7 +6,25 @@
 //! `todo!()`, deferred to the serialisation batch (DataFixerUpper is not ported yet).
 //! See DESIGN_DECISIONS.md (#dfu-proposal).
 //!
-//! Everything else is oracle-verified against `batch2.txt` -- 41 groups, all green.
+//! # COVERAGE: 40 OF 41 GROUPS BIT-EXACT -- SO SAY SO PRECISELY
+//!
+//! `batch2.txt` has 41 `vec3.*` groups. **40 are bit-exact.** The one that is not is
+//! `vec3.rotation`, and it is measured rather than waved away:
+//!
+//! | quantity | golden rows | bit-exact | cause |
+//! |---|---|---|---|
+//! | `rotation` yaw | 512 | **376** | host `atan2` vs HotSpot, 1 ULP |
+//! | `rotation` pitch | 512 | **333** | host `asin` vs HotSpot, 1 ULP |
+//! | `rotation` axis-aligned yaw | 112 | **112** | asserted exactly |
+//! | `addLocalCoordinates` (uses `rotation`) | 512 | **512** | - |
+//!
+//! So `addLocalCoordinates` is FULLY exact despite going through `rotation()`: the 1-ULP
+//! yaw/pitch difference is absorbed by the following `Mth` table lookups and `float`
+//! products. The exposure is code that reads `rotation()` directly -- entity yaw/pitch,
+//! camera angles.
+//!
+//! Closing this needs `jvm_math::asin` and `jvm_math::atan2`. Until then this file is
+//! PARTIAL for TWO reasons: the three codec members, and `rotation()`.
 //! See `_porting/tests/parity_batch2.rs`.
 //!
 //! # WIDTHS

@@ -302,10 +302,10 @@ pub fn assert_f32_bits(method: &str, row: &Row, actual: f32) {
 
 pub fn assert_f64_bits(method: &str, row: &Row, actual: f64) {
     let expected = row.exp0().as_f64_bits();
-    let actual = actual.to_bits();
-    assert_eq!(
-        actual, expected,
-        "{method} (golden line {}) args={:?}: expected f64 bits 0x{expected:016x} ({}), got 0x{actual:016x} ({})",
+    let bits = actual.to_bits();
+    assert!(
+        f64_bits_match(method, expected, bits),
+        "{method} (golden line {}) args={:?}: expected f64 bits 0x{expected:016x} ({}), got 0x{bits:016x} ({})",
         row.line, row.args, f64::from_bits(expected), actual
     );
 }
@@ -315,9 +315,8 @@ pub fn assert_multi_f64(method: &str, row: &Row, actual: &[f64]) {
     let expected: Vec<f64> = (0..row.expect.len()).map(|i| row.exp(i).as_f64()).collect();
     assert_eq!(actual.len(), expected.len(), "{method} (golden line {}): arity mismatch", row.line);
     for (i, (a, e)) in actual.iter().zip(expected.iter()).enumerate() {
-        assert_eq!(
-            a.to_bits(),
-            e.to_bits(),
+        assert!(
+            f64_bits_match(method, e.to_bits(), a.to_bits()),
             "{method} (golden line {}) component {i}: expected {} (0x{:016x}), got {} (0x{:016x})",
             row.line, e, e.to_bits(), a, a.to_bits()
         );
@@ -328,11 +327,114 @@ pub fn assert_multi_f32(method: &str, row: &Row, actual: &[f32]) {
     let expected: Vec<f32> = (0..row.expect.len()).map(|i| row.exp(i).as_f32()).collect();
     assert_eq!(actual.len(), expected.len(), "{method} (golden line {}): arity mismatch", row.line);
     for (i, (a, e)) in actual.iter().zip(expected.iter()).enumerate() {
-        assert_eq!(
-            a.to_bits(),
-            e.to_bits(),
+        assert!(
+            f32_bits_match(method, e.to_bits(), a.to_bits()),
             "{method} (golden line {}) component {i}: expected {} (0x{:08x}), got {} (0x{:08x})",
             row.line, e, e.to_bits(), a, a.to_bits()
+        );
+    }
+}
+
+// ============================================================================
+// THE NaN POLICY AS IT IS ACTUALLY ENFORCED
+// ============================================================================
+//
+// # WHY THE DEFAULT IS "NaN EQUALS NaN"
+//
+// A reviewer built this on Linux and got four failures in `parity_random` and a fifth in
+// `parity_mth` under `--release`. The causes are worth stating precisely, because they are
+// two DIFFERENT problems that look alike:
+//
+// 1. **The host's libm differs per OS.** glibc's `ln` happens to agree with HotSpot's
+//    `_dlog` on the eight inputs where Windows' does not. So `f64::ln` gives different
+//    `nextGaussian` values on Windows and Linux. This is why `parity_random` asserted
+//    "diverges on exactly rows [12, 13, 140, ...]" and failed on Linux: the divergence is
+//    a property of the HOST, not of the port. Fixed long-term by `jvm_math`; in the
+//    meantime the required-divergence assertions became ALLOWLISTS (see `parity_random`).
+//
+// 2. **NaN bits change with the optimisation level.** The same `lerp2` golden row gives
+//    `+NaN` in debug and `-NaN` in release. Rust does not guarantee the sign or payload of
+//    a NaN produced by arithmetic, and the optimiser is entitled to constant-fold,
+//    vectorise or reassociate. So a test that demands exact NaN bits is demanding
+//    something the language does not promise.
+//
+// Point 2 is what this policy fixes. **Where game code cannot observe a NaN's sign or
+// payload, the comparison treats any NaN as equal to any other NaN.** Exact bits are still
+// required for everything else -- `+0.0` vs `-0.0` is a REAL divergence and is still
+// checked, because vanilla's signed-zero behaviour is load-bearing everywhere.
+//
+// # WHY THE OPT-IN LIST IS CURRENTLY EMPTY
+//
+// The policy says exact NaN bits matter only where game code can OBSERVE them:
+// `Float.floatToRawIntBits` / `Double.doubleToRawLongBits` results, values fed into hashing
+// or serialisation, or values compared bit-for-bit against a stored constant.
+//
+// **No ported golden group observes raw NaN bits.** Java's `hashCode` implementations
+// (`Vec2`, `Vec3`, `Rotations`) all go through `floatToIntBits`/`doubleToLongBits`, which
+// CANONICALISE every NaN to one value -- so they cannot distinguish payloads, and the
+// groups pass without needing exact bits. Nothing else in the ported surface serialises a
+// raw float yet; NBT is not ported.
+//
+// So the list below is empty, and that is a CLAIM worth being able to check rather than an
+// accident. `nan_bits_observable_list_has_no_stale_entries` fails if it ever names a group
+// the oracle does not emit, and `no_group_claims_raw_nan_observability` (in
+// `parity_batch2.rs`) fails if a group is added without a reason.
+
+/// Golden groups where a NaN's exact sign and payload ARE observable by game code.
+///
+/// **Currently empty**, for the reason documented above: every ported `hashCode`
+/// canonicalises NaN, and no ported group serialises a raw float.
+///
+/// To opt a group in, add its name here AND write down which of the three observable sites
+/// applies. Do not add a group just because it "has NaNs" -- `vec3.subtractScalar` has
+/// thousands of NaN rows and observes none of them.
+pub const NAN_BITS_OBSERVABLE: &[&str] = &[];
+
+/// Does `actual_bits` satisfy `expected_bits` for `method`?
+///
+/// Equal bits always match. Differing bits match when both sides are NaN **and** the group
+/// is not in [`NAN_BITS_OBSERVABLE`]. `+0.0` vs `-0.0` never matches.
+#[inline]
+pub fn f64_bits_match(method: &str, expected_bits: u64, actual_bits: u64) -> bool {
+    if expected_bits == actual_bits {
+        return true;
+    }
+    both_nan_f64(expected_bits, actual_bits) && !NAN_BITS_OBSERVABLE.contains(&method)
+}
+
+/// `f32` counterpart of [`f64_bits_match`].
+#[inline]
+pub fn f32_bits_match(method: &str, expected_bits: u32, actual_bits: u32) -> bool {
+    if expected_bits == actual_bits {
+        return true;
+    }
+    both_nan_f32(expected_bits, actual_bits) && !NAN_BITS_OBSERVABLE.contains(&method)
+}
+
+#[inline]
+fn both_nan_f64(a: u64, b: u64) -> bool {
+    const EXP: u64 = 0x7ff0_0000_0000_0000;
+    (a & EXP) == EXP && (a & 0x000f_ffff_ffff_ffff) != 0 && (b & EXP) == EXP
+        && (b & 0x000f_ffff_ffff_ffff) != 0
+}
+
+#[inline]
+fn both_nan_f32(a: u32, b: u32) -> bool {
+    const EXP: u32 = 0x7f80_0000;
+    (a & EXP) == EXP && (a & 0x007f_ffff) != 0 && (b & EXP) == EXP && (b & 0x007f_ffff) != 0
+}
+
+/// Guard: every entry in [`NAN_BITS_OBSERVABLE`] must be a group the oracle really emits,
+/// and must say why. A stale entry would silently keep NaN bits strict for a group that no
+/// longer exists, which is the mirror image of the staleness bugs this project keeps hitting.
+#[test]
+fn nan_bits_observable_list_has_no_stale_entries() {
+    let g = Golden::load("batch2.txt");
+    let names = g.method_names();
+    for m in NAN_BITS_OBSERVABLE {
+        assert!(
+            names.iter().any(|n| n == m),
+            "NAN_BITS_OBSERVABLE names `{m}`, which batch2.txt does not emit"
         );
     }
 }
@@ -383,22 +485,22 @@ pub fn assert_str(method: &str, row: &Row, actual: &str) {
 ///
 /// The `label` is only used to make the assertion message name which step drifted.
 pub fn assert_f64_bits_at(method: &str, row: &Row, index: usize, label: &str, actual: f64) {
-    let expected = row.exp(index);
-    assert_eq!(
-        crate::javacompat::nan_policy::double_to_raw_long_bits(actual),
-        expected.as_f64_bits() as i64,
-        "{method} [{label}] (golden line {}, expected index {index})",
+    let expected = row.exp(index).as_f64_bits();
+    let bits = crate::javacompat::nan_policy::double_to_raw_long_bits(actual) as u64;
+    assert!(
+        f64_bits_match(method, expected, bits),
+        "{method} [{label}] (golden line {}, expected index {index}): expected bits 0x{expected:016x}, got 0x{bits:016x}",
         row.line
     );
 }
 
 /// `f32` counterpart of [`assert_f64_bits_at`].
 pub fn assert_f32_bits_at(method: &str, row: &Row, index: usize, label: &str, actual: f32) {
-    let expected = row.exp(index);
-    assert_eq!(
-        crate::javacompat::nan_policy::float_to_raw_int_bits(actual),
-        expected.as_f32_bits() as i32,
-        "{method} [{label}] (golden line {}, expected index {index})",
+    let expected = row.exp(index).as_f32_bits();
+    let bits = crate::javacompat::nan_policy::float_to_raw_int_bits(actual) as u32;
+    assert!(
+        f32_bits_match(method, expected, bits),
+        "{method} [{label}] (golden line {}, expected index {index}): expected bits 0x{expected:08x}, got 0x{bits:08x}",
         row.line
     );
 }
@@ -410,11 +512,28 @@ pub fn assert_i32_at(method: &str, row: &Row, index: usize, label: &str, actual:
 ///
 /// This is the non-panicking counterpart of [`assert_f64_bits_at`]. It exists for
 /// rows where a divergence is *known, measured and bounded* rather than absent: the
-/// caller needs to count the exceptions, assert that the set of exceptions is exactly
+/// caller needs to count the exceptions, assert that the set of exceptions is a SUBSET of
 /// the one already documented, and fail loudly if it grows.
 ///
 /// A blanket `assert_eq!` cannot express that, and deleting the assertion to make the
 /// suite green would hide the very thing being tracked.
+///
+/// "Subset", not "equal": a test must never REQUIRE a divergence. If the host libm on
+/// this OS happens to agree with HotSpot, that is a good day and the suite should pass.
+/// Asserting equality of the mismatch set would make correctness depend on which libc the
+/// machine has -- which is exactly the bug this function's callers had.
+///
+/// Note this applies the same NaN policy as the asserting helpers.
 pub fn f64_matches(row: &Row, index: usize, actual: f64) -> bool {
-    row.exp(index).as_f64_bits() == crate::javacompat::nan_policy::double_to_raw_long_bits(actual) as u64
+    let bits = crate::javacompat::nan_policy::double_to_raw_long_bits(actual) as u64;
+    f64_bits_match("", row.exp(index).as_f64_bits(), bits)
+}
+
+/// [`f64_matches`] with the group name supplied, so [`NAN_BITS_OBSERVABLE`] applies.
+///
+/// Prefer this over [`f64_matches`] in new code: the empty method name above means an
+/// opt-in group can never match NaN.
+pub fn f64_matches_in(method: &str, row: &Row, index: usize, actual: f64) -> bool {
+    let bits = crate::javacompat::nan_policy::double_to_raw_long_bits(actual) as u64;
+    f64_bits_match(method, row.exp(index).as_f64_bits(), bits)
 }

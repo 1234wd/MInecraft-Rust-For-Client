@@ -146,11 +146,38 @@ fn transcript(g: &Golden, kind: Kind, prefix: &str) {
     // `random.txt` records those `radiusSquared` values, and the golden asserts the
     // divergence count there too. If a future corpus lands on a new such input this
     // assert fires and the list has to be updated deliberately.
-    assert_eq!(
-        gaussian_mismatches,
-        expected_gaussian_log_divergences(prefix),
-        "{prefix}.nextGaussian diverged on rows other than the documented \\
-         Math.log / _dlog inputs"
+    // THE SET IS AN ALLOWLIST, NOT AN EXPECTATION.
+    //
+    // This used to assert that a divergence MUST occur on exactly rows
+    // [12, 13, 140, 141, 284, 285, 316, 317]. A reviewer built this on Linux and it failed
+    // with ZERO mismatches, because glibc's `ln` agrees with HotSpot's `_dlog` on those
+    // eight inputs and Windows does not. So the "expected divergence" was a measurement
+    // of the HOSTs libm asserted as if it were a property of the port.
+    //
+    // The rule now: a mismatch is tolerated only if it is on the allowlist; a mismatch
+    // anywhere else fails the build; and if the allowlisted rows happen to MATCH -- a
+    // better libm, a different CPU, or a future `jvm_math` -- the suite still passes.
+    //
+    // A test must never require a bug.
+    //
+    // What this can no longer prove is that `Math.log` parity is still BROKEN. That was
+    // never its job; proving it is `jvm_math`s job. Until then the printed count is the
+    // evidence.
+    let allowed = allowed_gaussian_log_divergences(prefix);
+    let unexpected: Vec<usize> = gaussian_mismatches
+        .iter()
+        .copied()
+        .filter(|i| !allowed.contains(i))
+        .collect();
+    println!(
+        "{prefix}.nextGaussian: {}/{} draws differ from the golden; {} allowlisted rows",
+        gaussian_mismatches.len(),
+        g.rows(&format!("{prefix}.nextGaussian")).len(),
+        allowed.len()
+    );
+    assert!(
+        unexpected.is_empty(),
+        "{prefix}.nextGaussian diverged OUTSIDE the documented Math.log allowlist. allowed={allowed:?} unexpected={unexpected:?}. Either the host libm changed or a real regression appeared."
     );
 
     // nextInt(bound): the oracle keeps ONE source per seed across ALL bounds, so
@@ -255,10 +282,13 @@ fn each(g: &Golden, method: &str, mut f: impl FnMut(&Row)) {
 // The four transcripts
 // ---------------------------------------------------------------------------
 
-/// Draw indices within a `.nextGaussian` transcript that are EXPECTED to differ by
-/// 1-2 ULP because of the `Math.log` divergence. Filled in from measurement; see the
-/// long comment at the `.nextGaussian` assertion.
-fn expected_gaussian_log_divergences(prefix: &str) -> Vec<usize> {
+/// Draw indices within a `.nextGaussian` transcript that are ALLOWED to differ by
+/// 1-2 ULP because of the `Math.log` divergence.
+///
+/// Filled in from measurement. This is a CEILING, not a target: rows listed here may
+/// match -- a better libm, or `jvm_math` one day -- and the suite still passes. Rows
+/// NOT listed must match exactly, and a mismatch on one of those fails the build.
+fn allowed_gaussian_log_divergences(prefix: &str) -> Vec<usize> {
     // Measured, not guessed. Each entry is a PAIR of consecutive draws (v1*multiplier
     // then the cached v2*multiplier) whose `radiusSquared` is one of the inputs where
     // the host `ln` and HotSpot's `_dlog` intrinsic disagree by 1 ULP.
@@ -737,10 +767,13 @@ fn gaussian_intermediates_match_step_by_step() {
         } else {
             // Count is 4 pairs of divergent `radiusSquared` values across the corpus,
             // each contributing a log/q/multiplier/product cluster.
-            assert!(
-                !steps_mismatches.is_empty(),
-                "{prefix}.gaussianSteps: expected the documented Math.log divergences, \\
-                 found none -- if `Math.log` parity was fixed, delete this allowance"
+            // ALSO AN ALLOWLIST, for the same reason. The old assertion REQUIRED the
+            // divergence to be present, which made a correct port look broken and a
+            // broken port on a lucky libc look fine. Now it is only reported; nothing is
+            // required, and `jvm_math` is what will make this zero for good.
+            println!(
+                "{prefix}.gaussianSteps: {} log-dependent steps differ from the golden",
+                steps_mismatches.len()
             );
         }
     }
