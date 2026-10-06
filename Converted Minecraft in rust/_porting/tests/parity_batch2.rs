@@ -913,6 +913,29 @@ fn rotations_to_string() {
 const COVERED: &[&str] = &[
     "argb.srgbToLinearTable",
     "argb.linearToSrgbTable",
+    // -- ARGB: all 21 method groups, ported in session 11 --
+    "argb.channels",
+    "argb.colorFloats",
+    "argb.toABGR",
+    "argb.color4",
+    "argb.color3",
+    "argb.colorFromVec3",
+    "argb.colorFloat",
+    "argb.as8BitChannel",
+    "argb.scaleRGB",
+    "argb.scaleRGBInt",
+    "argb.multiplyAlpha",
+    "argb.multiply",
+    "argb.addRgb",
+    "argb.subtractRgb",
+    "argb.alphaBlend",
+    "argb.meanLinear",
+    "argb.greyscaleAverage",
+    "argb.srgbLerp",
+    "argb.linearLerp",
+    "argb.linearLerpThrows",
+    "argb.srgbTables",
+    "argb.setBrightness",
     "vec2.constants",
     "vec2.lengths",
     "vec2.hashCode",
@@ -1012,29 +1035,6 @@ const BLOCKED_ON_UNPORTED_TYPES: &[&str] = &[
     "aabb.fromVec3",  // port not started
     "aabb.builderError",  // port not started
     "aabb.builder",  // port not started
-    // -- argb --
-    "argb.channels",  // port not started
-    "argb.colorFloats",  // port not started
-    "argb.toABGR",  // port not started
-    "argb.color4",  // port not started
-    "argb.color3",  // port not started
-    "argb.colorFromVec3",  // port not started
-    "argb.colorFloat",  // port not started
-    "argb.as8BitChannel",  // port not started
-    "argb.scaleRGB",  // port not started
-    "argb.scaleRGBInt",  // port not started
-    "argb.multiplyAlpha",  // port not started
-    "argb.multiply",  // port not started
-    "argb.addRgb",  // port not started
-    "argb.subtractRgb",  // port not started
-    "argb.alphaBlend",  // port not started
-    "argb.meanLinear",  // port not started
-    "argb.greyscaleAverage",  // port not started
-    "argb.srgbLerp",  // port not started
-    "argb.linearLerp",  // port not started
-    "argb.linearLerpThrows",  // port not started
-    "argb.srgbTables",  // port not started
-    "argb.setBrightness",  // port not started
     // -- blockpos --
     "blockpos.constants",  // port not started
     "blockpos.asLong",  // port not started
@@ -1307,5 +1307,448 @@ fn argb_tables_match_the_golden() {
         "argb tables verified against the golden: SRGB_TO_LINEAR 256 values (max {max_stl}), \
          LINEAR_TO_SRGB 1024 values (max {})",
         LINEAR_TO_SRGB.iter().copied().max().unwrap_or(0)
+    );
+}
+
+// ============================================================================
+// ARGB
+// ============================================================================
+//
+// `ARGB` is a class of static methods over packed 0xAARRGGBB integers, so every group here is
+// a row of inputs and a row of results with no intermediate state. The interesting parts are
+// three-fold and all three are commented at their definitions in `ARGB.rs`:
+//
+//   * `scaleRGB(int,int)` widens to `long` before multiplying, so a large scale saturates at 255
+//     instead of overflowing to a negative `int` that would clamp to 0.
+//   * `scaleRGB(int,float,float,float)` truncates by the `(int)` cast BEFORE clamping.
+//   * `Math.round(float)` is not `floor(a + 0.5f)` in `f32`; see `math_round_f32`.
+//
+// Column meanings below are taken from `Batch2Oracle.argb`, which is what produced the rows.
+
+// `ARGB` has no instance state -- it is a class of static methods -- so unlike `Mth` there is no
+// unit struct to name, and the module itself is the import.
+use minecraft_rust::net::minecraft::util::ARGB;
+// Only `assert_i32_at`: `assert_f32_bits_at` is already in scope from the module-level `use`
+// block above, and importing it twice is a duplicate-definition error.
+use minecraft_rust::javacompat::golden::assert_i32_at;
+
+/// Loads `batch2.txt` and fails if the group is empty -- an empty group passes every assertion
+/// trivially, and `each()` exists for exactly that reason.
+fn argb_rows(group: &str) -> Vec<Row> {
+    let g = Golden::load("batch2.txt");
+    let rows = g.rows(group);
+    assert!(!rows.is_empty(), "group `{group}` is empty");
+    rows.to_vec()
+}
+
+#[test]
+fn argb_channels() {
+    for r in &argb_rows("argb.channels") {
+        let c = r.arg(0).as_i32();
+        assert_eq!(ARGB::alpha(c), r.exp(0).as_i32(), "alpha({c:#x})");
+        assert_eq!(ARGB::red(c), r.exp(1).as_i32(), "red({c:#x})");
+        assert_eq!(ARGB::green(c), r.exp(2).as_i32(), "green({c:#x})");
+        assert_eq!(ARGB::blue(c), r.exp(3).as_i32(), "blue({c:#x})");
+    }
+}
+
+#[test]
+fn argb_color_floats() {
+    for r in &argb_rows("argb.colorFloats") {
+        let c = r.arg(0).as_i32();
+        assert_f32_bits_at("argb.colorFloats", r, 0, "alphaFloat", ARGB::alpha_float(c));
+        assert_f32_bits_at("argb.colorFloats", r, 1, "redFloat", ARGB::red_float(c));
+        assert_f32_bits_at("argb.colorFloats", r, 2, "greenFloat", ARGB::green_float(c));
+        assert_f32_bits_at("argb.colorFloats", r, 3, "blueFloat", ARGB::blue_float(c));
+    }
+}
+
+#[test]
+fn argb_to_abgr() {
+    for r in &argb_rows("argb.toABGR") {
+        let c = r.arg(0).as_i32();
+        assert_i32_at("argb.toABGR", r, 0, "toABGR", ARGB::to_abgr(c));
+        assert_i32_at("argb.toABGR", r, 1, "fromABGR", ARGB::from_abgr(c));
+    }
+}
+
+#[test]
+fn argb_color4() {
+    for r in &argb_rows("argb.color4") {
+        let a = r.arg(0).as_i32();
+        let rr = r.arg(1).as_i32();
+        let gg = r.arg(2).as_i32();
+        let bb = r.arg(3).as_i32();
+        let c = ARGB::color_4(a, rr, gg, bb);
+        assert_i32_at("argb.color4", r, 0, "color(a,r,g,b)", c);
+        assert_i32_at("argb.color4", r, 1, "color(a,r)", ARGB::color_alpha_rgb(a, rr));
+        // The oracle's second column uses `r | 0x100`, i.e. a red channel of 256+ so that
+        // `color(a, rgb)` and `color(a, r, g, b)` disagree and cannot be conflated.
+        assert_i32_at("argb.color4", r, 2, "color(a, r|0x100)", ARGB::color_alpha_rgb(a, rr | 0x100));
+        // `opaque`/`transparent`/`white`/`black`/`gray` all take the ORIGINAL colour `c`, which
+        // the oracle reconstructs as `color(alpha, red, green, blue)`. Recomputing it from the
+        // row's channels is the same value, so it is built here rather than passed in.
+        let orig = ARGB::color_4(a, rr, gg, bb);
+        assert_i32_at("argb.color4", r, 3, "opaque", ARGB::opaque(orig));
+        assert_i32_at("argb.color4", r, 4, "transparent", ARGB::transparent(orig));
+        assert_i32_at("argb.color4", r, 5, "white(a)", ARGB::white_int(a));
+        assert_i32_at("argb.color4", r, 6, "black(a)", ARGB::black_int(a));
+        assert_i32_at("argb.color4", r, 7, "gray(r)", ARGB::gray(rr as f32));
+    }
+}
+
+#[test]
+fn argb_color3() {
+    for r in &argb_rows("argb.color3") {
+        let (rr, gg, bb) = (r.arg(0).as_i32(), r.arg(1).as_i32(), r.arg(2).as_i32());
+        assert_i32_at("argb.color3", r, 0, "color(r,g,b)", ARGB::color_3(rr, gg, bb));
+    }
+}
+
+#[test]
+fn argb_color_from_vec3() {
+    for r in &argb_rows("argb.colorFromVec3") {
+        let c = r.arg(0).as_i32();
+        // Java: `color(new Vec3(redFloat(c), greenFloat(c), blueFloat(c)))`. `ARGB#color(Vec3)`
+        // narrows each `double` component to `float` before scaling, so the Vec3 is built from
+        // `f32`-widened values and `ARGB::color_vec3` narrows again -- both steps present.
+        let v = Vec3::new(
+            ARGB::red_float(c) as f64,
+            ARGB::green_float(c) as f64,
+            ARGB::blue_float(c) as f64,
+        );
+        assert_i32_at("argb.colorFromVec3", r, 0, "color(Vec3)", ARGB::color_vec3(v));
+    }
+}
+
+#[test]
+fn argb_color_float() {
+    for r in &argb_rows("argb.colorFloat") {
+        let f = r.arg(0).as_f32();
+        // The oracle's first column is `ARGB.color(f, ARGB.red(c))`, where `c` comes from the
+        // outer colour corpus -- but the row carries ONLY the float, so that colour is not
+        // recoverable from the row and the column cannot be checked here. `color(float, int)` is
+        // covered instead by `argb.color4` column 1, which does carry its colour.
+        //
+        // Columns 1..=4 are pure functions of `f`, so they are checked in full.
+        assert_i32_at("argb.colorFloat", r, 1, "white(f)", ARGB::white_float(f));
+        assert_i32_at("argb.colorFloat", r, 2, "black(f)", ARGB::black_float(f));
+        assert_i32_at("argb.colorFloat", r, 3, "gray(f)", ARGB::gray(f));
+        assert_i32_at("argb.colorFloat", r, 4, "colorFromFloat(f,f,f,f)", ARGB::color_from_float(f, f, f, f));
+    }
+}
+
+#[test]
+fn argb_as_8bit_channel() {
+    for r in &argb_rows("argb.as8BitChannel") {
+        let f = r.arg(0).as_f32();
+        assert_i32_at("argb.as8BitChannel", r, 0, "as8BitChannel", ARGB::as_8bit_channel(f));
+    }
+}
+
+#[test]
+fn argb_scale_rgb() {
+    for r in &argb_rows("argb.scaleRGB") {
+        let c = r.arg(0).as_i32();
+        let f = r.arg(1).as_f32();
+        assert_i32_at("argb.scaleRGB", r, 0, "scaleRGB(c,f)", ARGB::scale_rgb_uniform(c, f));
+        assert_i32_at("argb.scaleRGB", r, 1, "scaleRGB(c,f,f,f)", ARGB::scale_rgb(c, f, f, f));
+    }
+}
+
+#[test]
+fn argb_scale_rgb_int() {
+    for r in &argb_rows("argb.scaleRGBInt") {
+        let c = r.arg(0).as_i32();
+        let scale = r.arg(1).as_i32();
+        assert_i32_at("argb.scaleRGBInt", r, 0, "scaleRGB(c,int)", ARGB::scale_rgb_int(c, scale));
+    }
+}
+
+#[test]
+fn argb_multiply_alpha() {
+    for r in &argb_rows("argb.multiplyAlpha") {
+        let c = r.arg(0).as_i32();
+        let af = r.arg(1).as_f32();
+        assert_i32_at("argb.multiplyAlpha", r, 0, "multiplyAlpha(c, alphaFloat(c))", ARGB::multiply_alpha(c, af));
+        assert_i32_at("argb.multiplyAlpha", r, 1, "multiplyAlpha(c, 0.0)", ARGB::multiply_alpha(c, 0.0));
+        assert_i32_at("argb.multiplyAlpha", r, 2, "multiplyAlpha(0, 1.0)", ARGB::multiply_alpha(0, 1.0));
+        assert_i32_at("argb.multiplyAlpha", r, 3, "multiplyAlpha(c, 2.0)", ARGB::multiply_alpha(c, 2.0));
+    }
+}
+
+#[test]
+fn argb_multiply() {
+    for r in &argb_rows("argb.multiply") {
+        let (a, b) = (r.arg(0).as_i32(), r.arg(1).as_i32());
+        assert_i32_at("argb.multiply", r, 0, "multiply", ARGB::multiply(a, b));
+    }
+}
+
+#[test]
+fn argb_add_and_subtract_rgb() {
+    for r in &argb_rows("argb.addRgb") {
+        let (a, b) = (r.arg(0).as_i32(), r.arg(1).as_i32());
+        assert_i32_at("argb.addRgb", r, 0, "addRgb", ARGB::add_rgb(a, b));
+    }
+    for r in &argb_rows("argb.subtractRgb") {
+        let (a, b) = (r.arg(0).as_i32(), r.arg(1).as_i32());
+        assert_i32_at("argb.subtractRgb", r, 0, "subtractRgb", ARGB::subtract_rgb(a, b));
+    }
+}
+
+#[test]
+fn argb_alpha_blend() {
+    for r in &argb_rows("argb.alphaBlend") {
+        let (dest, src) = (r.arg(0).as_i32(), r.arg(1).as_i32());
+        assert_i32_at("argb.alphaBlend", r, 0, "alphaBlend", ARGB::alpha_blend(dest, src));
+    }
+}
+
+#[test]
+fn argb_mean_linear() {
+    for r in &argb_rows("argb.meanLinear") {
+        let (a, b) = (r.arg(0).as_i32(), r.arg(1).as_i32());
+        assert_i32_at(
+            "argb.meanLinear",
+            r,
+            0,
+            "meanLinear(a,b,~a,~b)",
+            ARGB::mean_linear(a, b, !a, !b),
+        );
+        assert_i32_at(
+            "argb.meanLinear",
+            r,
+            1,
+            "meanLinear(a,a,a,a)",
+            ARGB::mean_linear(a, a, a, a),
+        );
+    }
+}
+
+#[test]
+fn argb_greyscale_and_average() {
+    for r in &argb_rows("argb.greyscaleAverage") {
+        let (a, b) = (r.arg(0).as_i32(), r.arg(1).as_i32());
+        assert_i32_at("argb.greyscaleAverage", r, 0, "greyscale(a)", ARGB::greyscale(a));
+        assert_i32_at("argb.greyscaleAverage", r, 1, "average(a,b)", ARGB::average(a, b));
+    }
+}
+
+#[test]
+fn argb_srgb_lerp() {
+    for r in &argb_rows("argb.srgbLerp") {
+        let f = r.arg(0).as_f32();
+        let a = r.arg(1).as_i32();
+        let b = r.arg(2).as_i32();
+        assert_i32_at("argb.srgbLerp", r, 0, "srgbLerp", ARGB::srgb_lerp(f, a, b));
+    }
+}
+
+#[test]
+fn argb_linear_lerp() {
+    for r in &argb_rows("argb.linearLerp") {
+        let f = r.arg(0).as_f32();
+        let a = r.arg(1).as_i32();
+        let b = r.arg(2).as_i32();
+        assert_i32_at("argb.linearLerp", r, 0, "linearLerp", ARGB::linear_lerp(f, a, b));
+    }
+}
+
+#[test]
+fn argb_set_brightness() {
+    for r in &argb_rows("argb.setBrightness") {
+        let c = r.arg(0).as_i32();
+        let b = r.arg(1).as_f32();
+        assert_i32_at("argb.setBrightness", r, 0, "setBrightness", ARGB::set_brightness(c, b));
+    }
+}
+
+#[test]
+fn argb_srgb_tables() {
+    for r in &argb_rows("argb.srgbTables") {
+        let ch = r.arg(0).as_i32();
+        assert_f32_bits_at("argb.srgbTables", r, 0, "srgbToLinearChannel", ARGB::srgb_to_linear_channel(ch));
+        assert_i32_at(
+            "argb.srgbTables",
+            r,
+            1,
+            "linearToSrgbChannel(ch/1023f)",
+            ARGB::linear_to_srgb_channel(ch as f32 / 1023.0),
+        );
+        assert_i32_at(
+            "argb.srgbTables",
+            r,
+            2,
+            "linearToSrgbChannel(ch/255f)",
+            ARGB::linear_to_srgb_channel(ch as f32 / 255.0),
+        );
+    }
+}
+
+/// `linearLerp` must **panic**, with Java's exact exception text, wherever vanilla throws.
+///
+/// # THIS IS THE POINT OF THE TEST
+///
+/// A clamping "port" would return a colour here. Vanilla 26.2 throws
+/// `ArrayIndexOutOfBoundsException`, and a caller that survives on the Rust side where the game
+/// crashes is a gameplay difference -- the most expensive kind to find later, because nothing
+/// looks wrong.
+///
+/// So this compares the panic MESSAGE against the JVM's own recorded string, index and array
+/// length included. `argb.linearLerpThrows` was emitted by catching the exception in Java and
+/// writing `getClass().getName() + ": " + getMessage()`, so the expected text is the JVM's, not
+/// mine.
+///
+/// It also pins the other direction: rows recorded as `ok` must NOT panic. A port that panicked
+/// everywhere would pass a "does it throw" test, and that is the mirror-image bug.
+#[test]
+fn argb_linear_lerp_panics_like_java() {
+    let rows = argb_rows("argb.linearLerpThrows");
+    let mut threw = 0usize;
+    let mut ok = 0usize;
+
+    for r in &rows {
+        let f = r.arg(0).as_f32();
+        let a = r.arg(1).as_i32();
+        let b = r.arg(2).as_i32();
+        let expected = r.exp(0).as_opt_str().unwrap_or("").to_string();
+
+        // Silence the default panic printer: these panics are the expected outcome, and 5 lines of
+        // backtrace noise per row would bury a real failure.
+        let prev = std::panic::take_hook();
+        std::panic::set_hook(Box::new(|_| {}));
+        let outcome = std::panic::catch_unwind(move || ARGB::linear_lerp(f, a, b));
+        std::panic::set_hook(prev);
+
+        match (expected.as_str(), outcome) {
+            ("ok", Ok(_)) => ok += 1,
+            ("ok", Err(_)) => panic!(
+                "argb.linearLerpThrows: alpha={f:e} colours ({a:#x},{b:#x}) is recorded as `ok` \
+                 but the Rust port panicked. A port that always throws would pass a \
+                 does-it-throw test, so both directions are checked."
+            ),
+            (_, Err(e)) => {
+                threw += 1;
+                let msg = e
+                    .downcast_ref::<String>()
+                    .cloned()
+                    .or_else(|| e.downcast_ref::<&str>().map(|s| s.to_string()))
+                    .unwrap_or_else(|| format!("<non-string panic payload: {e:?}>"));
+                assert_eq!(
+                    msg, expected,
+                    "argb.linearLerpThrows: alpha={f:e} colours ({a:#x},{b:#x}) -- the panic text \
+                     must be Java's, index and array length included, because that is what a \
+                     crash log shows and what a maintainer greps for"
+                );
+                // And the text must actually name Java's exception, not just match by accident.
+                assert!(
+                    msg.starts_with("java.lang.ArrayIndexOutOfBoundsException: Index "),
+                    "panic text does not name Java's exception: {msg:?}"
+                );
+            }
+            (_, Ok(_)) => panic!(
+                "argb.linearLerpThrows: alpha={f:e} colours ({a:#x},{b:#x}) should have thrown \
+                 `{expected}` but the Rust port returned a colour"
+            ),
+        }
+    }
+
+    assert!(
+        threw > 0,
+        "no row in argb.linearLerpThrows threw, so this test proves nothing -- the corpus must \
+         contain out-of-range alphas"
+    );
+    assert!(ok > 0, "no row was recorded as `ok`; the corpus must contain in-range alphas too");
+    println!("argb.linearLerpThrows: {threw} threw with Java's exact text, {ok} returned a colour");
+}
+
+/// The `as usize` audit, as a test rather than a comment.
+///
+/// Every table index in `ARGB.rs` goes through `checked_srgb_to_linear` /
+/// `checked_linear_to_srgb`, which validate the Java `int` **before** the cast. The failure this
+/// guards against is specific and quiet: a negative Java index cast to `usize` becomes an
+/// enormous value and reads out of bounds, or -- the version that actually bites -- wraps into a
+/// *valid* index and returns a plausible wrong colour with no panic at all.
+///
+/// So this asserts the two properties that make the check meaningful: negative and over-long
+/// inputs panic with Java's text, and the values just inside the boundary still work.
+#[test]
+fn argb_table_index_audit() {
+    use minecraft_rust::argb_srgb_tables::{LINEAR_TO_SRGB, SRGB_TO_LINEAR};
+
+    let prev = std::panic::take_hook();
+    std::panic::set_hook(Box::new(|_| {}));
+
+    // Negative and past-the-end on BOTH tables, at both extremes, so a wraparound cannot hide in
+    // a range this test happens not to touch.
+    //
+    // The two tables have DIFFERENT lengths, so "out of range" means something different for
+    // each: `SRGB_TO_LINEAR` is 256 entries (indexed by an sRGB channel) and `LINEAR_TO_SRGB`
+    // is 1024 (indexed by `floor(linear * 1023)`). An earlier version of this test used one
+    // shared list and asserted that index 255 threw -- which is a VALID index into a 256-entry
+    // table. The test was wrong, not the port.
+    //
+    // Everything is COLLECTED while the panic hook is suppressed and asserted afterwards.
+    // Asserting inside the loop would have its own message swallowed by that same hook, which is
+    // exactly what happened on the first attempt: the test failed and said nothing.
+    let mut accepted_too_willingly: Vec<String> = Vec::new();
+
+    for bad in [-1, -2, -1023, i32::MIN, 256, 1023, 1024, 1025, i32::MAX] {
+        if std::panic::catch_unwind(move || ARGB::srgb_to_linear_channel(bad)).is_ok() {
+            accepted_too_willingly.push(format!("srgbToLinearChannel({bad})"));
+        }
+    }
+
+    // Values whose `floor(linear * 1023)` lands outside 0..1024.
+    //
+    // The upper threshold is NOT 1.0: the index goes out of range only once
+    // `linear * 1023 >= 1024`, i.e. `linear >= 1024/1023 ~= 1.000977`. A first attempt used
+    // 1.0001, and the port was right to accept it -- `floor(1.0001 * 1023) = 1023`, the last
+    // valid index. 1.0 itself is in range and `linearLerp` relies on that.
+    for bad in [-1.0f32, -0.5, -1.0e-30, f32::NEG_INFINITY, 1.001, 1.5, 2.0, 1.0e30, f32::INFINITY] {
+        if std::panic::catch_unwind(move || ARGB::linear_to_srgb_channel(bad)).is_ok() {
+            accepted_too_willingly.push(format!("linearToSrgbChannel({bad:e})"));
+        }
+    }
+
+    // The last valid index of each table must WORK, or "the check" is just refusing everything.
+    // `SRGB_TO_LINEAR` tops out at 255 and `LINEAR_TO_SRGB` at 1023, and those two boundaries
+    // differing is exactly why the bad-value lists above differ.
+    let last_channel_ok = std::panic::catch_unwind(|| ARGB::srgb_to_linear_channel(255)).is_ok();
+    let last_linear_ok = std::panic::catch_unwind(|| ARGB::linear_to_srgb_channel(1.0)).is_ok();
+
+    std::panic::set_hook(prev);
+
+    assert!(
+        accepted_too_willingly.is_empty(),
+        "these out-of-range inputs did NOT throw, so a negative or over-long Java index can \
+         reach the table: {accepted_too_willingly:?}. Either the bounds check is missing or a \
+         negative index wrapped into a valid slot -- which is worse, because it returns a \
+         plausible wrong colour with no panic at all."
+    );
+    assert!(
+        last_channel_ok,
+        "srgbToLinearChannel(255) is the last valid index of a 256-entry table and must not throw"
+    );
+    assert!(
+        last_linear_ok,
+        "linearToSrgbChannel(1.0) gives index 1023, the last valid index, and must not throw"
+    );
+
+    // The boundaries themselves must still work, or the "check" is just refusing everything.
+    assert_eq!(
+        ARGB::srgb_to_linear_channel(0).to_bits(),
+        (0.0f32).to_bits()
+    );
+    let top = SRGB_TO_LINEAR.len() - 1;
+    assert_eq!(ARGB::srgb_to_linear_channel(top as i32), SRGB_TO_LINEAR[top] as f32 / 1023.0);
+    assert_eq!(
+        ARGB::linear_to_srgb_channel(0.0),
+        LINEAR_TO_SRGB[0] as i32
+    );
+    assert_eq!(
+        ARGB::linear_to_srgb_channel(1.0),
+        LINEAR_TO_SRGB[LINEAR_TO_SRGB.len() - 1] as i32
     );
 }

@@ -175,7 +175,7 @@ joml's `Math.invsqrt` is version-specific, so pinning matters. The exact version
 Minecraft 26.2 ships are **unverified** â€” see `OPEN_QUESTIONS.md` #5.
 ---
 
-## `oracle-with-zero-stubs` — no source stubs, ever (session 03)
+## `oracle-with-zero-stubs` ï¿½ no source stubs, ever (session 03)
 
 Session 02 compiled against 17 hand-written stubs. **All 17 are gone.** Guava, DFU,
 netty and jspecify are now the real jars at the versions Minecraft 26.2 resolves; the
@@ -200,14 +200,14 @@ compile, so even `StreamCodec`/`Component`/`Entity` need no stub.
 
 ## `versions-are-read-not-chosen`
 
-Every dependency version is read from the Fabric Loom / Gradle cache on this machine —
+Every dependency version is read from the Fabric Loom / Gradle cache on this machine ï¿½
 i.e. the resolved dependency tree Loom actually produced for the 26.2 client jar
 (`%USERPROFILE%\.gradle\caches\modules-2\files-2.1\<group>\<artifact>\<version>`). The
 table lives in `fetch_libs.ps1`.
 
 This immediately caught a mistake: session 02 pinned **commons-lang3 3.17.0** as
 "close enough to current", but 26.2 resolves **3.20.0**. Guessing versions for a
-bit-exactness port is exactly the wrong instinct — `joml`'s `Math.invsqrt` is a
+bit-exactness port is exactly the wrong instinct ï¿½ `joml`'s `Math.invsqrt` is a
 version-specific bit trick.
 
 ---
@@ -231,7 +231,7 @@ compiling.
 
 ---
 
-## `nan-policy` — match NaN bits only where they are observable
+## `nan-policy` ï¿½ match NaN bits only where they are observable
 
 Session 02 added exact-sign arithmetic helpers everywhere. That is right for the
 arithmetic and **wrong as a blanket policy**, because:
@@ -245,7 +245,7 @@ arithmetic and **wrong as a blanket policy**, because:
   So an exact NaN sign is not a portable property of the algorithm.
 
 The rule now (`javacompat/nan_policy.rs`): match exact sign **and payload** only where
-game code can observe it — `floatToRawIntBits`/`doubleToRawLongBits` results, and
+game code can observe it ï¿½ `floatToRawIntBits`/`doubleToRawLongBits` results, and
 anything hashed, serialised, or put on the wire. Everywhere else, assert only that
 both sides are NaN (`equivalent_f32`/`equivalent_f64`). Signed zero is still
 distinguished, because that *is* observable.
@@ -258,14 +258,14 @@ what nearly all Minecraft runs on.
 ## `entropy-injection`
 
 Every clock and entropy read goes through `javacompat::entropy`. No ported code may call
-`SystemTime::now`, `Instant::now`, `RandomState`, or read `/dev/urandom` directly — one
+`SystemTime::now`, `Instant::now`, `RandomState`, or read `/dev/urandom` directly ï¿½ one
 file, one grep, is the whole point.
 
 This is *not* a gameplay change: `RandomSupport#generateUniqueSeed` is non-deterministic
 by construction, so its value was never reproducible. Centralising the clock changes
 only *where* it is read, and makes `cargo test` deterministic.
 
-`System.nanoTime()` has no portable Rust equivalent — Java's origin is
+`System.nanoTime()` has no portable Rust equivalent ï¿½ Java's origin is
 JVM-chosen and unspecified. `entropy::nano_time` returns nanoseconds since the UNIX
 epoch instead. Different number, same property (fresh each call); see
 OPEN_QUESTIONS.md #1.
@@ -298,25 +298,25 @@ few methods we need keeps every rounding decision visible.
 
 **One assumption of mine was wrong** and is recorded as such: I expected JOML's
 widen-to-f64-before-sqrt `invsqrt` to differ from a single-precision `sqrt`. It does
-not, for normal inputs — double rounding is benign when the intermediate has at least
-`2p + 2` mantissa bits, and f64 has 53 = 2·24 + 2 = 50. The test now sweeps 200k values
+not, for normal inputs ï¿½ double rounding is benign when the intermediate has at least
+`2p + 2` mantissa bits, and f64 has 53 = 2ï¿½24 + 2 = 50. The test now sweeps 200k values
 to keep that honest rather than asserting my guess. The JOML spelling is kept anyway,
 so it stays auditable against `javap` and does not depend on the theorem holding.
 
 ---
 
-## `dfu-proposal` — how we will handle DataFixerUpper and Codec (PROPOSAL ONLY)
+## `dfu-proposal` ï¿½ how we will handle DataFixerUpper and Codec (PROPOSAL ONLY)
 
 Not implemented. `Direction.CODEC`, `Vec3i.CODEC`, `Vec3.STREAM_CODEC` etc. are all
 `todo!()` and their files are `PARTIAL` where that is the only thing missing.
 
-**Option A — port DataFixerUpper into `javacompat`.** ~30 classes (`Codec`, `DataResult`,
+**Option A ï¿½ port DataFixerUpper into `javacompat`.** ~30 classes (`Codec`, `DataResult`,
 `RecordCodecBuilder`, the `MapCodec`/`RecordCodecBuilder` DSL). Pros: one dependency
 model, full control, and the DSL is what vanilla's codec declarations read like.
 Cons: large, and DFU has its own `DynamicOps` hierarchy that is itself a
 serialisation format we would then need to match.
 
-**Option B — a minimal replacement.** Only what vanilla actually uses:
+**Option B ï¿½ a minimal replacement.** Only what vanilla actually uses:
 `Codec<T>` over a `DataResult<T>`, `MapCodec`, `RecordCodecBuilder`, `Either`, `ExtraCodecs`.
 Pros: far smaller surface. Cons: it is a *new* implementation, so its failure modes are
 ours; and vanilla's codec graphs are deeply nested (`StreamCodec` chains especially), so
@@ -425,6 +425,68 @@ exactly -- it is not an artifact. But emitting it produced 203 golden rows that
 look unstable and trains you to ignore diffs. Removed from the golden set; the seeded
 path stays covered by `random.txt`'s `wobble_check`. Same reason
 `generateUniqueSeed` is untestable (OPEN_QUESTIONS #1).
+
+### 4. `ARGB#setBrightness` case 4 uses `brightness`, not `secondaryColor` (session 11)
+
+The most consequential artifact found so far, because it is a **silent** one: it produces
+a plausible colour, every value is in range, nothing looks wrong.
+
+`minecraft-decompiled` says:
+
+```java
+case 4:
+    red = Math.round(tertiaryColor * 255.0F);
+    green = Math.round(primaryColor * 255.0F);
+    blue = Math.round(secondaryColor * 255.0F);   // <-- WRONG
+    break;
+```
+
+`javap -p -c net.minecraft.util.ARGB` says otherwise. The float locals are pinned first --
+`fload_1` is `brightness`, and the three derived colours are stored at `fstore 13/14/15`:
+
+```text
+246: fload_1          // brightness
+247: fconst_1
+248: fload 9         // saturation
+250: fload 12        // colorWheelOffset
+252: fmul
+253: fsub
+254: fmul
+255: fstore 14       // secondaryColor
+```
+
+and then, inside `tableswitch` target 4 (bytecode offsets 432-457):
+
+```text
+432: fload         15   // tertiaryColor -> red
+442: fload         13   // primaryColor  -> green
+451: fload_1           // brightness     -> blue   <-- NOT fload 14
+```
+
+Five of the six cases load `secondaryColor` (`fload 14`) where the source says so, and case
+4 alone loads `fload_1`. The decompiler got one arm of one `switch` wrong.
+
+**How it was caught.** Golden row 146 of `argb.setBrightness`: colour `0x000100FF` at
+brightness `0.5`. That colour is blue-dominant, so `rgbMax == blue`, which gives
+`hue = 4 + cG - cR`, which puts `colorWheelSegment` at 4.004 and so selects case 4. The
+port followed the source and produced `blue = 127`; the jar returns `128`. A JVM probe
+(`p.BrightProbe`, run against the jar, since deleted) confirmed that the method's own
+return value contradicts the source's own formula evaluated on the method's own
+intermediates -- `round(secondaryColor * 255.0F)` is `127`, yet `setBrightness` returns
+`0x00000080`.
+
+**Why it is not an unreachable corner.** Any blue-dominant colour reaches case 4, so every
+bluish entity render, water tint or particle colour faded through `ARGB#setBrightness`
+would have been off by one blue level for the rest of the port's life if we had trusted
+the source.
+
+**The rule this strengthens.** `jar-is-ground-truth` is not a formality. When a golden
+group fails *and the port faithfully matches the decompiled source*, the source is
+suspect and `javap -c` is the next step -- not a re-read of the source, and never a
+"the test is probably wrong". This is the second time that has paid (the first was
+`Vec3#zRot`'s swapped signs), and the reason is structural: a decompiler reconstructs
+control flow, and one arm of a six-way `tableswitch` is exactly the shape of thing it
+reconstructs wrongly.
 
 ---
 
@@ -861,3 +923,85 @@ system's default encoding and **ate a byte**: `f32::MIN_POSITIVE` became `32::MI
 Every PowerShell write in this project must pass `(New-Object System.Text.UTF8Encoding($false))`.
 The bug was caught only because `git diff` changed its "Binary files differ" wording, which is a
 poor reason to catch anything -- treat any unexpected `WriteAllLines` in this repo as suspect.
+
+## `#runtime-exceptions` (session 11)
+
+**When the Java method throws, the Rust port panics -- with Java's exception class name and
+Java's exact message text, including interpolated indices and array lengths. It does not
+return a sentinel, and it does not clamp.**
+
+This extends the earlier `panic-not-Result` rule (L82) with the part that rule did not
+pin down: *what the panic says*. "Panics like Java" is worthless unless the text matches,
+because the text is what a crash log shows and what a maintainer greps for.
+
+### The case that forces it: `ARGB#linearLerp`
+
+```java
+public static int linearLerp(float alpha, int p0, int p1) {
+    return color(
+        Mth.lerpInt(alpha, alpha(p0), alpha(p1)),
+        LINEAR_TO_SRGB[Mth.lerpInt(alpha, SRGB_TO_LINEAR[red(p0)], SRGB_TO_LINEAR[red(p1)])] & 0xFF,
+        ...);
+}
+```
+
+`Mth#lerpInt` is `(int)(start + alpha * (end - start))` with **no clamping**. `alpha` above
+1 or below 0 therefore walks the index off the end of the 1024-entry `LINEAR_TO_SRGB` array,
+and vanilla 26.2 throws:
+
+```text
+java.lang.ArrayIndexOutOfBoundsException: Index -211 out of bounds for length 1024
+```
+
+This is reachable from ordinary game code -- entity rendering, and any caller that fades a
+colour with an unclamped factor. The golden group `argb.linearLerpThrows` pins it: the
+oracle catches the exception in Java and records
+`ex.getClass().getName() + ": " + ex.getMessage()` for alphas from `-1.0F` through
+`Float.POSITIVE_INFINITY`, and records the literal string `ok` for the ones that do not
+throw.
+
+### Why clamping would be the worst possible "fix"
+
+A clamping port returns a colour where the game crashes. The caller then keeps running, on
+data the Java side would have rejected, and the divergence surfaces later -- as a wrong
+colour, a wrong alpha, a desync -- far from its cause. The exception is not a bug to be
+tidied away; **it is the specification**. This project has no gameplay changes, and silently
+converting a crash into a value is the most expensive kind of gameplay change: the kind that
+looks like a fix.
+
+### How it is tested
+
+`parity_batch2::argb_linear_lerp_panics_like_java`. It walks every row of
+`argb.linearLerpThrows` inside `catch_unwind` and asserts the panic message equals the JVM's
+recorded string exactly -- index and array length included. It asserts **both** directions:
+rows recorded `ok` must not panic. A port that panicked unconditionally would pass a
+"does it throw" test, and that is the mirror-image bug.
+
+### The `as usize` audit that goes with it
+
+Every table index in `ARGB.rs` goes through one of two checked accessors, and neither
+contains a bare `as usize`:
+
+```rust
+fn checked_linear_to_srgb(index: i32) -> u8 {
+    if index < 0 || index >= LINEAR_TO_SRGB.len() as i32 {
+        throw_array_index_out_of_bounds(index, LINEAR_TO_SRGB.len());
+    }
+    LINEAR_TO_SRGB[index as usize]
+}
+```
+
+The **ordering** is the whole point: the Java `int` is validated *before* the cast. A
+negative index cast to `usize` becomes an enormous value and reads out of bounds -- or,
+worse, wraps into a *valid* index and returns a plausible wrong colour with no panic at
+all. The second failure mode is invisible, which is why `argb_table_index_audit` asserts
+that out-of-range inputs throw **and** that the last valid index of each table still works,
+so "the check" cannot be satisfied by refusing everything.
+
+That test caught two mistakes in the test itself, both worth recording because both are the
+kind of thing that would otherwise have shipped as a green suite: `SRGB_TO_LINEAR` has 256
+entries and `LINEAR_TO_SRGB` has 1024, so index 255 is **valid** for the first and invalid
+for the second; and the upper threshold for `linearToSrgbChannel` is not `1.0` but
+`1024/1023 ~= 1.000977`, because `floor(1.0001 * 1023)` is `1023` -- the last valid index.
+Both times the port was right and the test was wrong. A test that is wrong in the
+permissive direction is the one kind of wrong that does not announce itself.
