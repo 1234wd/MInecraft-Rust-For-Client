@@ -595,3 +595,26 @@ lib build is warning-free; only the test target warns). Left alone because the s
 test-file edits to the port being worked on.
 
 **Decision needed:** delete `exp3`, or keep it as a helper and mark it `#[allow(dead_code)]`.
+
+### #28 `every_batch2_group_is_covered` does not check WHICH list a group is in
+
+Found during session 11, and it had been hiding for the whole session. 55 groups — all 21
+`identifier.*` and 34 `aabb.*` — had passing tests in `parity_batch2.rs` while still being listed
+in `BLOCKED_ON_UNPORTED_TYPES`, because my edits appended to the block that list ended in rather
+than to `COVERED`. Every count I quoted from those lists during the session was therefore wrong
+(`BLOCKED` read 159 when it should have read 104), and no test failed, because the guard only
+checks that each group appears in **exactly one** of the two lists — which held throughout.
+
+```rust
+// passes for a group that is listed as BLOCKED but has a test
+assert!(in_covered(g) ^ in_blocked(g));
+```
+
+**Decision needed:** add the missing direction. A group named in `COVERED` should be required to
+have at least one test in this file, and — more useful for catching this — a group exercised by a
+test here should be required to be in `COVERED`. The second is the one that would have fired.
+
+This is the same failure shape as OPEN_QUESTIONS #26: the harness has a declared invariant and
+nothing checks it. Twice in one session the same class of gap cost real time, which suggests the
+harness's invariants should be read as a checklist and each one looked for individually before
+trusting a green run.

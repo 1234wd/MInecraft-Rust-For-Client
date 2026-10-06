@@ -660,3 +660,19 @@ shape, so a different regression cannot hide behind it.
 
 Next: `BlockPos` + `MutableBlockPos` (79 methods), which unblocks AABB's four `BlockPos` groups and
 five of the blocked `Mth` methods.
+
+**[2026-10-06 12:41:58 +05:00] _porting/tests/parity_batch2.rs -> FIX | groups bookkeeping | commit d19f3bc**
+
+A bookkeeping error of mine, worth its own commit because it corrupted every count I quoted:
+
+55 groups (all 21 `identifier.*`, all 34 `aabb.*`) had passing tests while still being listed in
+`BLOCKED_ON_UNPORTED_TYPES`. My edits appended after a line that turned out to be the last line of
+the BLOCKED list rather than of COVERED. So `BLOCKED` read 159 when the true figure was 104, and
+every per-session count in this log up to that point is wrong.
+
+`every_batch2_group_is_covered` did not catch it: it checks each group is in exactly ONE of the two
+lists, which held throughout. It never checks that a group with a test is in `COVERED`. Logged as
+OPEN_QUESTIONS #28.
+
+Corrected totals, measured: **COVERED 131 / BLOCKED 104 / golden 235** (was 54 / 181 at session-10
+HEAD `72da0ae`). 243 tests green in debug and release.
