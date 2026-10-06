@@ -400,6 +400,19 @@ pub fn abs_f64(a: f64) -> f64 {
 ///    `Math.min(+0.0F, -0.0F)` == `0x80000000` (`-0.0`), and
 ///    `Math.max(+0.0F, -0.0F)` == `0x00000000` (`+0.0`).
 ///    Writing this as a plain `if a <= b` returns `+0.0` for min, which is wrong.
+///
+/// # AND THE TIE MUST BE `-0.0` REGARDLESS OF ORDER
+///
+/// The `else { b }` below returns the SECOND operand on a tie, which handles `min(+0.0, -0.0)`
+/// but gets `min(-0.0, +0.0)` **wrong**: `a < b` is false for two zeros of either sign, so it
+/// returns `+0.0` where Java returns `-0.0`. The JDK documents the result as "negative zero if
+/// and only if" an argument is negative zero, so the tie-break is order-independent.
+///
+/// Found by `AABB`: its swapping constructor is `Math.min`/`Math.max` over pairs that include
+/// `{-0.0, 0.0}`, so `new AABB(-0.0, ..., +0.0, ...)` stored `min = +0.0`. That propagated into
+/// every box method -- `getSize`, `min(Axis)`, `contract`, the setters, `getCenter` -- because
+/// they all read the same two fields. Six `aabb.*` groups failed on it at once, which is the
+/// cheapest possible signal that the bug was in the shared helper and not in `AABB`.
 #[inline]
 pub fn min_f32(a: f32, b: f32) -> f32 {
     if a.is_nan() {
@@ -409,15 +422,19 @@ pub fn min_f32(a: f32, b: f32) -> f32 {
         return b;
     }
     if a < b {
-        a
-    } else {
-        b
+        return a;
     }
+    // `a == b` here means both are zeros of some sign (NaN is already handled). Java returns the
+    // negative one, so return whichever is negative.
+    if a == b && a.is_sign_negative() {
+        return a;
+    }
+    b
 }
 
 /// Port of `Math.min(double, double)`. See [`min_f32`].
-/// Port of `Math.min(double, double)`. See [`min_f32`], including the signed-zero
-/// tie-break (`Math.min(+0.0, -0.0)` is `-0.0`).
+/// Port of `Math.min(double, double)`. See [`min_f32`], including the signed-zero tie-break:
+/// `Math.min(+0.0, -0.0)` **and** `Math.min(-0.0, +0.0)` are both `-0.0`.
 #[inline]
 pub fn min_f64(a: f64, b: f64) -> f64 {
     if a.is_nan() {
@@ -427,15 +444,22 @@ pub fn min_f64(a: f64, b: f64) -> f64 {
         return b;
     }
     if a < b {
-        a
-    } else {
-        b
+        return a;
     }
+    // See `min_f32`: on a tie between two zeros, Java returns the negative one regardless of
+    // which argument came first.
+    if a == b && a.is_sign_negative() {
+        return a;
+    }
+    b
 }
 
-/// Port of `Math.max(float, float)`. See [`min_f32`] for the NaN rule.
-///
-/// Note `max(+0.0, -0.0)` is `+0.0`, because `+0.0 >= -0.0` is true.
+/// Port of `Math.max(float, float)`. See [`min_f32`] for the NaN rule and for the signed-zero
+/// tie-break, which here resolves the other way: `max` returns `+0.0` for a tie between the two
+/// zeros, and -- as with `min` -- **regardless of argument order**. `a >= b` is true for
+/// `(-0.0, +0.0)`, so the `else { b }` branch would only ever be reached with `b` negative, and
+/// the explicit `is_sign_positive` test makes the order-independence visible rather than
+/// incidental.
 #[inline]
 pub fn max_f32(a: f32, b: f32) -> f32 {
     if a.is_nan() {
@@ -444,14 +468,19 @@ pub fn max_f32(a: f32, b: f32) -> f32 {
     if b.is_nan() {
         return b;
     }
-    if a >= b {
-        a
-    } else {
-        b
+    if a > b {
+        return a;
     }
+    // `a <= b` here: either `a` and `b` are equal non-zero values (so `a` is fine to return), or
+    // they are two zeros, where Java wants the positive one.
+    if a == b && a.is_sign_positive() {
+        return a;
+    }
+    b
 }
 
-/// Port of `Math.max(double, double)`. See [`min_f32`] for the NaN rule.
+/// Port of `Math.max(double, double)`. See [`min_f32`] for the NaN rule and the signed-zero
+/// tie-break; as with `min`, `max(+0.0, -0.0)` and `max(-0.0, +0.0)` are both `+0.0`.
 #[inline]
 pub fn max_f64(a: f64, b: f64) -> f64 {
     if a.is_nan() {
@@ -460,11 +489,13 @@ pub fn max_f64(a: f64, b: f64) -> f64 {
     if b.is_nan() {
         return b;
     }
-    if a >= b {
-        a
-    } else {
-        b
+    if a > b {
+        return a;
     }
+    if a == b && a.is_sign_positive() {
+        return a;
+    }
+    b
 }
 
 /// Port of `Long.rotateLeft(long, int)`. The distance is masked to 6 bits by the

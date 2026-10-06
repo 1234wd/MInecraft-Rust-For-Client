@@ -593,3 +593,70 @@ Caught by golden row 146 and confirmed with a JVM probe. Added
 `BLOCKED_ON_UNPORTED_TYPES` 181 -> 160. 213 tests green in debug and release.
 
 Next: `Identifier` (38 methods / 21 groups).
+
+**[2026-10-06 09:14:33 +05:00] net/minecraft/resources/Identifier.rs -> PORTED | methods 32/38 (6 PORT-BLOCKED) | groups 21/21 | commit ef86059**
+
+Also ported `net/minecraft/IdentifierException.rs` (2/2). `BLOCKED_ON_UNPORTED_TYPES` 160 -> 139.
+224 tests green in debug and release.
+
+Two findings worth more than the port:
+
+1. `IdentifierException`'s constructor runs `StringEscapeUtils.escapeJava` over the message, so a
+   newline in a path is reported as a literal `\n`. Nothing in `Identifier.java` says so. My first
+   port got it wrong and `identifier.parseError` caught it. The table was MEASURED against the jar
+   (p.EscapeProbe): `0x7F` is NOT escaped (boundary is `>= 0x80`, not `> 0x7E`) and the hex digits
+   are UPPERCASE. Both differ from a from-memory transcription.
+
+2. **A golden bug, and the rule I broke while hitting it.** `identifier.parse` recorded
+   `bool:false` for 23 inputs on which `parse` SUCCEEDS. The oracle's comparison operand was
+   `withDefaultNamespace(s)` -- the whole input used as a PATH -- inside the same `try` as
+   `parse`, so it threw for every input containing `:` and the broad `catch` could not tell which
+   of the two threw. `p.IdProbe` confirmed: parseThrew=13, cmpOperandThrew=23, of 43.
+   `identifier.parseError` already had the true 13 and was correct throughout. Fixed the operand,
+   re-ran the oracle; the diff was 26 rows in that one group and nothing else.
+
+   **Process failure, recorded because the rule exists for a reason.** Fixing a mangled call site
+   (`idsignum(...)` instead of `signum(...)`) I reached for PowerShell `-replace` + `Set-Content`
+   on a `.rs` file, which session 09 explicitly forbids. It added a UTF-8 BOM and converted all
+   2292 lines to CRLF -- the same failure mode as OPEN_QUESTIONS #24. Repaired with a byte-level
+   operation (strip BOM, CRLF->LF) and verified: no BOM, CRLF=0, NUL=0, FF=0, and `git diff --stat`
+   showed 560/22, i.e. my actual work rather than a whole-file rewrite. Two edits with the edit
+   tool would have cost less than the repair. Not repeated.
+
+Next: `AABB` (55 methods / 39 groups), BlockPos parts `todo!`-blocked.
+
+Logged, not fixed: OPEN_QUESTIONS #25 (`identifier.constants` records an identity hashCode, so
+it changes every oracle run), #26 (`identifier.constants`' `fn` declaration contradicts its row --
+values are args, the label is the expected value), #27 (pre-existing dead-code warning on `exp3`).
+
+**[2026-10-06 11:52:07 +05:00] net/minecraft/world/phys/AABB.rs -> PARTIAL | methods 42/55 (6 PORT-BLOCKED) | groups 34/39 | commit PENDING**
+
+Also added `Direction.Axis::choose` (18 lines) -- `AABB::min`/`max` were its only callers in the
+ported set. 243 tests green in debug and release.
+
+**A real bug in shared code, found by six groups failing at once.** `java_lang::min_f64` and
+`max_f64` got the signed-zero tie-break wrong in one order: `min(-0.0, +0.0)` returned `+0.0`
+where Java returns `-0.0`. The existing code returned the *second* operand on a tie, which is
+right for `min(+0.0, -0.0)` and wrong for `min(-0.0, +0.0)`. Java's rule is order-independent: the
+tie resolves to negative zero for `min` and positive zero for `max`.
+
+AABB's constructor is `Math.min`/`Math.max` over pairs and the corpus contains `{-0.0, 0.0}`, so one
+wrong field value propagated into `getSize`, `min(Axis)`, `contract`, the six setters and
+`getCenter` -- six groups failed simultaneously. That simultaneity is the tell: a bug in one method
+fails one group. Fixed both helpers with explicit `is_sign_negative`/`is_sign_positive` tie-breaks.
+
+**A golden defect I did NOT paper over.** `aabb.equals` emits three rows per corpus pair, and the
+middle one compares against a box built from the corpus *arrays* `b` and `a` -- which the row's
+interleaved `boxArgs(a,b)` does not let you recover. `parity_batch2::aabb_equals_uses_double_compare`
+therefore counts those rows instead of asserting them, and asserts the count, so if the oracle ever
+records that operand the test says to strengthen itself. My first attempt asserted that the swapped
+operand rebuilds the same box; that is wrong (`box` uses Y-arguments `(b[0], a[1])` while the swapped
+box uses `(a[0], b[1])`), and the golden's `false` caught it.
+
+`aabb.toString` is PORT-BLOCKED rather than special-cased: 85 of 100 rows pass, and the 15 that differ
+are all `Double.MIN_VALUE` (`4.9E-324` vs `5.0E-324`). That is the `FloatingDecimal` subnormal gap,
+so the group waits for queue item 11. The test asserts every remaining mismatch has that exact
+shape, so a different regression cannot hide behind it.
+
+Next: `BlockPos` + `MutableBlockPos` (79 methods), which unblocks AABB's four `BlockPos` groups and
+five of the blocked `Mth` methods.

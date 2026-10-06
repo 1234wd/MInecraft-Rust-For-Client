@@ -703,6 +703,25 @@ impl Axis {
         }
     }
 
+    /// Port of `Direction.Axis#choose(double,double,double)`.
+    ///
+    /// Added while porting `AABB`, whose `min(Axis)`/`max(Axis)` are the only callers in the
+    /// ported set. Java's version is a ternary chain; this is the same dispatch, and it stays a
+    /// total function so `AABB::min`/`max` need no out-of-range branch.
+    ///
+    /// The three arguments are **eagerly evaluated** at every call site. That is not a
+    /// behavioural difference here -- `AABB` passes three plain field reads, so there is nothing
+    /// to elide -- but it is why this is written as a `match` on the axis rather than something
+    /// lazy.
+    #[inline]
+    pub fn choose(&self, x: f64, y: f64, z: f64) -> f64 {
+        match self {
+            Axis::X => x,
+            Axis::Y => y,
+            Axis::Z => z,
+        }
+    }
+
     /// Port of `Vec3i#relative(Axis, int)`.
     #[inline]
     pub fn relative_to(&self, from: Vec3i, steps: i32) -> Vec3i {
