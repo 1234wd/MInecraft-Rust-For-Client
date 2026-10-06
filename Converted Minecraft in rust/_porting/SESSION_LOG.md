@@ -569,3 +569,13 @@ Working agreement for this session, from the prompt and from session 09's own po
 * Files are edited with the edit tool only. One approved exception: the `Vec2.rs` byte repair.
 
 Checkpoints are appended below, one line per commit.
+
+## Checkpoints
+
+```
+[2026-10-05 22:54:25 +05:00] SESSION START — baseline fc0b5dc, 192 tests green both profiles
+[2026-10-06 05:57:15 +05:00] (setup) oracle section() now fatal + corpus written via .tmp  | methods n/a | groups 235/235 verified | commit f464cee
+[2026-10-06 06:09:59 +05:00] (setup) net/minecraft/world/phys/Vec2.rs → REPAIRED (was corrupt)  | methods n/a | groups n/a | commit 763d4e6
+```
+
+**Queue items 3 onward (ARGB, Identifier, AABB, BlockPos, NBT) were NOT reached.** See the report.
