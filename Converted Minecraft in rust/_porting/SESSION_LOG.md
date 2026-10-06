@@ -629,7 +629,7 @@ Logged, not fixed: OPEN_QUESTIONS #25 (`identifier.constants` records an identit
 it changes every oracle run), #26 (`identifier.constants`' `fn` declaration contradicts its row --
 values are args, the label is the expected value), #27 (pre-existing dead-code warning on `exp3`).
 
-**[2026-10-06 11:52:07 +05:00] net/minecraft/world/phys/AABB.rs -> PARTIAL | methods 42/55 (6 PORT-BLOCKED) | groups 34/39 | commit PENDING**
+**[2026-10-06 11:52:07 +05:00] net/minecraft/world/phys/AABB.rs -> PARTIAL | methods 42/55 (6 PORT-BLOCKED) | groups 34/39 | commit 2d0820b**
 
 Also added `Direction.Axis::choose` (18 lines) -- `AABB::min`/`max` were its only callers in the
 ported set. 243 tests green in debug and release.
