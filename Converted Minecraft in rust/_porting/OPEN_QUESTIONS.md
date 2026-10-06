@@ -544,3 +544,54 @@ session 08's `WriteAllLines` -- that was reverted with `git checkout`, and these
 committed tree at `ec2c610`. Candidates: an earlier session's PowerShell write with a non-UTF8
 encoding, or `core.autocrlf` mangling a NUL during checkout. Worth knowing, because if it is
 recurring then other files may be quietly damaged too. A cheap audit: `git grep -lP '\x00' -- '*.rs'`.
+
+---
+
+## Logged during session 11 (not fixed -- porting continued)
+
+### #25 `identifier.constants` records an IDENTITY hashCode, so the golden changes every run
+
+`identifier.constants` records `Identifier.ERROR_INVALID.hashCode()`. `ERROR_INVALID` is a
+`SimpleCommandExceptionType`, which does **not** override `hashCode`, so the value comes from
+`Object` and depends on allocation order and JVM state. Two oracle runs minutes apart on
+otherwise identical input produced:
+
+```text
+i32:2135704963     (before the session-11 run)
+i32:1816201398     (after it)
+```
+
+Same program, same jar, same JDK. The row is therefore **not reproducible** and cannot be
+asserted. `parity_batch2::identifier_constants` checks the five stable string columns and
+column 6's *type*, and asserts nothing about the hash.
+
+**Decision needed:** drop the column from the oracle, or pin it the way `Mth#wobble` was
+dropped (see `DESIGN_DECISIONS.md#decompiler-artifacts` item 3). Dropping is the honest fix; the
+same treatment should probably be applied to any other group recording a `hashCode()` of an
+object that does not override it.
+
+### #26 `identifier.constants` declares a signature that contradicts the row it emits
+
+```java
+o.fn("identifier.constants", "", "str str str str str i32 i32");
+o.row(Out.join(/* five strings, two i32 */), Out.str("constants"));
+```
+
+`Out.row(args, ret)` puts the first argument in the **args** column and the second in the
+**expected** column. So the seven values are the row's arguments and `constants` is its single
+expected value -- the exact opposite of what the `fn` declaration says. `golden.rs` does not
+cross-check the declaration against the row, so nothing fails; a test that reads `exp(i)` gets
+`"constants"` at column 0 and fails confusingly.
+
+**Decision needed:** make `Out.fn` validate that every row's column count matches its
+declaration, and fail the section otherwise. That would have caught this and the
+`argb.srgbTables` truncation at the point they were written rather than on first use.
+
+### #27 `parity_batch2.rs` has a pre-existing dead-code warning on `exp3`
+
+`_porting/tests/parity_batch2.rs:50` -- `fn exp3(r: &Row, i: usize) -> [f64; 3]` is never used,
+so `cargo test` emits `warning: function 'exp3' is never used`. It predates session 11 (the
+lib build is warning-free; only the test target warns). Left alone because the session froze
+test-file edits to the port being worked on.
+
+**Decision needed:** delete `exp3`, or keep it as a helper and mark it `#[allow(dead_code)]`.

@@ -579,3 +579,17 @@ Checkpoints are appended below, one line per commit.
 ```
 
 **Queue items 3 onward (ARGB, Identifier, AABB, BlockPos, NBT) were NOT reached.** See the report.
+
+---
+
+# Session 11 - ports only
+
+**[2026-10-06 07:41:12 +05:00] net/minecraft/util/ARGB.rs -> PORTED | methods 46/49 (3 PORT-BLOCKED: JOML Vector4f) | groups 23/23 | commit c990b9b**
+
+DECOMPILER ARTIFACT: `ARGB#setBrightness` case 4 assigns `brightness` to blue where the
+decompiled source says `secondaryColor`. `javap -c` confirms (`fload_1`, not `fload 14`).
+Caught by golden row 146 and confirmed with a JVM probe. Added
+`DESIGN_DECISIONS.md#runtime-exceptions` and `#decompiler-artifacts` item 4.
+`BLOCKED_ON_UNPORTED_TYPES` 181 -> 160. 213 tests green in debug and release.
+
+Next: `Identifier` (38 methods / 21 groups).

@@ -2494,13 +2494,29 @@ final class Batch2Oracle {
 			"minecraft:foo/bar/baz", "foo:bar", "mymod:block", "mymod:",
 			"a:0", "0:a", "-:a", "a:-", "_:_", ".:.", "..:..",
 		};
+		// The comparison operand is `withDefaultNamespace(id.getPath())`, NOT
+		// `withDefaultNamespace(s)`.
+		//
+		// The original passed the WHOLE input as the operand's PATH, inside the same try block
+		// as `parse`. For any input containing ':' that operand throws, the broad
+		// `catch (IdentifierException)` cannot tell which of the two threw, and so recorded
+		// `bool:false` -- meaning "parse failed" -- for 23 inputs on which `parse` SUCCEEDS.
+		// `parse("minecraft:stone")` returns `minecraft:stone`; the old golden said it threw.
+		//
+		// That is the worst shape of oracle bug: the harness loses information and the loss
+		// looks exactly like a real result. Confirmed against the jar with `p.IdProbe`:
+		// parseThrew=13, cmpOperandThrew=23, of 43. `identifier.parseError` already
+		// enumerated the true 13 correctly, so only this group was affected.
+		//
+		// Using the identifier's own PATH as the operand cannot throw (the path was already
+		// validated) and still asks the useful question: is this the default-namespace form?
 		o.fn("identifier.parse", "str", "bool str str i32 i32 i32");
 		for (String s : cases) {
 			try {
 				Identifier id = Identifier.parse(s);
 				o.row(Out.str(s), Out.join(Out.b(true), Out.str(id.getNamespace()), Out.str(id.getPath()),
 					Out.i32(id.hashCode()),
-					Out.i32(Integer.signum(id.compareTo(Identifier.withDefaultNamespace(s)))),
+					Out.i32(Integer.signum(id.compareTo(Identifier.withDefaultNamespace(id.getPath())))),
 					Out.i32(id.toString().length())));
 			} catch (IdentifierException ex) {
 				o.row(Out.str(s), Out.join(Out.b(false), Out.str(""), Out.str(""),

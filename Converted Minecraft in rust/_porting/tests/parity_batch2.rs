@@ -1102,28 +1102,28 @@ const BLOCKED_ON_UNPORTED_TYPES: &[&str] = &[
     "chunkpos.minMaxFromRegion",  // port not started
     "chunkpos.rangeClosed",  // port not started
     "chunkpos.rangeClosedFromTo",  // port not started
-    // -- identifier --
-    "identifier.parse",  // port not started
-    "identifier.parseError",  // port not started
-    "identifier.tryParse",  // port not started
-    "identifier.fromNamespaceAndPath",  // port not started
-    "identifier.fromNamespaceAndPathError",  // port not started
-    "identifier.withDefaultNamespace",  // port not started
-    "identifier.withDefaultNamespaceError",  // port not started
-    "identifier.tryBuild",  // port not started
-    "identifier.bySeparator",  // port not started
-    "identifier.bySeparatorError",  // port not started
-    "identifier.tryBySeparator",  // port not started
-    "identifier.isAllowedInIdentifier",  // port not started
-    "identifier.validPathChar",  // port not started
-    "identifier.isValidPath",  // port not started
-    "identifier.isValidNamespace",  // port not started
-    "identifier.strings",  // port not started
-    "identifier.withPath",  // port not started
-    "identifier.withPathError",  // port not started
-    "identifier.withPrefixSuffix",  // port not started
-    "identifier.compareTo",  // port not started
-    "identifier.constants",  // port not started
+    // -- identifier: all 21 method groups, ported in session 11 --
+    "identifier.parse",
+    "identifier.parseError",
+    "identifier.tryParse",
+    "identifier.fromNamespaceAndPath",
+    "identifier.fromNamespaceAndPathError",
+    "identifier.withDefaultNamespace",
+    "identifier.withDefaultNamespaceError",
+    "identifier.tryBuild",
+    "identifier.bySeparator",
+    "identifier.bySeparatorError",
+    "identifier.tryBySeparator",
+    "identifier.isAllowedInIdentifier",
+    "identifier.validPathChar",
+    "identifier.isValidPath",
+    "identifier.isValidNamespace",
+    "identifier.strings",
+    "identifier.withPath",
+    "identifier.withPathError",
+    "identifier.withPrefixSuffix",
+    "identifier.compareTo",
+    "identifier.constants",
     // -- mth --
     "mth.mulAndTruncate",
     "mth.rayIntersectsAABB",
@@ -1750,5 +1750,558 @@ fn argb_table_index_audit() {
     assert_eq!(
         ARGB::linear_to_srgb_channel(1.0),
         LINEAR_TO_SRGB[LINEAR_TO_SRGB.len() - 1] as i32
+    );
+}
+
+// ============================================================================
+// Identifier
+// ============================================================================
+//
+// `Identifier` is the class the whole resource system keys off, so its two validation messages
+// are load-bearing beyond this file: they end up in command errors and log lines.
+//
+// Four things are easy to get wrong, and each has a group pinning it:
+//
+//   * `isValidNamespace` rejects exactly `".."` and nothing else, SEPARATELY from the character
+//     loop. `".."` passes every character test, so without that line `Identifier.parse("..")`
+//     would name a parent directory.
+//   * The two error messages are not the same message: the namespace one says "identifier" and
+//     the path one says "location", and their character classes differ (`/` is legal in a path
+//     and not in a namespace).
+//   * `hashCode` is Java's 31-based `String#hashCode`, not Rust's `str` hash.
+//   * `compareTo` compares PATH first and namespace only as a tiebreak -- the opposite of what
+//     `toString()` suggests.
+//
+// Every group that can throw is checked through `catch_unwind` against the JVM's recorded
+// message, and BOTH directions are checked, because a port that always threw would pass a
+// does-it-throw test.
+
+use minecraft_rust::javacompat::golden::Val;
+use minecraft_rust::net::minecraft::resources::Identifier::{
+    by_separator, from_namespace_and_path, is_allowed_in_identifier, is_valid_namespace,
+    is_valid_path, parse, try_build, try_by_separator, try_parse, valid_path_char,
+    with_default_namespace, DEFAULT_NAMESPACE, REALMS_NAMESPACE,
+};
+
+/// Runs `f`, returning `Some(<panic message>)` if it panicked and `None` if it returned.
+///
+/// The return value of `f` is discarded -- these all return an identifier or a `String`, and
+/// the tests re-call the function to read it, so a happy path is never read out of a
+/// `catch_unwind` that might have swallowed something.
+///
+/// The panic hook is suppressed inside so expected panics do not print a backtrace per row; the
+/// caller's assertions happen after it is restored, because an assertion made while the hook is
+/// suppressed loses its own message. That mistake cost one debugging round here.
+fn catch_panic_message<T, F: FnOnce() -> T + std::panic::UnwindSafe>(f: F) -> Option<String> {
+    let prev = std::panic::take_hook();
+    std::panic::set_hook(Box::new(|_| {}));
+    let outcome = std::panic::catch_unwind(f);
+    std::panic::set_hook(prev);
+    outcome.err().map(|e| {
+        e.downcast_ref::<String>()
+            .cloned()
+            .or_else(|| e.downcast_ref::<&str>().map(|s| s.to_string()))
+            .unwrap_or_else(|| format!("<non-string panic payload: {e:?}>"))
+    })
+}
+
+/// `Integer.signum` of a Rust `Ordering`.
+///
+/// `Ordering` has no `signum` on stable, and the golden records `Integer.signum(...)` rather
+/// than a raw comparison result -- `String#compareTo`'s exact magnitude is implementation
+/// defined, so only the sign is contractual.
+fn signum(o: std::cmp::Ordering) -> i32 {
+    match o {
+        std::cmp::Ordering::Less => -1,
+        std::cmp::Ordering::Equal => 0,
+        std::cmp::Ordering::Greater => 1,
+    }
+}
+
+fn identifier_rows(group: &str) -> Vec<Row> {
+    let g = Golden::load("batch2.txt");
+    let rows = g.rows(group);
+    assert!(!rows.is_empty(), "group `{group}` is empty");
+    rows.to_vec()
+}
+
+/// The golden's `\0` decodes to the EMPTY STRING, not to null -- only `\0null` is null (see
+/// `unescape_str` in `golden.rs`).
+///
+/// That distinction is load-bearing here: an empty path is a *valid* path, `minecraft:` is a
+/// real identifier, and a test that read `\0` as "null" would report both as failures.
+fn golden_str(row: &Row, index: usize) -> String {
+    row.exp(index).as_opt_str().unwrap_or("").to_string()
+}
+
+fn golden_bool(row: &Row, index: usize) -> bool {
+    match row.exp(index) {
+        Val::Bool(b) => *b,
+        other => panic!("expected bool at column {index}, got {other:?}"),
+    }
+}
+
+/// The oracle's separators are all single characters. A multi-character separator would make
+/// the port's `len_utf8` step wrong in a way an ASCII-only golden cannot detect, so it is
+/// refused loudly rather than silently mis-handled.
+fn golden_separator(row: &Row) -> char {
+    let raw = row.arg(1).as_opt_str().unwrap_or("").to_string();
+    let chars: Vec<char> = raw.chars().collect();
+    match chars.as_slice() {
+        [c] => *c,
+        other => panic!("separator {other:?} is not a single char; the port assumes it is"),
+    }
+}
+
+#[test]
+fn identifier_parse() {
+    for r in &identifier_rows("identifier.parse") {
+        let input = r.arg(0).as_opt_str().unwrap_or("").to_string();
+        let expected_ok = golden_bool(r, 0);
+
+        match (expected_ok, catch_panic_message(|| parse(&input))) {
+            (true, None) => {
+                let id = parse(&input);
+                assert_eq!(id.get_namespace(), golden_str(r, 1), "parse({input:?}) namespace");
+                assert_eq!(id.get_path(), golden_str(r, 2), "parse({input:?}) path");
+                assert_eq!(id.java_hash_code(), r.exp(3).as_i32(), "parse({input:?}) hashCode");
+                assert_eq!(
+                    signum(id.compare_to(&with_default_namespace(id.get_path()))) as i32,
+                    r.exp(4).as_i32(),
+                    "parse({input:?}) compareTo(withDefaultNamespace(path))"
+                );
+                assert_eq!(
+                    id.to_string().encode_utf16().count(),
+                    r.exp(5).as_i32() as usize,
+                    "parse({input:?}) toString().length() -- Java counts UTF-16 code units, so \
+                     Rust's `chars().count()` would differ for a non-BMP path"
+                );
+            }
+            (false, Some(msg)) => assert!(
+                msg.starts_with("net.minecraft.IdentifierException: "),
+                "parse({input:?}) is recorded as failing but the panic text is not Java's: {msg:?}"
+            ),
+            (true, Some(msg)) => {
+                panic!("parse({input:?}) succeeds in the golden but the port threw: {msg}")
+            }
+            (false, None) => {
+                panic!("parse({input:?}) is recorded as failing but the port returned a value")
+            }
+        }
+    }
+}
+
+/// The exact exception text, compared to the JVM's own strings.
+///
+/// This is `#runtime-exceptions` applied to `Identifier`: the message a player sees in a command
+/// error, or greps for in a log, has to be vanilla's. Both message shapes are covered here, and
+/// the assertion is on the WHOLE string, so a swapped or paraphrased message fails.
+#[test]
+fn identifier_parse_error_text() {
+    for r in &identifier_rows("identifier.parseError") {
+        let input = r.arg(0).as_opt_str().unwrap_or("").to_string();
+        let expected = golden_str(r, 0);
+        let got = catch_panic_message(|| parse(&input))
+            .unwrap_or_else(|| panic!("parse({input:?}) is recorded as throwing but returned"));
+        assert_eq!(
+            got, expected,
+            "identifier.parseError: the panic text must be Java's, character class and the \
+             identifier/location wording included"
+        );
+    }
+}
+
+#[test]
+fn identifier_try_parse() {
+    for r in &identifier_rows("identifier.tryParse") {
+        let input = r.arg(0).as_opt_str().unwrap_or("").to_string();
+        match (try_parse(&input), golden_bool(r, 0)) {
+            (Some(id), true) => {
+                assert_eq!(id.get_namespace(), golden_str(r, 1), "tryParse({input:?}) namespace");
+                assert_eq!(id.get_path(), golden_str(r, 2), "tryParse({input:?}) path");
+            }
+            (None, false) => {}
+            (Some(id), false) => panic!(
+                "tryParse({input:?}) recorded None but returned {}:{}",
+                id.get_namespace(),
+                id.get_path()
+            ),
+            (None, true) => panic!("tryParse({input:?}) should have succeeded but returned None"),
+        }
+    }
+}
+
+/// `fromNamespaceAndPath`, `tryBuild` and `withDefaultNamespace` share one corpus, so they are
+/// checked together -- and the difference between the throwing and the `None`-returning form is
+/// asserted at the same time, since a `try*` implemented as `catch_unwind` would otherwise pass.
+#[test]
+fn identifier_constructors() {
+    for r in &identifier_rows("identifier.fromNamespaceAndPath") {
+        let ns = r.arg(0).as_opt_str().unwrap_or("").to_string();
+        let path = r.arg(1).as_opt_str().unwrap_or("").to_string();
+        match (golden_bool(r, 0), catch_panic_message(|| {
+            from_namespace_and_path(&ns, &path)
+        })) {
+            (true, None) => {
+                let id = from_namespace_and_path(&ns, &path);
+                assert_eq!(id.get_namespace(), golden_str(r, 1));
+                assert_eq!(id.get_path(), golden_str(r, 2));
+                assert_eq!(id.to_string(), golden_str(r, 3));
+            }
+            (false, Some(msg)) => assert!(
+                msg.starts_with("net.minecraft.IdentifierException: "),
+                "fromNamespaceAndPath({ns:?}, {path:?}): {msg:?}"
+            ),
+            (ok, got) => panic!(
+                "fromNamespaceAndPath({ns:?}, {path:?}): golden says ok={ok} but the port \
+                 threw={}",
+                got.is_some()
+            ),
+        }
+    }
+
+    for r in &identifier_rows("identifier.fromNamespaceAndPathError") {
+        let ns = r.arg(0).as_opt_str().unwrap_or("").to_string();
+        let path = r.arg(1).as_opt_str().unwrap_or("").to_string();
+        let expected = golden_str(r, 0);
+        let got = catch_panic_message(|| from_namespace_and_path(&ns, &path))
+            .unwrap_or_else(|| panic!("fromNamespaceAndPath({ns:?}, {path:?}) should have thrown"));
+        assert_eq!(got, expected, "fromNamespaceAndPath({ns:?}, {path:?})");
+    }
+
+    for r in &identifier_rows("identifier.withDefaultNamespace") {
+        let path = r.arg(0).as_opt_str().unwrap_or("").to_string();
+        match (golden_bool(r, 0), catch_panic_message(|| with_default_namespace(&path))) {
+            (true, None) => {
+                let id = with_default_namespace(&path);
+                assert_eq!(id.get_namespace(), golden_str(r, 1));
+                assert_eq!(id.get_path(), golden_str(r, 2));
+                assert_eq!(id.to_string(), golden_str(r, 3));
+            }
+            (false, Some(msg)) => assert!(
+                msg.starts_with("net.minecraft.IdentifierException: "),
+                "withDefaultNamespace({path:?}): {msg:?}"
+            ),
+            (ok, got) => panic!(
+                "withDefaultNamespace({path:?}): golden says ok={ok} but the port threw={}",
+                got.is_some()
+            ),
+        }
+    }
+
+    for r in &identifier_rows("identifier.withDefaultNamespaceError") {
+        let path = r.arg(0).as_opt_str().unwrap_or("").to_string();
+        let expected = golden_str(r, 0);
+        let got = catch_panic_message(|| with_default_namespace(&path))
+            .unwrap_or_else(|| panic!("withDefaultNamespace({path:?}) should have thrown"));
+        assert_eq!(got, expected, "withDefaultNamespace({path:?})");
+    }
+
+    for r in &identifier_rows("identifier.tryBuild") {
+        let ns = r.arg(0).as_opt_str().unwrap_or("").to_string();
+        let path = r.arg(1).as_opt_str().unwrap_or("").to_string();
+        match (try_build(&ns, &path), golden_bool(r, 0)) {
+            (Some(id), true) => {
+                assert_eq!(id.get_namespace(), golden_str(r, 1));
+                assert_eq!(id.get_path(), golden_str(r, 2));
+            }
+            (None, false) => {}
+            (Some(id), false) => panic!(
+                "tryBuild({ns:?}, {path:?}) recorded None but returned {}:{}",
+                id.get_namespace(),
+                id.get_path()
+            ),
+            (None, true) => panic!("tryBuild({ns:?}, {path:?}) should have succeeded"),
+        }
+    }
+}
+
+#[test]
+fn identifier_by_separator() {
+    for r in &identifier_rows("identifier.bySeparator") {
+        let s = r.arg(0).as_opt_str().unwrap_or("").to_string();
+        let sep = golden_separator(r);
+        match (golden_bool(r, 0), catch_panic_message(|| by_separator(&s, sep))) {
+            (true, None) => {
+                let id = by_separator(&s, sep);
+                assert_eq!(id.get_namespace(), golden_str(r, 1), "bySeparator({s:?}, {sep:?}) ns");
+                assert_eq!(id.get_path(), golden_str(r, 2), "bySeparator({s:?}, {sep:?}) path");
+                assert_eq!(id.to_string(), golden_str(r, 3));
+            }
+            (false, Some(msg)) => assert!(
+                msg.starts_with("net.minecraft.IdentifierException: "),
+                "bySeparator({s:?}, {sep:?}): {msg:?}"
+            ),
+            (ok, got) => panic!(
+                "bySeparator({s:?}, {sep:?}): golden says ok={ok} but the port threw={}",
+                got.is_some()
+            ),
+        }
+    }
+
+    for r in &identifier_rows("identifier.bySeparatorError") {
+        let s = r.arg(0).as_opt_str().unwrap_or("").to_string();
+        let sep = golden_separator(r);
+        let expected = golden_str(r, 0);
+        let got = catch_panic_message(|| by_separator(&s, sep))
+            .unwrap_or_else(|| panic!("bySeparator({s:?}, {sep:?}) should have thrown"));
+        assert_eq!(got, expected, "bySeparator({s:?}, {sep:?})");
+    }
+
+    for r in &identifier_rows("identifier.tryBySeparator") {
+        let s = r.arg(0).as_opt_str().unwrap_or("").to_string();
+        let sep = golden_separator(r);
+        match (try_by_separator(&s, sep), golden_bool(r, 0)) {
+            (Some(id), true) => {
+                assert_eq!(id.get_namespace(), golden_str(r, 1));
+                assert_eq!(id.get_path(), golden_str(r, 2));
+            }
+            (None, false) => {}
+            (Some(id), false) => panic!(
+                "tryBySeparator({s:?}, {sep:?}) recorded None but returned {}:{}",
+                id.get_namespace(),
+                id.get_path()
+            ),
+            (None, true) => panic!("tryBySeparator({s:?}, {sep:?}) should have succeeded"),
+        }
+    }
+}
+
+/// The character predicates over the whole range, including the values above `0x7F`.
+///
+/// `isAllowedInIdentifier` is the only one of the three that admits `:` -- that is what lets a
+/// command scanner capture a whole `namespace:path` in one pass -- and it is why it must never
+/// be used as a validity check. The corpus reaches `0x100`, `0x2603` and `0xFFFF`, where
+/// Java's `(char)` narrowing from `int` is what makes the answer `false` rather than undefined.
+#[test]
+fn identifier_character_predicates() {
+    for r in &identifier_rows("identifier.isAllowedInIdentifier") {
+        let c = r.arg(0).as_i32();
+        let ch = char::from_u32(c as u32).expect("golden char code point must be valid UTF-32");
+        assert_eq!(
+            is_allowed_in_identifier(ch),
+            golden_bool(r, 0),
+            "identifier.isAllowedInIdentifier({c:#x})"
+        );
+    }
+    for r in &identifier_rows("identifier.validPathChar") {
+        let c = r.arg(0).as_i32();
+        let ch = char::from_u32(c as u32).expect("golden char code point must be valid UTF-32");
+        assert_eq!(
+            valid_path_char(ch),
+            golden_bool(r, 0),
+            "identifier.validPathChar({c:#x})"
+        );
+    }
+}
+
+#[test]
+fn identifier_string_predicates() {
+    for r in &identifier_rows("identifier.isValidPath") {
+        let s = r.arg(0).as_opt_str().unwrap_or("").to_string();
+        assert_eq!(
+            is_valid_path(&s),
+            golden_bool(r, 0),
+            "identifier.isValidPath({s:?})"
+        );
+    }
+    for r in &identifier_rows("identifier.isValidNamespace") {
+        let s = r.arg(0).as_opt_str().unwrap_or("").to_string();
+        assert_eq!(
+            is_valid_namespace(&s),
+            golden_bool(r, 0),
+            "identifier.isValidNamespace({s:?}) -- note `\"..\"` is rejected separately from \
+             the character loop even though every character is legal"
+        );
+    }
+}
+
+#[test]
+fn identifier_strings() {
+    for r in &identifier_rows("identifier.strings") {
+        let ns = r.arg(0).as_opt_str().unwrap_or("").to_string();
+        let path = r.arg(1).as_opt_str().unwrap_or("").to_string();
+        let id = from_namespace_and_path(&ns, &path);
+        let label = format!("{ns}:{path}");
+        assert_str("identifier.strings", r, &id.to_string());
+        assert_eq!(id.to_debug_file_name(), golden_str(r, 1), "toDebugFileName({label})");
+        assert_eq!(id.to_language_key(), golden_str(r, 2), "toLanguageKey({label})");
+        assert_eq!(
+            id.to_short_language_key(),
+            golden_str(r, 3),
+            "toShortLanguageKey({label}) -- drops the namespace when it is `minecraft`"
+        );
+        assert_eq!(
+            id.to_short_string(),
+            golden_str(r, 4),
+            "toShortString({label}) -- same rule as toShortLanguageKey but `:` not `.`"
+        );
+        assert_eq!(
+            id.to_language_key_with_prefix("pre"),
+            golden_str(r, 5),
+            "toLanguageKey(\"pre\")({label})"
+        );
+        assert_eq!(
+            signum(id.compare_to(&from_namespace_and_path("minecraft", &path))) as i32,
+            r.exp(6).as_i32(),
+            "compareTo(minecraft:{path}) from {ns} -- path first, namespace only as tiebreak"
+        );
+        assert_eq!(id.java_hash_code(), r.exp(7).as_i32(), "hashCode({label})");
+    }
+}
+
+#[test]
+fn identifier_with_path_prefix_suffix() {
+    for r in &identifier_rows("identifier.withPath") {
+        let ns = r.arg(0).as_opt_str().unwrap_or("").to_string();
+        let path = r.arg(1).as_opt_str().unwrap_or("").to_string();
+        let new_path = r.arg(2).as_opt_str().unwrap_or("").to_string();
+        // `identifier.withPath` only emits rows for inputs that do NOT throw; the throwing ones
+        // land in `identifier.withPathError`. Reaching a row at all is the precondition, so
+        // there is no catch here -- a panic would be a genuine mismatch.
+        let base = from_namespace_and_path(&ns, &path);
+        assert_eq!(
+            base.with_path(&new_path).to_string(),
+            golden_str(r, 0),
+            "withPath({ns}:{path}, {new_path:?})"
+        );
+    }
+
+    for r in &identifier_rows("identifier.withPathError") {
+        let ns = r.arg(0).as_opt_str().unwrap_or("").to_string();
+        let path = r.arg(1).as_opt_str().unwrap_or("").to_string();
+        let new_path = r.arg(2).as_opt_str().unwrap_or("").to_string();
+        let expected = golden_str(r, 0);
+        let base = from_namespace_and_path(&ns, &path);
+        let label = format!("withPath({ns}:{path}, {new_path:?})");
+        let got = catch_panic_message(move || base.with_path(&new_path))
+            .unwrap_or_else(|| panic!("{label} should have thrown"));
+        assert_eq!(got, expected, "{label}");
+    }
+
+    for r in &identifier_rows("identifier.withPrefixSuffix") {
+        let ns = r.arg(0).as_opt_str().unwrap_or("").to_string();
+        let path = r.arg(1).as_opt_str().unwrap_or("").to_string();
+        let id = from_namespace_and_path(&ns, &path);
+        let label = format!("{ns}:{path}");
+        assert_eq!(
+            id.with_prefix("pre_").to_string(),
+            golden_str(r, 0),
+            "withPrefix({label}) -- prefixes the PATH, not the namespace"
+        );
+        assert_eq!(
+            id.with_suffix("_suf").to_string(),
+            golden_str(r, 1),
+            "withSuffix({label})"
+        );
+        assert_eq!(
+            id.to_language_key_with_prefix_and_suffix("pre", "suf"),
+            golden_str(r, 2),
+            "toLanguageKey(\"pre\",\"suf\")({label})"
+        );
+    }
+}
+
+/// `compareTo` and `equals` together, plus the antisymmetry the golden encodes.
+///
+/// The group emits `signum(a.compareTo(b))`, `signum(b.compareTo(a))` and `a.equals(b)`, so a
+/// comparison that is not a total order -- or an `equals` that disagrees with it -- fails here
+/// rather than much later inside a sorted registry.
+#[test]
+fn identifier_compare_to() {
+    for r in &identifier_rows("identifier.compareTo") {
+        let ns_a = r.arg(0).as_opt_str().unwrap_or("").to_string();
+        let path_a = r.arg(1).as_opt_str().unwrap_or("").to_string();
+        let ns_b = r.arg(2).as_opt_str().unwrap_or("").to_string();
+        let path_b = r.arg(3).as_opt_str().unwrap_or("").to_string();
+        let a = from_namespace_and_path(&ns_a, &path_a);
+        let b = from_namespace_and_path(&ns_b, &path_b);
+        let label = format!("compareTo({ns_a}:{path_a}, {ns_b}:{path_b})");
+        assert_i32_at(
+            "identifier.compareTo",
+            r,
+            0,
+            &format!("{label}: a vs b"),
+            signum(a.compare_to(&b)) as i32,
+        );
+        assert_i32_at(
+            "identifier.compareTo",
+            r,
+            1,
+            &format!("{label}: b vs a"),
+            signum(b.compare_to(&a)) as i32,
+        );
+        assert_i32_at(
+            "identifier.compareTo",
+            r,
+            2,
+            &format!("{label}: equals"),
+            i32::from(a == b),
+        );
+    }
+}
+
+/// `identifier.constants`, with two columns deliberately NOT asserted.
+///
+/// # THE VALUES ARE IN THE **ARGS** COLUMN, NOT THE EXPECTED COLUMN
+///
+/// The row reads `... i32:... i32:... -> str:constants`, so the seven declared values are the
+/// row's *arguments* and `constants` is its *expected* value. The oracle's `fn` declaration
+/// (`"" -> str str str str str i32 i32`) disagrees with what it emitted: it declares the values
+/// as the return type and gives no argument types. Reading `exp(i)` here yields `"constants"` at
+/// column 0. Logged in `OPEN_QUESTIONS.md` -- the data is fine, only the declaration is wrong.
+///
+/// `ERROR_INVALID.hashCode()` is an **identity** hash: `SimpleCommandExceptionType` does not
+/// override `hashCode`, so the value comes from `Object` and depends on allocation order and JVM
+/// state. Two oracle runs minutes apart produced 2135704963 and 1816201398 for the same program.
+/// Asserting it would make this test flaky by construction, and pinning either value would be a
+/// hand-derived constant. Logged rather than asserted.
+///
+/// The five string columns are stable and are checked, and column 6's *type* is asserted so a
+/// future oracle change cannot silently add columns this test would then ignore.
+#[test]
+fn identifier_constants() {
+    assert_eq!(DEFAULT_NAMESPACE, "minecraft");
+    assert_eq!(REALMS_NAMESPACE, "realms");
+    let rows = identifier_rows("identifier.constants");
+    assert_eq!(
+        rows.len(),
+        1,
+        "identifier.constants is a single row by construction"
+    );
+    let r = &rows[0];
+    let arg_str = |i: usize| -> String { r.arg(i).as_opt_str().unwrap_or("").to_string() };
+    assert_eq!(
+        arg_str(0),
+        ":",
+        "NAMESPACE_SEPARATOR -- compared as a String, because String.valueOf(char) yields one"
+    );
+    assert_eq!(arg_str(1), "minecraft", "DEFAULT_NAMESPACE");
+    assert_eq!(arg_str(2), "realms", "REALMS_NAMESPACE");
+    assert_eq!(
+        arg_str(3),
+        "[a-z0-9_.-]",
+        "ALLOWED_NAMESPACE_CHARACTERS -- vanilla's own string, which is missing its closing \
+         bracket; reproduced, not corrected"
+    );
+    assert_eq!(
+        arg_str(4),
+        "com.mojang.brigadier.exceptions.SimpleCommandExceptionType",
+        "ERROR_INVALID's class name"
+    );
+    // Columns 5 and 6 are the identity hashCode and the `toString().length()`. Rather than
+    // asserting nothing about them, the row's SHAPE is asserted: column 6 must be an `i32`,
+    // which fails loudly if the oracle's columns change rather than letting this test quietly
+    // stop covering two columns.
+    assert!(
+        matches!(r.arg(6), Val::I32(_)),
+        "identifier.constants column 6 should be the i32 ERROR_INVALID.toString().length(); \
+         got {:?}. The oracle's columns changed -- update this test deliberately.",
+        r.arg(6)
+    );
+    assert_eq!(
+        r.exp(0).as_opt_str().unwrap_or(""),
+        "constants",
+        "the expected column is the literal label `constants`, not a value -- see the doc comment"
     );
 }
