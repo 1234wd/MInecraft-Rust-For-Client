@@ -70,6 +70,13 @@ Converted Minecraft in rust/logs/
 # So: if a golden regeneration produces a SMALLER file, or a group goes missing, read this first.
 Converted Minecraft in rust/_porting/java-oracle/section-error.txt
 
+# A stage that FAILS leaves its scratch file behind, by design: since session 10 the oracle
+# streams to `<name>.tmp` and moves it into place only on success, so a crashed run cannot
+# truncate a good 37 MB corpus. The `.tmp` is inert, but it must never be committed -- a stray
+# `batch2.txt.tmp` in the tree reads like golden data and is not.
+Converted Minecraft in rust/_porting/test-data/*.tmp
+Converted Minecraft in rust/_porting/java-oracle/stage-error.txt
+
 # Editor / OS noise. No separators except the trailing `/`, so these match at any depth.
 .vscode/
 .idea/

@@ -513,8 +513,31 @@ What is needed is a decision, not an effort:
 3. **Leave it.** The build is clean apart from one cosmetic warning, and the file is not on the
    porting path.
 
-Recommendation: option 2, one time, with the diff reviewed. But it needs the reviewer's explicit
-okay because it bends a rule that exists precisely because of this file.
+Recommendation: option 2, one time, with the diff reviewed.
+
+**RESOLVED (session 10) -- the reviewer found the cause, and it vindicates the edit-tool rule.**
+
+All six defects are in doc comments, at exactly the positions where a **Markdown backtick**
+opened a code span: `` `f32::MIN_POSITIVE` `` and `` `0x00800000` ``. In a **PowerShell
+double-quoted string the backtick is the escape character**, so:
+
+| source | PowerShell double-quoted string | result |
+|---|---|---|
+| `` `0 `` | escape `\0` | **NUL byte** |
+| `` `f `` | escape `\f` | **form feed** `0x0C` |
+| `` `l ``, `` `M ``, any other | not a recognised escape | backtick **silently dropped** |
+
+That accounts for all six: three NULs (`0x00000001`, `0x00800000` twice), three form feeds, and
+three vanished characters leaving `32::MIN_POSITIVE` instead of `` `f32::MIN_POSITIVE` ``. Every
+one sits where a code span began.
+
+So the mechanism was **a PowerShell write of Rust doc comments containing backticks** -- exactly
+the operation session-09's rule 2 forbids. Three damages in three sessions, and the two most recent
+share this root cause. The rule is not caution; it is the result.
+
+Repaired under the reviewer's one-time exception: a byte-level pass restores `0` and `f`, then the
+edit tool puts the backticks back and removes the duplicate `#[test]`. The NUL/form-feed count is
+asserted in CI, so a recurrence fails the build instead of quietly turning a source file binary.
 
 **How the corruption got in is still unexplained**, and that matters more than the fix. It is not
 session 08's `WriteAllLines` -- that was reverted with `git checkout`, and these bytes are in the

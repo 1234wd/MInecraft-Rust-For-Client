@@ -510,3 +510,62 @@ diverge was deleted -- asserting the absence of a bug is the same mistake as req
 `ARGB`, `Identifier`, `AABB`, `ChunkPos`. The session went to the two reviewer findings, and
 `#runtime-exceptions` still has no first case -- now deferred three sessions running. That is the
 one thing I would change about how this session was spent.
+
+---
+
+# Session 09 - CI, and the ARGB tables (reconstructed at the start of session 10)
+
+**This entry was missing.** Session 09 made four commits and never appended here; I found the gap
+at the start of session 10 while re-adding the session-10 header. Reconstructed from the four
+commit messages, which is why it is terse.
+
+Commits: `9a13263`, `834b47b`, `2c2e6e1`, `fc0b5dc`.
+
+## What happened
+
+* **Reviewer Q3 (Linux CI)**: wrote `.github/workflows/parity.yml`, not pushed. Linux and Windows
+  as gates, macOS ARM64 as `continue-on-error`. Both shell steps were executed locally rather than
+  eyeballed, which is how five separate bugs in them were found -- including a PCRE probe that
+  reported "no PCRE" on a grep that has it, making the step silently vacuous.
+* **Reviewer Q4 (Vec2)**: could not be done. `Vec2.rs` contains three NUL bytes at HEAD, so git and
+  the read/edit tools classify it as binary. Per that session's rule 2 it was logged, not scripted
+  around: `OPEN_QUESTIONS #24`. Audited every tracked `.rs`: `Vec2.rs` is the only damaged file.
+* **ARGB prerequisite**: `argb.srgbTables` claimed in a comment to be emitted "in full" while
+  looping `ch < 256` over two tables of 256 and 1024 entries. Added `argb.srgbToLinearTable` (256)
+  and `argb.linearToSrgbTable` (1024), read out of the jar by reflection, plus
+  `_porting/tools/gen_argb_tables.py` to derive the Rust tables and
+  `parity_batch2::argb_tables_match_the_golden` to check all 1280 values.
+
+## The finding that mattered most
+
+Adding a group made the golden file **shrink by 6,291 bytes** and `argb.setBrightness` silently
+stop being emitted. Cause: I got the table's array type wrong, and `section()` caught the
+`ClassCastException`, appended it to `section-error.txt`, and continued. No test failed, no
+non-zero exit, nothing on stdout. Session 10 fixes `section()` so a failed section is fatal.
+
+## Not done
+
+`ARGB.rs` and `Identifier.rs`. 49 + 38 methods and 23 + 21 golden groups was more than remained,
+and a half-ported file claiming PORTED is worse than an honest SKELETON. Fourth session running
+with zero game files ported, which is what session 10 exists to fix.
+
+---
+
+# Session 10 (long session)
+
+Session 10 start: 2026-10-05 22:54:25 +05:00
+
+Baseline `fc0b5dc`: 192 tests green in debug and release, tree clean.
+
+Working agreement for this session, from the prompt and from session 09's own post-mortem:
+
+* **Port first, log harness problems instead of fixing them inline.** Four sessions running with
+  zero game files ported, because each one found a foundation problem and then a second one. The
+  guard rails are frozen; only fix what blocks the file in front of me.
+* 60-minute limit per file. If a file is not fully green in 60 minutes, mark only the stuck
+  methods `todo!`, commit the rest as PARTIAL, log it, and move on.
+* 20-minute limit per infrastructure problem.
+* Oracle work is allowed only to add golden groups for the file currently being ported.
+* Files are edited with the edit tool only. One approved exception: the `Vec2.rs` byte repair.
+
+Checkpoints are appended below, one line per commit.

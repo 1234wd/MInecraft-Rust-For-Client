@@ -3008,20 +3008,55 @@ final class Batch2Oracle {
 	 * group truncated the whole 34 MB file after 194 of 234 groups -- with nothing at
 	 * all indicating what had been lost. A golden file that silently loses its tail is
 	 * worse than one that refuses to be written.
+	 *
+	 * <h2>SINCE SESSION 10: A FAILED SECTION IS FATAL</h2>
+	 *
+	 * <p>Continuing was right in session 05, when the only failure mode known was a method that
+	 * legitimately throws on some inputs. It was wrong by session 09, and the cost was concrete:
+	 * I added a group, got an array type wrong, and the {@code ClassCastException} was caught,
+	 * appended to {@code section-error.txt} and swallowed. The run "succeeded", and
+	 * {@code argb.setBrightness} silently stopped being emitted while the golden file SHRANK by
+	 * 6,291 bytes. No test failed, no non-zero exit, and the only evidence was a file getting
+	 * smaller -- which I noticed only because diffing the group list had become habit.
+	 *
+	 * <p>The trade-off being made explicit: a legitimate throw in one group now costs the whole
+	 * regeneration instead of one group. That is the correct way round. A missing group fails
+	 * loudly and immediately; a truncated corpus fails as a <em>wrong</em> number somewhere far
+	 * away, or not at all.
+	 *
+	 * <p>Methods that legitimately throw for some inputs must therefore handle it <em>inside</em>
+	 * the group that uses them, by catching and recording the exception as the expected value --
+	 * which is what {@code argb.linearLerpThrows} does -- not by letting it escape here.
 	 */
 	private static void section(final Out o, final String name,
 			final java.util.function.Consumer<Out> body) {
 		try {
 			body.accept(o);
 		} catch (Throwable t) {
-			System.out.println("SECTION FAILED (continuing): " + name + ": " + t);
+			// THREE channels, because one is not enough: stdout for a human watching the run,
+			// the file for whoever is reading the tree later, and a non-zero exit for CI.
+			System.out.println();
+			System.out.println("############################################################");
+			System.out.println("# SECTION FAILED: " + name);
+			System.out.println("# " + t);
+			System.out.println("# The golden file was NOT fully written. Do not use it.");
+			System.out.println("############################################################");
+			System.out.println();
+
 			try (java.io.PrintWriter w = new java.io.PrintWriter(
 					new java.io.FileWriter("section-error.txt", true))) {
 				w.println("SECTION FAILED: " + name + ": " + t);
 				t.printStackTrace(w);
 			} catch (java.io.IOException ignored) {
-				// Nowhere left to report it; the stdout line above is the record.
+				// Nowhere left to report it; the stdout banner above is the record.
 			}
+
+			// Re-throw as an Error so nothing catches it on the way out and `stage(...)` reports
+			// the failure rather than printing a cheerful "wrote N lines".
+			if (t instanceof Error err) {
+				throw err;
+			}
+			throw new IllegalStateException("SECTION FAILED: " + name + ": " + t, t);
 		}
 	}
 
