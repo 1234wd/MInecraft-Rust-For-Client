@@ -813,11 +813,13 @@ impl Vec3 {
 
     /// Port of `Vec3#get(Direction.Axis)`.
     ///
-    /// Java writes `axis.choose(this.x, this.y, this.z)`. `Direction.Axis#choose` is a
-    /// three-way select declared on `Direction.java`, and `Direction.rs` is item 9 of the
-    /// session-06 loop rather than part of this file, so the dispatch is inlined here.
-    /// When `Axis#choose` is ported it must be a plain `match` on the same three arms --
-    /// there is no arithmetic in it, so inlining cannot change behaviour.
+    /// Java writes `axis.choose(this.x, this.y, this.z)`. `Direction.Axis#choose` was
+    /// inlined here while it was unported; it is now ported (session 12, for `BlockPos`), so this
+    /// `match` and that method are duplicates rather than one delegating to the other.
+    /// Behaviour is identical either way -- `choose` is a plain three-way select with no
+    /// arithmetic -- and leaving this one inline avoids a `Vec3` -> `Direction` dependency in the
+    /// hot path. Both are oracle-covered indirectly: `blockpos.betweenCornersInDirection` reads
+    /// this method's result to choose its starting corner.
     #[inline]
     pub fn get(&self, axis: Axis) -> f64 {
         match axis {

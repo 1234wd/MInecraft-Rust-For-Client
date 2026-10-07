@@ -735,6 +735,45 @@ impl Axis {
     }
 }
 
+/// Java: `private static final ImmutableList<Direction.Axis> YXZ_AXIS_ORDER`.
+///
+/// Returned as a fixed array rather than an `ImmutableList`, because the only consumers are
+/// `axis_step_order` and its one caller. The **order** is the payload -- `BlockPos#
+/// betweenCornersInDirection` uses elements 0, 1 and 2 as "first, second, third axis to visit",
+/// so `YXZ` and `YZX` are genuinely different traversal orders, not two spellings of one thing.
+pub const YXZ_AXIS_ORDER: [Axis; 3] = [Axis::Y, Axis::X, Axis::Z];
+
+/// Java: `private static final ImmutableList<Direction.Axis> YZX_AXIS_ORDER`.
+pub const YZX_AXIS_ORDER: [Axis; 3] = [Axis::Y, Axis::Z, Axis::X];
+
+/// Port of `Direction#axisStepOrder(Vec3)`.
+///
+/// Added while porting `BlockPos`, whose `betweenCornersInDirection` is the only caller in the
+/// ported set.
+///
+/// # THE COMPARISON IS `<`, AND IT IS ON **MAGNITUDES**
+///
+/// ```java
+/// return Math.abs(movement.x) < Math.abs(movement.z) ? YZX_AXIS_ORDER : YXZ_AXIS_ORDER;
+/// ```
+///
+/// Two details that are easy to get wrong, and both change the traversal order:
+///
+/// * It compares `|x|` against `|z|` -- **not** `x` against `z`. So `(-1, 0, 1)` takes the `YXZ`
+///   branch, because the magnitudes are equal and `<` is false. A port comparing signed values
+///   picks the other order for every diagonal with mixed signs.
+/// * `y` is never compared. `Y` is first in both orders; only the relative order of `X` and `Z`
+///   varies, and it depends on whether the movement is more sideways than forward.
+///
+/// The golden's direction corpus includes `{-1, 1, -1}` and `{1, -1, 1}` specifically to pin this.
+pub fn axis_step_order(movement: &crate::net::minecraft::world::phys::Vec3::Vec3) -> [Axis; 3] {
+    if movement.x.abs() < movement.z.abs() {
+        YZX_AXIS_ORDER
+    } else {
+        YXZ_AXIS_ORDER
+    }
+}
+
 /// Port of `Direction.Plane`.
 ///
 /// Not ported. It exists for `Direction#getAxisDirection`-style flattening and is only
