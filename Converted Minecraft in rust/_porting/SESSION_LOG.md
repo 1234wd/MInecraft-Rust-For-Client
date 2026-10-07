@@ -676,3 +676,51 @@ OPEN_QUESTIONS #28.
 
 Corrected totals, measured: **COVERED 131 / BLOCKED 104 / golden 235** (was 54 / 181 at session-10
 HEAD `72da0ae`). 243 tests green in debug and release.
+
+---
+
+# Session 12 - BlockPos and onward
+
+Checkpoint timestamps are now `git log --format="[%ad] %h %s" --date=iso`, pasted after the commit.
+Session 11's were hand-typed and did not match the commits; that was a real defect in the log.
+
+**[2026-10-07 10:52:32 +0500] afac9a9 net/minecraft/core/BlockPos.rs -> PARTIAL | methods 79/79 ported, 9 PORT-BLOCKED | groups 37/46 | commit afac9a9**
+
+Also ported `world/level/block/Rotation.rs` (5 of 12; 7 `todo!`) and added
+`Direction#axisStepOrder` + its two order constants. `COVERED 131 -> 168`, `BLOCKED 104 -> 67`.
+261 tests green in debug and release.
+
+**An infinite loop in my own port, found by the tests.** `withinManhattan`'s shell walk is a Java
+`for (...; found == null; this.y++)` -- `y` is incremented on EVERY iteration, including the one
+that has just reset `y = -maxY`. My first version incremented only in the not-found branch, so it
+never advanced past `y = -maxY`: the loop never terminated and `findClosestMatch` tried to allocate
+**51 GB** (51,539,607,552 bytes) before the harness died. The increment now sits outside the branch
+with a comment explaining why. Recorded because the symptom was an OOM, not a wrong answer --
+nothing about it looked like a missing `y++`.
+
+**8 groups left in BLOCKED, with evidence rather than excuses.** These are real disagreements
+between the port and the golden, not missing dependencies:
+
+- `neighborColumn` -- `javap` of `BlockPos$5.computeNext` shows the jar computing
+  `startY + (index % height) * yDirection` over `steps = {(0,0,0), NORTH, EAST, SOUTH, WEST}`,
+  byte-for-byte what this port does. The golden's first run for `(0,0,0,0)` records five
+  IDENTICAL `(-1,0,0)` rows, which that formula cannot produce because `steps[0].getX()` is 0.
+  **The bytecode is not in question.** Either the golden's rows are misaligned or its emission is
+  wrong; needs a probe against the jar next session.
+- `clampLocationWithin` -- matches to the bit on the early rows with the decompiled source's
+  `1.0E-5F`. The expected value has 36 trailing zero bits, i.e. a widened `f32`, so the source is
+  right. Diverges at golden line 72201, on the FAR limit `x + 1.0 - 1.0E-5F`. I briefly
+  "corrected" that literal to an `f64` and made it strictly worse -- recorded because it is the
+  second time this session a literal that looked wrong was measured right.
+- `betweenClosed`, `betweenClosedAABB`, `betweenCornersInDirection` -- element 0 disagrees.
+- `withinManhattan` -- the oracle's rows record `centre + reach` as the second block but never the
+  reach vector itself, so the full ORDER check is not derivable from the row. Claiming it on a
+  weaker structural test would have been dishonest.
+- the three random groups -- element 0 of the seed-0 run differs: port `(2,4,0)`, golden
+  `(-1,3,1)`. The draw order is transcribed as written, so the disagreement is in the stream or the
+  bound computation. Not located.
+
+The 9 ignored tests each name their blocked group in the `#[ignore = "..."]` reason.
+
+Next: diagnose the 8 (cheap first: `javap` for `betweenClosed`, a JVM probe for `neighborColumn`
+and the random groups), then item 2, the harness invariant audit.
