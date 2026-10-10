@@ -724,3 +724,55 @@ The 9 ignored tests each name their blocked group in the `#[ignore = "..."]` rea
 
 Next: diagnose the 8 (cheap first: `javap` for `betweenClosed`, a JVM probe for `neighborColumn`
 and the random groups), then item 2, the harness invariant audit.
+
+**[2026-10-11 00:14:31 +0500] 367c85a MANIFEST.csv regenerated; 3 Status headers corrected | groups 37/46 unchanged | commit 367c85a**
+
+Bookkeeping the owner asked for. `MANIFEST.csv` had never been regenerated since session 10, so
+ARGB, Identifier, IdentifierException, AABB, BlockPos and Rotation all still read `SKELETON`.
+`mirror.py` derives status from the file header, so regenerating after fixing the headers fixes
+the root cause rather than the symptom.
+
+Three headers were wrong. `AABB.rs` and `BlockPos.rs` both said `Status: PORTED` while being
+PARTIAL (42/55 methods and 34/39 groups; 37/46 groups). `Rotation.rs` said `PARTED` -- a typo.
+
+**And the first fix made it worse, which is worth recording.** I first wrote the counts into the
+status line -- `Status: PARTIAL -- 42 of 55 methods; 34 of 39 golden groups`. `mirror.py` copies
+the whole rest of the line into the manifest's `status` column, so that turned one `PARTIAL` into
+four distinct values, and `BlockPos`'s **comma** inside the status field shifted every later
+column for any reader that splits on commas naively. `Import-Csv` was safe because `mirror.py`
+writes proper CSV, but the convention already in `Direction.rs` and `Vec3.rs` is a bare token with
+the detail in prose, so that is what these use now. Status histogram is four clean buckets:
+SKELETON 7031, VERIFIED 12, PARTIAL 9, PORTED 3.
+
+**[2026-10-11 00:24:53 +0500] 881484f item 2, harness invariant audit | groups 37/46 unchanged | commit 881484f**
+
+30-minute limit respected. Full enumeration in the commit message; the short version:
+
+*Enforced already* -- every golden group is claimed; no stale BLOCKED entry; no empty group;
+typed-value decoding panics on a mismatch and on an out-of-range column index (so an index typo
+fails loudly instead of silently reading a neighbouring column); the multi-value helpers assert
+arity before comparing.
+
+*The false-pass, now fixed* -- `COVERED` and `BLOCKED_ON_UNPORTED_TYPES` were never checked for
+overlap, and both existing guards filter with `!COVERED.contains(m) && !BLOCKED.contains(m)`, so a
+group in **both** lists passed both. Every coverage number rests on their disjointness, since
+`COVERED.len() + BLOCKED.len()` is quoted as the golden's group count. The permitted failure is
+not hypothetical: move a group from BLOCKED to COVERED and delete or `#[ignore]` its test, and
+both guards stay green while the verified count goes **up** and the groups actually checked goes
+**down**. This session ended with nine `#[ignore]`d tests whose eight groups I moved to BLOCKED by
+hand -- a discipline, not a rule. New test `covered_and_blocked_are_disjoint` checks both
+directions.
+
+*Logged, not fixed* (can weaken a check but cannot turn a failing port green) -- `NAN_BITS_OBSERVABLE`
+is empty, so any two NaNs compare equal in every group, which is deliberate but means no ported
+group pins a NaN bit pattern; `assert_str` reads only column 0; `f64_bits_match` keys its NaN
+exemption on the group-name string, so a misspelled name silently loses the exemption.
+
+*The remaining hole, stated rather than hidden* -- nothing verifies that a group listed in
+`COVERED` is actually **read** by some test. Closing that needs each test to declare the groups it
+reads; larger than the 15-minute budget for a false-pass fix, so it stays open rather than being
+quietly forgotten.
+
+Measured after the fix: `COVERED 168`, `BLOCKED 67`, sum 235, union 235, and union equals the
+number of `#fn` headers in `batch2.txt`. The partition is exact and is now proved to be.
+262 tests green in debug and release.
