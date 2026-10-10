@@ -1,12 +1,19 @@
 //! Port of: net/minecraft/world/phys/AABB.java
 //! Java class(es): net.minecraft.world.phys.AABB, net.minecraft.world.phys.AABB$Builder
-//! Status: PORTED
+//! Status: PARTIAL
 //!
-//! 35 of 39 `aabb.*` golden groups are bit-exact. The four that are not --
-//! `aabb.fromBlockPos`, `aabb.encapsulatingFullBlocks`, `aabb.moveBlockPos` and
-//! `aabb.intersectsBlockPos` -- all take a `BlockPos`, which is a 7-line skeleton. Every method
-//! that needs one is a `todo!("PORT-BLOCKED: BlockPos")`; see the PORT-BLOCKED section at the
-//! bottom.
+//! 42 of 55 methods; 34 of 39 golden groups. PARTIAL for two separate reasons, both of which
+//! are gaps rather than bugs.
+//!
+//! **Nine methods are `todo!`**, each naming its dependency: seven on types that are not ported
+//! (`BlockPos` x4, `levelgen.structure.BoundingBox`, `BlockHitResult`, `FloatingDecimal`) and the
+//! two JOML `Vector4f` overloads. See the PORT-BLOCKED section at the bottom.
+//!
+//! **Five of the 39 `aabb.*` golden groups are not claimed.** Four need a `BlockPos`
+//! (`fromBlockPos`, `encapsulatingFullBlocks`, `moveBlockPos`, `intersectsBlockPos`). The fifth,
+//! `aabb.toString`, is a formatting dependency: 85 of its 100 rows match bit-for-bit, and the 15
+//! that differ are all `Double.MIN_VALUE`, where Java prints `4.9E-324` and `double_to_string`
+//! prints `5.0E-324`. That is the `FloatingDecimal` subnormal gap, not an AABB bug.
 //!
 //! # THE CONSTRUCTOR SWAPS, AND THAT IS THE WHOLE CLASS
 //!

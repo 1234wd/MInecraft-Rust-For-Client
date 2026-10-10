@@ -1,6 +1,8 @@
 //! Port of: net/minecraft/world/level/block/Rotation.java
 //! Java class(es): net.minecraft.world.level.block.Rotation
-//! Status: PARTED -- 5 of 12 methods; 7 `todo!` on unported external types.
+//! Status: PARTIAL
+//!
+//! 5 of 12 methods; the other 7 are `todo!` on unported external types.
 //!
 //! Ported ahead of `BlockPos`, which needs the four enum constants and the `index` they carry.
 //! No `rotation.*` golden group exists for THIS class -- the four `rotations.*` groups in

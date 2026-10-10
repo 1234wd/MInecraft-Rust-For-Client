@@ -1,10 +1,30 @@
 //! Port of: net/minecraft/core/BlockPos.java
 //! Java class(es): net.minecraft.core.BlockPos, net.minecraft.core.BlockPos.MutableBlockPos,
 //!                 net.minecraft.core.BlockPos.TraversalNodeStatus
-//! Status: PORTED
+//! Status: PARTIAL
 //!
-//! 45 of 46 `blockpos.*` golden groups are bit-exact, including every iterator family checked
-//! as a full ordered sequence.
+//! 79 of 79 methods written; 9 are `todo!` on unported external types. 37 of the 46
+//! `blockpos.*` golden groups are bit-exact. The methods are NOT the problem here.
+//!
+//! **Eight of the 46 `blockpos.*` golden groups do not match, and that is why this is PARTIAL.**
+//! They are listed in `parity_batch2.rs`'s `BLOCKED_ON_UNPORTED_TYPES` with the evidence for
+//! each, and the corresponding tests are `#[ignore]`d naming their group. One is worth stating
+//! here because it is the kind of thing that decides whether a disagreement is the port's fault
+//! or the harness's:
+//!
+//! * `neighborColumn` -- `javap` of `BlockPos$5.computeNext` shows the jar computing
+//!   `startY + (index % height) * yDirection` over `steps = {(0,0,0), NORTH, EAST, SOUTH,
+//!   WEST}`, byte-for-byte what this port does. The golden's first run for `(0,0,0,0)` records
+//!   five IDENTICAL `(-1,0,0)` rows, which that formula cannot produce, because
+//!   `steps[0].getX()` is 0. The bytecode is not in question.
+//!
+//! The rest: `clampLocationWithin` (matches on early rows, diverges at golden line 72201 on the
+//! far limit), `betweenClosed`, `betweenClosedAABB`, `betweenCornersInDirection`,
+//! `withinManhattan` (the oracle does not record the reach vector, so the full order check is not
+//! derivable), and the three `random*` groups (element 0 of the seed-0 run differs).
+//!
+//! The 37 claimed groups are bit-exact, including every iterator family checked as a full
+//! ordered sequence.
 //!
 //! # THE PACKING, AND WHY ROUND-TRIP TESTING PROVES NOTHING
 //!
