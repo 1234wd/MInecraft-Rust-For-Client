@@ -1215,6 +1215,53 @@ fn every_batch2_group_is_covered() {
     );
 }
 
+/// `COVERED` and `BLOCKED_ON_UNPORTED_TYPES` must be DISJOINT.
+///
+/// # THIS IS THE FALSE-PASS THAT OPEN_QUESTIONS #28 RECORDED, NOW CLOSED
+///
+/// The two other guards -- `every_batch2_group_is_covered` and `blocked_list_matches_the_oracle`
+/// -- are both filters on `m`, so a group present in BOTH lists passes both of them. Nothing
+/// checked disjointness, and disjointness is what every coverage number in this project rests on:
+/// `COVERED.len() + BLOCKED.len() == 235` is only the golden's group count if the two sets do
+/// not overlap, and `COVERED.len()` is quoted in every report as "groups verified".
+///
+/// The concrete failure this allows, which is not hypothetical: move a group from `BLOCKED` to
+/// `COVERED` and delete or `#[ignore]` its test. Both existing guards stay green, the verified
+/// count goes UP, and the number of groups actually checked goes DOWN or stays the same.
+/// Session 12 ended with exactly nine `#[ignore]`d tests, and putting their eight groups in
+/// `BLOCKED` was a manual discipline, not an enforced one.
+///
+/// This test catches the overlap. It does NOT catch "listed in `COVERED` but never read by any
+/// test" -- that would need each test to declare the groups it reads, which is a larger change
+/// than the 15-minute budget for a false-pass fix. Recorded in the audit log as the remaining
+/// known hole rather than quietly left.
+#[test]
+fn covered_and_blocked_are_disjoint() {
+    let overlap: Vec<&&str> = COVERED
+        .iter()
+        .filter(|m| BLOCKED_ON_UNPORTED_TYPES.contains(m))
+        .collect();
+    assert!(
+        overlap.is_empty(),
+        "these groups are in BOTH COVERED and BLOCKED_ON_UNPORTED_TYPES: {overlap:?}.\n\
+         Both guards filter with `!COVERED.contains(m) && !BLOCKED.contains(m)`, so an overlap is\n\
+         invisible to them -- and it makes `COVERED.len() + BLOCKED.len()` overstate the number of\n\
+         distinct golden groups, which is the denominator every coverage percentage uses.\n\
+         A group belongs in exactly one list. If it is verified, it is COVERED; if it is not, it\n\
+         is BLOCKED, with a note saying why."
+    );
+    // And the converse direction, for the same reason: a BLOCKED entry that is also COVERED
+    // hides an unverified group behind a verified-looking one.
+    let overlap_back: Vec<&&str> = BLOCKED_ON_UNPORTED_TYPES
+        .iter()
+        .filter(|m| COVERED.contains(m))
+        .collect();
+    assert!(
+        overlap_back.is_empty(),
+        "these groups are in BOTH lists (checking the other direction): {overlap_back:?}"
+    );
+}
+
 /// Conversely, a blocked entry for a group the oracle stopped emitting is stale and
 /// hides the fact that coverage was lost.
 #[test]
