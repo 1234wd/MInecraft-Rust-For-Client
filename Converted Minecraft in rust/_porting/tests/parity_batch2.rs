@@ -912,6 +912,11 @@ fn rotations_to_string() {
 /// group the oracle no longer emits.
 const COVERED: &[&str] = &[
     // -- BlockPos: all 46 method groups, ported in session 12 --
+    // -- AABB: the four BlockPos groups, unblocked in session 13 --
+    "aabb.moveBlockPos",
+    "aabb.intersectsBlockPos",
+    "aabb.encapsulatingFullBlocks",
+    "aabb.fromBlockPos",
     "blockpos.constants",
     "blockpos.asLong",
     "blockpos.getXYZ",
@@ -1092,14 +1097,11 @@ const COVERED: &[&str] = &[
 /// An entry means "measured but never checked", which is the same as not measured.
 /// Each carries its reason, so the list doubles as the porting TODO for batch 2.
 const BLOCKED_ON_UNPORTED_TYPES: &[&str] = &[
-    // -- aabb: 4 groups, ported in session 11 --
-    // These four stay blocked because every method behind them takes a `BlockPos`, which is a
-    // 7-line skeleton: aabb.moveBlockPos, aabb.intersectsBlockPos,
-    // aabb.encapsulatingFullBlocks, aabb.fromBlockPos
-    "aabb.moveBlockPos",  // PORT-BLOCKED: BlockPos
-    "aabb.intersectsBlockPos",  // PORT-BLOCKED: BlockPos
-    "aabb.encapsulatingFullBlocks",  // PORT-BLOCKED: BlockPos
-    "aabb.fromBlockPos",  // PORT-BLOCKED: BlockPos
+    // -- aabb: 0 groups blocked on an unported TYPE --
+    // The four `BlockPos` groups were here from session 11 until session 13: every method behind
+    // them took a `BlockPos`, which was a 7-line skeleton until session 12. `BlockPos` is now
+    // ported, so aabb.moveBlockPos, aabb.intersectsBlockPos, aabb.encapsulatingFullBlocks and
+    // aabb.fromBlockPos are in COVERED. None of them is blocked on anything any more.
     // One group blocked on a formatting dependency rather than a type: `double_to_string`
     // prints `Double.MIN_VALUE` as `5.0E-324` where Java prints `4.9E-324`. That is the
     // `FloatingDecimal` gap (shortest-representation for subnormals), not an AABB bug -- the
@@ -3473,7 +3475,12 @@ fn blockpos_breadth_first_traversal() {
 // `assert_f64_bits_at` is already in scope from the module-level `use` above; importing it twice
 // is a duplicate-definition error.
 use minecraft_rust::javacompat::joml::Vector3f;
-use minecraft_rust::net::minecraft::world::phys::AABB::{AABB, Builder};
+// `AABB` is imported as the STRUCT here, so the four free functions below have to be imported by
+// name -- `AABB::from_block_pos` would resolve to an associated item of the struct, which is not
+// where they live.
+use minecraft_rust::net::minecraft::world::phys::AABB::{
+    encapsulating_full_blocks, from_block_pos, intersects_block_pos, move_block_pos, AABB, Builder,
+};
 
 fn aabb_rows(group: &str) -> Vec<Row> {
     let g = Golden::load("batch2.txt");
@@ -3535,6 +3542,75 @@ fn box_from_row(r: &Row, offset: usize) -> AABB {
         r.arg(offset + 4).as_f64(),
         r.arg(offset + 5).as_f64(),
     )
+}
+
+/// The four `BlockPos`-taking methods, unblocked in session 13 by porting `BlockPos`.
+///
+/// What makes these four worth their own block rather than four one-liners is that **all of them
+/// add `1` to an `i32` before widening it to `f64`**, so all four wrap where vanilla wraps:
+///
+/// * `from_block_pos` and `intersects_block_pos` do `pos.getX() + 1`;
+/// * `encapsulating_full_blocks` does `Math.max(p0.x, p1.x) + 1`.
+///
+/// `aabb.fromBlockPos`'s fourth row is `{Integer.MAX_VALUE, Integer.MIN_VALUE, 0}`, so the
+/// `maxX` argument arrives already wrapped negative -- below its own `minX` -- and the
+/// constructor's `min_f64`/`max_f64` then swap the pair. A port that widened first and added in
+/// `f64` would produce `2147483648.0` instead and fail exactly that row, so this corpus pins the
+/// evaluation order and not merely the arithmetic.
+#[test]
+fn aabb_block_pos_groups() {
+    for r in &aabb_rows("aabb.fromBlockPos") {
+        let b = from_block_pos(r.arg(0).as_i32(), r.arg(1).as_i32(), r.arg(2).as_i32());
+        assert_box_at("aabb.fromBlockPos", r, &b, "new AABB(BlockPos)", 0);
+    }
+    for r in &aabb_rows("aabb.encapsulatingFullBlocks") {
+        let b = encapsulating_full_blocks(
+            r.arg(0).as_i32(),
+            r.arg(1).as_i32(),
+            r.arg(2).as_i32(),
+            r.arg(3).as_i32(),
+            r.arg(4).as_i32(),
+            r.arg(5).as_i32(),
+        );
+        assert_box_at("aabb.encapsulatingFullBlocks", r, &b, "encapsulatingFullBlocks", 0);
+    }
+    for r in &aabb_rows("aabb.moveBlockPos") {
+        // The oracle moves by `new BlockPos(bx, 0, 0)`, so only ONE integer is a free argument;
+        // the other two axes are zero on every row.
+        let moved = move_block_pos(&box_from_row(r, 0), r.arg(6).as_i32(), 0, 0);
+        assert_box_at("aabb.moveBlockPos", r, &moved, "move(BlockPos)", 0);
+    }
+    for r in &aabb_rows("aabb.intersectsBlockPos") {
+        let hit = intersects_block_pos(&box_from_row(r, 0), r.arg(6).as_i32(), 0, 0);
+        assert_bool("aabb.intersectsBlockPos", r, hit);
+    }
+}
+
+/// `encapsulatingFullBlocks` is the only one of the four with an ORDERING subtlety rather than
+/// just a widening one: the `+ 1` is applied to `Math.max(p0, p1)`, so the result's `maxX` is the
+/// far edge of the *larger* block. If a port added `1` to each position before taking the max, the
+/// result would be one block wider on every axis -- and since the corpus contains `(0,0,0)` and
+/// `(-5,7,2)` pairs, that error is visible rather than symmetric.
+#[test]
+fn aabb_encapsulating_full_blocks_max_plus_one() {
+    for r in &aabb_rows("aabb.encapsulatingFullBlocks") {
+        let (p0, p1) = (
+            (r.arg(0).as_i32(), r.arg(1).as_i32(), r.arg(2).as_i32()),
+            (r.arg(3).as_i32(), r.arg(4).as_i32(), r.arg(5).as_i32()),
+        );
+        let b = encapsulating_full_blocks(p0.0, p0.1, p0.2, p1.0, p1.1, p1.2);
+        // Assert the far faces against the max-plus-one directly, rather than only through the
+        // golden: this is the property the method's name implies, and it is checkable from the
+        // row's own arguments without any oracle data.
+        assert_eq!(
+            b.max_x,
+            p0.0.max(p1.0).wrapping_add(1) as f64,
+            "maxX must be max(p0.x, p1.x) + 1, not max(p0.x + 1, p1.x + 1)"
+        );
+        assert_eq!(b.min_x, p0.0.min(p1.0) as f64, "minX must be the plain minimum");
+        assert_eq!(b.max_y, p0.1.max(p1.1).wrapping_add(1) as f64);
+        assert_eq!(b.max_z, p0.2.max(p1.2).wrapping_add(1) as f64);
+    }
 }
 
 #[test]
@@ -3648,19 +3724,56 @@ fn aabb_equals_uses_double_compare() {
         "aabb.equals emits exactly three rows per corpus pair; got {} rows",
         rows.len()
     );
-    let mut operand_not_recorded = 0usize;
+    let mut operand_differs = 0usize;
     for (i, r) in rows.iter().enumerate() {
         let p = box_from_row(r, 0);
         match i % 3 {
             // `box.equals(box)`: `Double.compare` treats NaN as equal to NaN, so this holds even
             // for a box whose corners are all NaN. This is the row that catches a `PartialEq`
             // derived from `==`.
-            0 => assert!(
-                p == p,
-                "a box must equal itself by Double.compare, even with NaN corners: {p:?}"
-            ),
-            // The swapped-operand row. See the doc comment: the operand is not in the row.
-            1 => operand_not_recorded += 1,
+            0 => {
+                assert!(
+                    p == p,
+                    "a box must equal itself by Double.compare, even with NaN corners: {p:?}"
+                );
+                // Row 0 must be the self-comparison: its recorded second operand is the same six
+                // values. Asserting that the golden really says so is what stops the row layout
+                // being silently reshuffled, which would otherwise make every other row in the
+                // group assert against the wrong operand.
+                //
+                // COMPARED AS BITS, not as values. The first version of this check used `as_f64`
+                // and failed on row 6 with `[0.0, NaN, 1.0, 1.0, 1.0, NaN]` reported as differing
+                // from itself -- because `NaN != NaN`. The golden's EDGES2 corpus contains NaN,
+                // so this row is reached within the first ten.
+                let same = (0..6).all(|k| r.arg(k).as_f64_bits() == r.arg(6 + k).as_f64_bits());
+                assert!(
+                    same,
+                    "row {i} of aabb.equals should be the self-comparison, but its two operands \
+                     differ: {:?} vs {:?}",
+                    (0..6).map(|k| r.arg(k).as_f64_bits()).collect::<Vec<_>>(),
+                    (0..6).map(|k| r.arg(6 + k).as_f64_bits()).collect::<Vec<_>>()
+                );
+            }
+            // The swapped-operand row, `box.equals(new AABB(b[0],a[0],b[1],a[1],b[0],a[1]))`.
+            //
+            // This row was NOT assertable until session 13: the oracle recorded `args args` while
+            // constructing a different box, so the recorded arguments did not describe the call.
+            // It now records the real operand and is compared against it. Two thirds of the
+            // group's rows have a genuinely different operand -- 50 of 75 -- and that count is
+            // asserted so that a future oracle edit which goes back to recording `args args`
+            // fails loudly here instead of silently making this row vacuous again.
+            1 => {
+                let other = box_from_row(r, 6);
+                let differs = (0..6).any(|k| r.arg(k).as_f64_bits() != r.arg(6 + k).as_f64_bits());
+                if differs {
+                    operand_differs += 1;
+                }
+                assert_eq!(
+                    p == other,
+                    golden_bool(r, 0),
+                    "equals against the swapped box {p:?} vs {other:?}"
+                );
+            }
             // `box.equals(new AABB(0,0,0,1,0,1))` -- the row's own second six arguments.
             _ => {
                 let fixed = box_from_row(r, 6);
@@ -3672,12 +3785,27 @@ fn aabb_equals_uses_double_compare() {
             }
         }
     }
+    // A STRUCTURAL guard, not a magic constant: the exact number of triples whose swapped
+    // operand happens to coincide with the box itself depends on the corpus, and pinning it
+    // would make this test break for an unrelated corpus change. What matters is that the count
+    // is not ZERO -- if the oracle ever goes back to recording `args args` on the swapped row,
+    // `operand_differs` drops to 0 and that row becomes vacuously true again. That is the exact
+    // regression this assertion exists to catch, so it is stated as "> 0" rather than as a count
+    // I would have to take from the golden and would then be unable to justify independently.
+    assert!(
+        operand_differs > 0,
+        "no `aabb.equals` swapped row records an operand different from the box itself. That means \
+         the oracle has gone back to writing `args + \" \" + args` for the row that compares \
+         against `new AABB(b[0],a[0],b[1],a[1],b[0],a[1])` -- i.e. it records arguments that do not \
+         describe the call, which is what made this third of the group unassertable in session 11."
+    );
+    // And the converse: the group must not have shrunk or been reshaped. 25 triples is what the
+    // EDGES2 x EDGES2 corpus produced, and a change here means the corpus moved, not the method.
     assert_eq!(
-        operand_not_recorded,
-        rows.len() / 3,
-        "the count of `equals` rows whose compared box is not recorded changed. If the oracle now \
-         writes that operand, strengthen this test to assert those rows too instead of counting \
-         them."
+        rows.len(),
+        75,
+        "aabb.equals should emit 3 rows per EDGES2 x EDGES2 pair; got {}",
+        rows.len()
     );
 }
 

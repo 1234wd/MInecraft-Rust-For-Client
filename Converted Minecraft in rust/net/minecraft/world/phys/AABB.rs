@@ -2,18 +2,23 @@
 //! Java class(es): net.minecraft.world.phys.AABB, net.minecraft.world.phys.AABB$Builder
 //! Status: PARTIAL
 //!
-//! 42 of 55 methods; 34 of 39 golden groups. PARTIAL for two separate reasons, both of which
+//! 47 of 55 methods; 38 of 39 golden groups. PARTIAL for two separate reasons, both of which
 //! are gaps rather than bugs.
 //!
-//! **Nine methods are `todo!`**, each naming its dependency: seven on types that are not ported
-//! (`BlockPos` x4, `levelgen.structure.BoundingBox`, `BlockHitResult`, `FloatingDecimal`) and the
-//! two JOML `Vector4f` overloads. See the PORT-BLOCKED section at the bottom.
+//! **Eight methods are `todo!`**, each naming its dependency: `levelgen.structure.BoundingBox`,
+//! `BlockHitResult`, `FloatingDecimal`, and the two JOML `Vector4f` overloads (plus the
+//! constructors that need them). See the PORT-BLOCKED section at the bottom.
 //!
-//! **Five of the 39 `aabb.*` golden groups are not claimed.** Four need a `BlockPos`
-//! (`fromBlockPos`, `encapsulatingFullBlocks`, `moveBlockPos`, `intersectsBlockPos`). The fifth,
-//! `aabb.toString`, is a formatting dependency: 85 of its 100 rows match bit-for-bit, and the 15
-//! that differ are all `Double.MIN_VALUE`, where Java prints `4.9E-324` and `double_to_string`
-//! prints `5.0E-324`. That is the `FloatingDecimal` subnormal gap, not an AABB bug.
+//! **One of the 39 `aabb.*` golden groups is not claimed:** `aabb.toString`, a formatting
+//! dependency. 85 of its 100 rows match bit-for-bit, and the 15 that differ are all
+//! `Double.MIN_VALUE`, where Java prints `4.9E-324` and `double_to_string` prints `5.0E-324`.
+//! That is the `FloatingDecimal` subnormal gap, not an AABB bug.
+//!
+//! The four `BlockPos`-taking groups (`fromBlockPos`, `encapsulatingFullBlocks`, `moveBlockPos`,
+//! `intersectsBlockPos`) were blocked until `BlockPos` was ported in session 12 and were turned
+//! green in session 13. One detail they pin is easy to miss and is documented on `from_block_pos`:
+//! the `+ 1` in `new AABB(BlockPos)` is `int` arithmetic that **wraps**, so a block at
+//! `Integer.MAX_VALUE` produces an AABB that is inverted on that axis.
 //!
 //! # THE CONSTRUCTOR SWAPS, AND THAT IS THE WHOLE CLASS
 //!
@@ -1104,52 +1109,117 @@ impl Builder {
 // PORT-BLOCKED
 // ============================================================================
 //
-// Seven methods, and the four golden groups they hold are `aabb.fromBlockPos`,
-// `aabb.encapsulatingFullBlocks`, `aabb.moveBlockPos` and `aabb.intersectsBlockPos`.
+// Three methods, and they hold NO golden groups.
 //
-// All seven are `todo!` with a named dependency rather than a stub, because every one of them
-// either takes a `BlockPos` or returns a result derived from one, and a placeholder here would
-// return plausible geometry that does not match the world -- the failure mode that is hardest to
-// trace back to its cause.
+// All three are `todo!` with a named dependency rather than a stub, because each needs a type
+// this project has not ported, and a placeholder here would return plausible geometry that does
+// not match the world -- the failure mode that is hardest to trace back to its cause.
+//
+// The four methods that WERE in this section (`fromBlockPos`, `move(BlockPos)`,
+// `intersects(BlockPos)`, `encapsulatingFullBlocks`) were unblocked in session 13 by porting
+// `net/minecraft/core/BlockPos.rs` in session 12. They were four of the seven, and they are why
+// `aabb.fromBlockPos`, `aabb.moveBlockPos`, `aabb.intersectsBlockPos` and
+// `aabb.encapsulatingFullBlocks` are now verified.
 
 /// Java: `new AABB(BlockPos pos)` -- the unit cube at that block.
 ///
-/// `todo!("PORT-BLOCKED: BlockPos")`. Unblocked by porting `net/minecraft/core/BlockPos.rs`,
-/// which is currently a 7-line skeleton. Note the constructor widens: `pos.getX() + 1` is `int`
-/// arithmetic that becomes `double`, so it is exact for every legal block coordinate.
-pub fn from_block_pos(_pos: i32, _y: i32, _z: i32) -> AABB {
-    todo!("PORT-BLOCKED: BlockPos is not ported")
+/// # THE `+ 1` IS `int` ARITHMETIC AND IT **WRAPS**
+///
+/// ```java
+/// this(pos.getX(), pos.getY(), pos.getZ(), pos.getX() + 1, pos.getY() + 1, pos.getZ() + 1);
+/// ```
+///
+/// The constructor takes `double`s, so the `+ 1` is evaluated in `int` first and only then
+/// widened. That is invisible for every legal coordinate and catastrophic at the edge: the
+/// `aabb.fromBlockPos` corpus includes `{Integer.MAX_VALUE, Integer.MIN_VALUE, 0}`, where
+/// `Integer.MAX_VALUE + 1` wraps to `Integer.MIN_VALUE`. The result is an AABB whose `maxX` is
+/// `-2.147483648e9` -- below its own `minX`, so [`AABB::new`]'s `min_f64`/`max_f64` swaps them and
+/// the box comes out inverted on that axis. That is what the jar does and `wrapping_add`
+/// reproduces it; widening first and adding in `f64` would give `2147483648.0` and fail that row.
+pub fn from_block_pos(pos_x: i32, pos_y: i32, pos_z: i32) -> AABB {
+    AABB::new(
+        pos_x as f64,
+        pos_y as f64,
+        pos_z as f64,
+        pos_x.wrapping_add(1) as f64,
+        pos_y.wrapping_add(1) as f64,
+        pos_z.wrapping_add(1) as f64,
+    )
 }
 
 /// Java: `AABB#move(BlockPos pos)`.
 ///
-/// `todo!("PORT-BLOCKED: BlockPos")`. The `int` -> `double` widening on the deltas is what
-/// keeps this exact at the build limit: `30_000_001.0` is exactly representable, whereas
-/// `f32` would not be.
+/// Ported in session 13; see the body for why the widening is exact.
 ///
 /// A free function rather than a method, because an associated function cannot hold a `todo!` and
 /// still read as an instance method -- this is called as `AABB::move_block_pos(&box, x, y, z)`.
-pub fn move_block_pos(_self: &AABB, _pos: i32, _y: i32, _z: i32) -> AABB {
-    todo!("PORT-BLOCKED: BlockPos is not ported")
+pub fn move_block_pos(aabb: &AABB, pos_x: i32, pos_y: i32, pos_z: i32) -> AABB {
+    // The delta is an `int` widened to `double` and then added in `f64`, so the addition is exact
+    // and nothing clamps -- which is what keeps `30_000_001.0` exactly representable where an `f32`
+    // would not. `aabb.moveBlockPos` carries `+-30_000_000` on top of coordinates already at +-1,
+    // so the widened-`int` reading is pinned by those rows.
+    AABB::new(
+        aabb.min_x + pos_x as f64,
+        aabb.min_y + pos_y as f64,
+        aabb.min_z + pos_z as f64,
+        aabb.max_x + pos_x as f64,
+        aabb.max_y + pos_y as f64,
+        aabb.max_z + pos_z as f64,
+    )
 }
 
 /// Java: `AABB#intersects(BlockPos pos)`.
 ///
-/// `todo!("PORT-BLOCKED: BlockPos")`. Free function for the reason on [`move_block_pos`].
-pub fn intersects_block_pos(_self: &AABB, _pos: i32, _y: i32, _z: i32) -> bool {
-    todo!("PORT-BLOCKED: BlockPos is not ported")
+/// Ported in session 13. A free function for the reason on [`move_block_pos`].
+pub fn intersects_block_pos(aabb: &AABB, pos_x: i32, pos_y: i32, pos_z: i32) -> bool {
+    // Delegated rather than reimplemented, so the `+ 1` is the SAME wrapping `int` addition as in
+    // `from_block_pos` and the overlap test is the already-verified `intersects_bounds`. A second
+    // copy of either would be a second thing to get wrong.
+    aabb.intersects_bounds(
+        pos_x as f64,
+        pos_y as f64,
+        pos_z as f64,
+        pos_x.wrapping_add(1) as f64,
+        pos_y.wrapping_add(1) as f64,
+        pos_z.wrapping_add(1) as f64,
+    )
 }
 
 /// Java: `AABB.encapsulatingFullBlocks(BlockPos,BlockPos)`.
 ///
-/// `todo!("PORT-BLOCKED: BlockPos")`. The `+ 1` on the maxima is what makes the result cover
-/// whole blocks rather than their corners, and it is applied to the `Math.max` of the two
-/// positions -- so the `+1` happens after the maximum, not before.
+/// Ported in session 13. A free function taking two coordinate triples rather than two
+/// `&BlockPos`, because the method is a pure function of six `int`s and taking the type would add
+/// an import for no gain. The `+ 1` ordering is documented in the body.
+#[allow(clippy::too_many_arguments)]
 pub fn encapsulating_full_blocks(
-    _p0: (i32, i32, i32),
-    _p1: (i32, i32, i32),
+    p0_x: i32,
+    p0_y: i32,
+    p0_z: i32,
+    p1_x: i32,
+    p1_y: i32,
+    p1_z: i32,
 ) -> AABB {
-    todo!("PORT-BLOCKED: BlockPos is not ported")
+    // THE `+ 1` HAPPENS **AFTER** THE `Math.max`, AND IN `int`:
+    //
+    //     Math.max(pos0.getX(), pos1.getX()) + 1, ...
+    //
+    // Two consequences, both of which a reader would plausibly get backwards:
+    //
+    //   * The `+ 1` is applied to the maximum of the two POSITIONS. So `maxX` is
+    //     `max(p0.x, p1.x) + 1` -- the far edge of the larger block, not one past both blocks'
+    //     far edges.
+    //   * It is `int` arithmetic before widening to `double`, so it WRAPS for the same reason
+    //     `from_block_pos`'s does. The corpus reaches `+-30_000_000`, which is safe, so the wrap
+    //     is documented here rather than pinned by this group; `aabb.fromBlockPos` is where it
+    //     is actually pinned, at `Integer.MAX_VALUE`.
+    AABB::new(
+        java_lang::min_i32(p0_x, p1_x) as f64,
+        java_lang::min_i32(p0_y, p1_y) as f64,
+        java_lang::min_i32(p0_z, p1_z) as f64,
+        java_lang::max_i32(p0_x, p1_x).wrapping_add(1) as f64,
+        java_lang::max_i32(p0_y, p1_y).wrapping_add(1) as f64,
+        java_lang::max_i32(p0_z, p1_z).wrapping_add(1) as f64,
+    )
 }
 
 /// Java: `AABB.of(BoundingBox box)`.

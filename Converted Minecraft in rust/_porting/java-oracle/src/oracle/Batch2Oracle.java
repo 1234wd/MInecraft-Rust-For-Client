@@ -1790,8 +1790,22 @@ final class Batch2Oracle {
 			for (double[] b : V2.EDGES2) {
 				AABB box = new AABB(a[0], b[0], a[1], b[1], a[1], b[0]);
 				String args = boxArgs(a, b);
+				// The swapped-operand row records the operand it actually compares against.
+				//
+				// It USED TO record `args + " " + args`, i.e. the same box twice, while
+				// constructing `new AABB(b[0], a[0], b[1], a[1], b[0], a[1])`. That is a
+				// DIFFERENT box -- note the last two components are `b[0], a[1]`, not the
+				// `b[1], a[0]` that `boxArgs(b, a)` would give -- so the recorded arguments did
+				// not describe the call that produced the value. The row was therefore not
+				// checkable: a test could only count it, which is what the old
+				// `aabb_equals_uses_double_compare` had to do. Recording the real operand
+				// makes the row assertable, and it is the third of a third of the group that was
+				// previously unverifiable.
+				String swapped = Out.join(Out.f64(b[0]), Out.f64(a[0]), Out.f64(b[1]),
+						Out.f64(a[1]), Out.f64(b[0]), Out.f64(a[1]));
 				o.row(args + " " + args, Out.b(box.equals(new AABB(a[0], b[0], a[1], b[1], a[1], b[0]))));
-				o.row(args + " " + args, Out.b(box.equals(new AABB(b[0], a[0], b[1], a[1], b[0], a[1]))));
+				o.row(args + " " + swapped,
+						Out.b(box.equals(new AABB(b[0], a[0], b[1], a[1], b[0], a[1]))));
 				o.row(args + " " + Out.join(Out.f64(0.0), Out.f64(0.0), Out.f64(0.0),
 						Out.f64(1.0), Out.f64(0.0), Out.f64(1.0)),
 					Out.b(box.equals(new AABB(0.0, 0.0, 0.0, 1.0, 0.0, 1.0))));
