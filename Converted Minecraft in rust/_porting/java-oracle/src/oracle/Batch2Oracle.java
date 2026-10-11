@@ -462,7 +462,7 @@ final class Batch2Oracle {
 		};
 		for (double[] bb : boxes) {
 			List<BlockPos> list = new ArrayList<>();
-			BlockPos.betweenClosed(new AABB(bb[0], bb[1], bb[2], bb[3], bb[4], bb[5])).forEach(list::add);
+			collect(list, BlockPos.betweenClosed(new AABB(bb[0], bb[1], bb[2], bb[3], bb[4], bb[5])));
 			String args = Out.join(Out.f64(bb[0]), Out.f64(bb[1]), Out.f64(bb[2]),
 				Out.f64(bb[3]), Out.f64(bb[4]), Out.f64(bb[5]));
 			for (int i = 0; i < Math.min(list.size(), 200); i++) {
@@ -484,7 +484,7 @@ final class Batch2Oracle {
 		for (int[] a : new int[][] {{0, 0, 0}, {1, 2, 3}, {-4, 10, 7}}) {
 			for (int endY : new int[] {0, 5, -5, 20, -20, 1}) {
 				List<BlockPos> list = new ArrayList<>();
-				BlockPos.neighborColumn(a[0], a[1], a[2], endY).forEach(list::add);
+				collect(list, BlockPos.neighborColumn(a[0], a[1], a[2], endY));
 				for (int i = 0; i < Math.min(list.size(), 200); i++) {
 					o.row(Out.join(Out.i32(a[0]), Out.i32(a[1]), Out.i32(a[2]), Out.i32(endY)),
 						out3i(list.get(i)));
@@ -535,9 +535,9 @@ final class Batch2Oracle {
 			for (int[] b : new int[][] {{0, 0, 0}, {1, 2, 3}, {3, 0, 1}, {-2, -3, -4}}) {
 				for (double[] d : dirs) {
 					List<BlockPos> list = new ArrayList<>();
-					BlockPos.betweenCornersInDirection(
+					collect(list, BlockPos.betweenCornersInDirection(
 						new BlockPos(a[0], a[1], a[2]), new BlockPos(b[0], b[1], b[2]),
-						new Vec3(d[0], d[1], d[2])).forEach(list::add);
+						new Vec3(d[0], d[1], d[2])));
 					String args = Out.join(Out.i32(a[0]), Out.i32(a[1]), Out.i32(a[2]),
 						Out.i32(b[0]), Out.i32(b[1]), Out.i32(b[2]),
 						Out.f64(d[0]), Out.f64(d[1]), Out.f64(d[2]));
@@ -554,7 +554,7 @@ final class Batch2Oracle {
 		for (long seed : V2.SEEDS) {
 			RandomSource r = RandomSource.create(seed);
 			List<BlockPos> list = new ArrayList<>();
-			BlockPos.randomBetweenClosed(r, 12, -3, -2, -1, 4, 5, 6).forEach(list::add);
+			collect(list, BlockPos.randomBetweenClosed(r, 12, -3, -2, -1, 4, 5, 6));
 			for (int i = 0; i < list.size(); i++) {
 				o.row(Out.i64(seed), out3i(list.get(i)));
 			}
@@ -567,7 +567,7 @@ final class Batch2Oracle {
 		for (long seed : V2.SEEDS) {
 			RandomSource r = RandomSource.create(seed);
 			List<BlockPos> list = new ArrayList<>();
-			BlockPos.randomBetweenClosed(r, 6, 5, 5, 5, 5, 5, 5).forEach(list::add);
+			collect(list, BlockPos.randomBetweenClosed(r, 6, 5, 5, 5, 5, 5, 5));
 			for (int i = 0; i < list.size(); i++) {
 				o.row(Out.i64(seed), out3i(list.get(i)));
 			}
@@ -577,7 +577,7 @@ final class Batch2Oracle {
 		for (long seed : V2.SEEDS) {
 			RandomSource r = RandomSource.create(seed);
 			List<BlockPos> list = new ArrayList<>();
-			BlockPos.randomInCube(r, 10, new BlockPos(0, 0, 0), 2).forEach(list::add);
+			collect(list, BlockPos.randomInCube(r, 10, new BlockPos(0, 0, 0), 2));
 			for (int i = 0; i < list.size(); i++) {
 				o.row(Out.i64(seed), out3i(list.get(i)));
 			}
@@ -875,7 +875,7 @@ final class Batch2Oracle {
 		for (int[] c : new int[][] {{0, 0}, {5, -3}}) {
 			for (int r : new int[] {0, 1, 2, 3}) {
 				List<ChunkPos> list = new ArrayList<>();
-				ChunkPos.rangeClosed(new ChunkPos(c[0], c[1]), r).forEach(list::add);
+				collectCP(list, ChunkPos.rangeClosed(new ChunkPos(c[0], c[1]), r));
 				for (int i = 0; i < Math.min(list.size(), 60); i++) {
 					o.row(Out.join(Out.i32(c[0]), Out.i32(c[1]), Out.i32(r)), out2i(list.get(i)));
 				}
@@ -885,8 +885,9 @@ final class Batch2Oracle {
 		o.fn("chunkpos.rangeClosedFromTo", "i32 i32 i32 i32", "i32 i32");
 		for (int[] a : new int[][] {{0, 0}, {2, 1}, {-1, -1}, {3, 0}}) {
 			for (int[] b : new int[][] {{0, 0}, {1, 2}, {3, -1}}) {
-				List<ChunkPos> list =
-					ChunkPos.rangeClosed(new ChunkPos(a[0], a[1]), new ChunkPos(b[0], b[1])).toList();
+				List<ChunkPos> list = new ArrayList<>();
+				collectCP(list,
+					ChunkPos.rangeClosed(new ChunkPos(a[0], a[1]), new ChunkPos(b[0], b[1])));
 				for (int i = 0; i < Math.min(list.size(), 60); i++) {
 					o.row(Out.join(Out.i32(a[0]), Out.i32(a[1]), Out.i32(b[0]), Out.i32(b[1])),
 						out2i(list.get(i)));
@@ -2998,11 +2999,52 @@ final class Batch2Oracle {
 			Out.f64(b.maxX), Out.f64(b.maxY), Out.f64(b.maxZ));
 	}
 
+	/**
+	 * Collect an iterator, COPYING each element.
+	 *
+	 * # WHY THIS EXISTS, AND WHY IT IS THE WHOLE STORY OF SEVEN BLOCKPOS GROUPS
+	 *
+	 * Every vanilla `BlockPos` iterator returns the SAME `MutableBlockPos` instance on every
+	 * step -- a reused cursor. So `it.forEach(list::add)` stores N references to ONE object, and
+	 * reading `list.get(i)` back later yields that object's FINAL value for every i. The golden
+	 * then records the last position of the walk N times.
+	 *
+	 * That is not a theory; it is what session 13 measured. `blockpos.betweenClosed` for
+	 * `(0,0,0)..(1,2,3)` has 24 elements, and the jar's own iterator, consumed without copying,
+	 * reports `1,2,3` for all of them -- the final element. The golden recorded exactly that, and
+	 * the Rust port, which yields owned values and therefore the true sequence, disagreed with it
+	 * on every element.
+	 *
+	 * `spiralAround` was already correct (it copies inline), which is why that one group passed and
+	 * gave no hint that anything was wrong. A group passing for a reason unrelated to why its
+	 * neighbours fail is exactly what hid this.
+	 *
+	 * Vanilla callers are unaffected -- they consume each element before advancing -- so this is
+	 * purely an artefact of materialising the sequence. The Rust port yields owned values, which
+	 * is the faithful model, so the GOLDEN was wrong and the port was right.
+	 */
+	private static void collect(List<BlockPos> list, Iterable<BlockPos> it) {
+		it.forEach(p -> list.add(new BlockPos(p.getX(), p.getY(), p.getZ())));
+	}
+
+	/**
+	 * {@link ChunkPos} counterpart of {@link #collect} -- same reused-cursor reason.
+	 *
+	 * Takes a `java.util.stream.Stream`, not an `Iterable`, because `ChunkPos.rangeClosed` returns
+	 * a Stream rather than an Iterable like the `BlockPos` iterators do. And it reads `p.x`/`p.z`
+	 * explicitly rather than `new ChunkPos(p)`, because `ChunkPos` is a **record** and so has no
+	 * copy constructor -- the canonical constructor is `ChunkPos(int, int)`.
+	 */
+	private static void collectCP(List<ChunkPos> list, java.util.stream.Stream<ChunkPos> s) {
+		s.forEach(p -> list.add(new ChunkPos(p.x(), p.z())));
+	}
+
 	/** Emit the first `cap` elements of an iterator as rows. */
 	private static void emitSeq(Out o, int[] from, int[] to,
 			BiFunction<BlockPos, BlockPos, Iterable<BlockPos>> fn, int cap) {
 		List<BlockPos> list = new ArrayList<>();
-		fn.apply(new BlockPos(from[0], from[1], from[2]), new BlockPos(to[0], to[1], to[2])).forEach(list::add);
+		collect(list, fn.apply(new BlockPos(from[0], from[1], from[2]),
+			new BlockPos(to[0], to[1], to[2])));
 		String args = Out.join(Out.i32(from[0]), Out.i32(from[1]), Out.i32(from[2]),
 			Out.i32(to[0]), Out.i32(to[1]), Out.i32(to[2]));
 		for (int i = 0; i < Math.min(list.size(), cap); i++) {

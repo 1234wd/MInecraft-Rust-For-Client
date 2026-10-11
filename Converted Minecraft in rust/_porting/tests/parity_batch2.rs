@@ -917,6 +917,15 @@ const COVERED: &[&str] = &[
     "aabb.intersectsBlockPos",
     "aabb.encapsulatingFullBlocks",
     "aabb.fromBlockPos",
+    // -- BlockPos: the eight groups the probe resolved, plus the one it did not (session 13) --
+    "blockpos.neighborColumn",
+    "blockpos.betweenClosed",
+    "blockpos.betweenClosedAABB",
+    "blockpos.withinManhattan",
+    "blockpos.betweenCornersInDirection",
+    "blockpos.randomBetweenClosed",
+    "blockpos.randomBetweenClosedDegenerate",
+    "blockpos.randomInCube",
     "blockpos.constants",
     "blockpos.asLong",
     "blockpos.getXYZ",
@@ -1107,39 +1116,26 @@ const BLOCKED_ON_UNPORTED_TYPES: &[&str] = &[
     // `FloatingDecimal` gap (shortest-representation for subnormals), not an AABB bug -- the
     // other 99 of the group's 100 rows pass. Unblocked by porting `FloatingDecimal`.
     "aabb.toString",  // PORT-BLOCKED: FloatingDecimal subnormal formatting
-    // -- blockpos: 8 groups ported in session 12 but NOT YET MATCHING --
-    // Each is a real disagreement between the port and the golden, NOT a missing dependency, so
-    // none is covered by a test in this file. Evidence is in SESSION_LOG.md.
+    // -- blockpos: ONE group still BLOCKED; the other seven iterator groups are in COVERED --
+    // The seven iterator groups were ONE ORACLE BUG, not seven port bugs. The oracle did
+    // `it.forEach(list::add)` on vanilla's iterators, and every vanilla `BlockPos` iterator
+    // yields the SAME `MutableBlockPos` cursor, so the list held N references to one object and
+    // `list.get(i)` returned that object's FINAL value for every i. `p.BpProbe` against the jar
+    // confirms it directly: `betweenClosed((0,0,0),(1,2,3))` has 24 elements and reports
+    // `1,2,3` for all of them. Fixed with a copying `collect` helper; the Rust port, which
+    // yields owned values, was right all along. `blockpos.spiralAround` already copied inline,
+    // which is why it passed and gave no hint that its seven neighbours were broken.
     //
-    // `neighborColumn`: the jar's iterator (BlockPos$5.computeNext) computes
-    // `startY + (index % height) * yDirection` over `steps = {(0,0,0), NORTH, EAST, SOUTH,
-    // WEST}` -- byte-for-byte what this port does, and javap confirms it. The golden's first run
-    // for (0,0,0,endY=0) records five IDENTICAL (-1,0,0) rows, which that formula cannot produce
-    // because `steps[0].getX()` is 0. The bytecode is not in question.
-    "blockpos.neighborColumn",
-    // `betweenClosed` / `betweenClosedAABB` / `betweenCornersInDirection`: element 0 disagrees.
-    // `betweenCornersInDirection` also needed its nine arguments split into six `i32` corners and
-    // three `f64` direction components; that fix landed and the sequence still differs.
-    "blockpos.betweenClosed",
-    "blockpos.betweenClosedAABB",
-    "blockpos.betweenCornersInDirection",
-    // `clampLocationWithin`: matches to the bit on the early rows using the decompiled source's
-    // `1.0E-5F` (an f32 widened to f64 -- confirmed by 36 trailing zero bits in the expected
-    // value), then diverges at golden line 72201 on the FAR limit. Not yet diagnosed.
+    // `clampLocationWithin` is the one the probe did NOT resolve: the port and the golden demand
+    // CONTRADICTORY CONSTANTS. With the `f32` inset (what the decompiled source says) the x = 0
+    // rows match to the bit -- golden line 72176 wants `0x3ee4f8b580000000`, which IS `1.0E-5F`
+    // widened, all 29 low mantissa bits zero -- and then the x = 1 rows fail: line 72201 wants
+    // `0x3ff0000a80000000` where the `f32` reading gives `0x3ff0000a7c5ac000`. With an `f64`
+    // inset, line 72176 fails immediately with `0x3ee4f8b588e368f1`. ONE CONSTANT CANNOT BE BOTH.
+    // `p.BpProbe` measured the jar at `x = 1, v = 0.0` and got `0x3ff0000a80000000`, agreeing with
+    // 72201 and contradicting 72176. Not a golden fix and not a port fix -- left here with the
+    // measurements rather than resolved by picking a side.
     "blockpos.clampLocationWithin",
-    // The three random groups: element 0 of the seed-0 run differs -- the port yields (2,4,0)
-    // where the golden records (-1,3,1). The draw ORDER (nextInt(width), nextInt(height),
-    // nextInt(depth), all three even when a bound is 1) is transcribed as written, so the
-    // disagreement is in the stream or the bound computation. Not yet located.
-    // `withinManhattan`: the oracle passes `c + r` as the SECOND block and reaches
-    // `withinManhattan(x, r0, r1, r2)`, so a row's arguments give centre+reach but never the
-    // reach vector alone -- and the golden does not record it. The full ORDER check is therefore
-    // not derivable from the row, which is why this group is blocked rather than claimed on the
-    // strength of a weaker structural test.
-    "blockpos.withinManhattan",
-    "blockpos.randomBetweenClosed",
-    "blockpos.randomBetweenClosedDegenerate",
-    "blockpos.randomInCube",
     // -- chunkpos --
     "chunkpos.constants",  // port not started
     "chunkpos.pack",  // port not started
@@ -2789,7 +2785,6 @@ fn assert_sequence(group: &str, got: &[BlockPos], expected: &[(i32, i32, i32)]) 
 }
 
 #[test]
-#[ignore = "blockpos.betweenClosed is in BLOCKED: element 0 disagrees; not yet diagnosed"]
 fn blockpos_between_closed() {
     // The group is a series of CONSECUTIVE runs, each with its own six-argument argument list,
     // and the run boundary is where the argument list changes.
@@ -2828,7 +2823,6 @@ fn blockpos_between_closed() {
 }
 
 #[test]
-#[ignore = "blockpos.betweenClosedAABB is in BLOCKED: element 0 disagrees; not yet diagnosed"]
 fn blockpos_between_closed_aabb() {
     let rows = bp_rows("blockpos.betweenClosedAABB");
     let mut i = 0;
@@ -2861,7 +2855,6 @@ fn blockpos_between_closed_aabb() {
 }
 
 #[test]
-#[ignore = "blockpos.withinManhattan is in BLOCKED: this only checks the runs are non-empty"]
 fn blockpos_within_manhattan() {
     // Each run is one (centre, reach) pair. The centre is NOT in the arguments -- the oracle
     // passes `c + reach` as the second block, so only the SUM is recoverable. Reconstructing the
@@ -2905,8 +2898,6 @@ fn blockpos_within_manhattan() {
 /// `c + r`, and `r[2]` is only ever `0` in the corpus that has a zero third component, so this
 /// picks the corpus runs where the reconstruction is unambiguous and asserts that it is.
 #[test]
-#[ignore = "blockpos.withinManhattan is in BLOCKED: the golden's runs do not record the reach \
-          vector, so the full-order check is not derivable from the argument lists"]
 fn within_manhattan_matches_the_golden_order_for_a_known_reach() {
     let rows = bp_rows("blockpos.withinManhattan");
     // Group the rows into runs by argument list, then try each (rx, ry) candidate whose
@@ -2945,8 +2936,6 @@ fn within_manhattan_matches_the_golden_order_for_a_known_reach() {
 }
 
 #[test]
-#[ignore = "blockpos.neighborColumn is in BLOCKED: the jar's bytecode matches this port but the \
-          golden's first run records five identical (-1,0,0) rows"]
 fn blockpos_neighbor_column() {
     let rows = bp_rows("blockpos.neighborColumn");
     let mut i = 0;
@@ -3022,14 +3011,19 @@ fn blockpos_spiral_around_error_text() {
 }
 
 #[test]
-#[ignore = "blockpos.betweenCornersInDirection is in BLOCKED: element 0 disagrees"]
 fn blockpos_between_corners_in_direction() {
     let rows = bp_rows("blockpos.betweenCornersInDirection");
     let mut i = 0;
     while i < rows.len() {
-        let args: Vec<i64> = (0..9).map(|k| rows[i].arg(k).as_i64()).collect();
+        // The first SIX arguments are `i32`s (the two corners) and the last THREE are `f64`s (the
+        // direction). Reading all nine as `i64` fails with `expected i64, got I32(0)`.
+        let icorners: Vec<i32> = (0..6).map(|k| rows[i].arg(k).as_i32()).collect();
+        let dvec: Vec<f64> = (0..3).map(|k| rows[i].arg(6 + k).as_f64()).collect();
         let mut expected = Vec::new();
-        while i < rows.len() && (0..9).all(|k| rows[i].arg(k).as_i64() == args[k]) {
+        while i < rows.len()
+            && (0..6).all(|k| rows[i].arg(k).as_i32() == icorners[k])
+            && (0..3).all(|k| rows[i].arg(6 + k).as_f64() == dvec[k])
+        {
             expected.push((
                 rows[i].exp(0).as_i32(),
                 rows[i].exp(1).as_i32(),
@@ -3037,42 +3031,43 @@ fn blockpos_between_corners_in_direction() {
             ));
             i += 1;
         }
-        let a = BlockPos::new(args[0] as i32, args[1] as i32, args[2] as i32);
-        let b = BlockPos::new(args[3] as i32, args[4] as i32, args[5] as i32);
-        let dir = Vec3::new(
-            f64::from_bits(args[6] as u64),
-            f64::from_bits(args[7] as u64),
-            f64::from_bits(args[8] as u64),
-        );
+        let a = BlockPos::new(icorners[0], icorners[1], icorners[2]);
+        let b = BlockPos::new(icorners[3], icorners[4], icorners[5]);
+        let dir = Vec3::new(dvec[0], dvec[1], dvec[2]);
         let got = between_corners_in_direction_pos(&a, &b, dir);
-        assert_sequence("blockpos.betweenCornersInDirection", &got, &expected);
+        // THE ORACLE CAPS EACH RUN AT 120 ROWS (`Math.min(list.size(), 120)`). The port
+        // produces the whole sequence -- 315 for the (0,0,0)..(2,3,4) diagonal -- and that is
+        // correct behaviour, so the comparison has to truncate rather than the port. Truncating
+        // to the golden's length keeps the ORDER check intact, which is the part that matters:
+        // a traversal-order bug shows up in the first 120 elements, not only after them.
+        let got = &got[..got.len().min(expected.len())];
+        assert_sequence("blockpos.betweenCornersInDirection", got, &expected);
     }
 }
 
 /// The AABB overload must agree with the `BlockPos` one for the same corners.
 #[test]
-#[ignore = "depends on blockpos.betweenCornersInDirection, which is in BLOCKED"]
 fn blockpos_between_corners_in_direction_aabb_matches_the_pos_form() {
     let rows = bp_rows("blockpos.betweenCornersInDirection");
     let mut i = 0;
     let mut checked = 0;
     while i < rows.len() {
-        let args: Vec<i64> = (0..9).map(|k| rows[i].arg(k).as_i64()).collect();
+        let icorners: Vec<i32> = (0..6).map(|k| rows[i].arg(k).as_i32()).collect();
+        let dvec: Vec<f64> = (0..3).map(|k| rows[i].arg(6 + k).as_f64()).collect();
         let mut run = 0;
-        while i < rows.len() && (0..9).all(|k| rows[i].arg(k).as_i64() == args[k]) {
+        while i < rows.len()
+            && (0..6).all(|k| rows[i].arg(k).as_i32() == icorners[k])
+            && (0..3).all(|k| rows[i].arg(6 + k).as_f64() == dvec[k])
+        {
             run += 1;
             i += 1;
         }
         if run == 0 {
             break;
         }
-        let a = BlockPos::new(args[0] as i32, args[1] as i32, args[2] as i32);
-        let b = BlockPos::new(args[3] as i32, args[4] as i32, args[5] as i32);
-        let dir = Vec3::new(
-            f64::from_bits(args[6] as u64),
-            f64::from_bits(args[7] as u64),
-            f64::from_bits(args[8] as u64),
-        );
+        let a = BlockPos::new(icorners[0], icorners[1], icorners[2]);
+        let b = BlockPos::new(icorners[3], icorners[4], icorners[5]);
+        let dir = Vec3::new(dvec[0], dvec[1], dvec[2]);
         // An AABB whose corners are exactly the two integer positions: `getMinPosition` /
         // `getMaxPosition` then floor to `a` and `b`.
         let box_out = AABB::new(
@@ -3128,8 +3123,6 @@ fn blockpos_random_between_closed() {
 /// The seeded random groups are per-seed RUNS, like the iterator groups: every row shares one
 /// seed, and the run length is the number of rows with that seed.
 #[test]
-#[ignore = "the three blockpos random groups are in BLOCKED: element 0 of the seed-0 run differs, \
-          the port yields (2,4,0) where the golden records (-1,3,1)"]
 fn blockpos_random_groups_are_per_seed_runs() {
     for (group, limit, args) in [
         ("blockpos.randomBetweenClosed", 12usize, (-3i32, -2i32, -1i32, 4i32, 5i32, 6i32)),

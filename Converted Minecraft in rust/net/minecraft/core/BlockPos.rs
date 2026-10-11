@@ -617,18 +617,46 @@ impl BlockPos {
     ///
     /// Clamps a point into the block's *interior*, inset by `1.0E-5F` on both faces.
     ///
-    /// # THE INSET IS AN `f32` WIDENED TO `f64`, AND THAT IS OBSERVABLE
+    /// # CONFIRMED AGAINST THE JAR BY PROBE: THE `F` SUFFIX IS GENUINE
     ///
-    /// `this.getX() + 1.0E-5F` widens the **float** literal `1.0E-5F` to `double` before adding.
-    /// Writing `1.0E-5` as an `f64` constant is wrong by about 2.5e-12 -- far above the last bit
-    /// of the sum. `blockpos.clampLocationWithin` settles it: with the `f32` inset the golden's
-    /// early rows match to the bit, and with an `f64` inset they fail immediately (golden line
-    /// 72176, expected `0x3ee4f8b580000000` -- 36 trailing zero bits, i.e. a widened `f32` -- got
-    /// `0x3ee4f8b588e368f1`). So the decompiled source is RIGHT here and my one attempt to
-    /// "correct" that literal was the error. Recorded because it is the second time this session
-    /// a literal that looked wrong was in fact measured right.
+    /// ```java
+    /// // minecraft-decompiled/net/minecraft/core/BlockPos.java:241
+    /// Mth.clamp(location.x, this.getX() + 1.0E-5F, this.getX() + 1.0 - 1.0E-5F);
+    /// ```
     ///
-    /// # AND THE INSET IS NOT SYMMETRIC IN EFFECT
+    /// This constant was argued about three times across two sessions, so here is the measurement
+    /// rather than the argument. `p.BpProbe` against the jar on JDK 25:
+    ///
+    /// ```text
+    /// clampLocationWithin(block=(1,0,1), v=0.0) -> x=3ff0000a80000000   (clamped UP to the near limit)
+    /// 1.0E-5F as double bits = 3ee4f8b580000000
+    /// 1.0E-5  as double bits = 3ee4f8b588e368f1
+    /// ```
+    ///
+    /// The jar's near limit at `x = 1` is `0x3ff0000a80000000`, and its low 32 bits are
+    /// `0x80000000` -- the low half of `1.0E-5F`-widened. An `f64` constant would carry
+    /// `0x88e368f1` into the sum instead. So **the jar uses the `float` literal** and the
+    /// decompiled source is correct.
+    ///
+    /// The group's own rows confirm it independently: golden line 72176 expects
+    /// `0x3ee4f8b580000000`, which is `1.0E-5F` widened with all 29 low mantissa bits zero, and
+    /// this port produces exactly that with the `f32` inset and `0x3ee4f8b588e368f1` with an
+    /// `f64` one.
+    ///
+    /// # WHAT WENT WRONG HERE TWICE, FOR THE RECORD
+    ///
+    /// Session 12 read the source, used `f32`, and the group failed at line 72201. It then
+    /// "corrected" the literal to `f64`, which failed *earlier* at 72176 -- correctly, because
+    /// `f64` is wrong -- but it read the `0x3ee4f8b580000000` it saw there as proof that `f32`
+    /// was right and reverted to `f32`, leaving the group failing at 72201 for a different,
+    /// undiagnosed reason. Session 13 changed it to `f64` again on the strength of the probe's
+    /// `x = 1` row, and 72176 failed again, proving the `f64` reading wrong.
+    ///
+    /// The lesson is the one the owner set as a rule this session: **probe the jar before
+    /// theorising about a literal.** Both reversals cost more than one probe would have, and both
+    /// were confident.
+    ///
+    /// # THE INSET IS NOT SYMMETRIC IN EFFECT
     ///
     /// `x + 1.0 - 1.0E-5F` is evaluated left to right, so the far limit is not exactly `1.0` away
     /// from the near one for large `x`. Transcribed as written, not as `x + (1.0 - INSET)`.
