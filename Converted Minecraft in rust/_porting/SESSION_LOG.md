@@ -776,3 +776,72 @@ quietly forgotten.
 Measured after the fix: `COVERED 168`, `BLOCKED 67`, sum 235, union 235, and union equals the
 number of `#fn` headers in `batch2.txt`. The partition is exact and is now proved to be.
 262 tests green in debug and release.
+
+---
+
+# Session 13 - finish Batch 2
+
+Checkpoint timestamps are `git log --format="[%ad] %h %s" --date=iso`, pasted after each commit.
+
+**[2026-10-11 11:58:15 +0500] e676040 AABB -> PARTIAL | methods 47/55 | groups 38/39 | commit e676040**
+
+The four `BlockPos`-blocked methods -- `fromBlockPos`, `move(BlockPos)`, `intersects(BlockPos)`,
+`encapsulatingFullBlocks` -- ported, and their four groups green. `aabb.equals` re-emitted with
+full coverage. `BLOCKED 67 -> 63`, `COVERED 168 -> 172`, 264 tests green.
+
+All four add `1` to an **`i32` before widening to `f64`**, so all four wrap where vanilla wraps.
+`fromBlockPos`'s fourth row is `{Integer.MAX_VALUE, Integer.MIN_VALUE, 0}`, so `maxX` arrives
+already wrapped negative, below its own `minX`, and the constructor's `min_f64`/`max_f64` swap the
+pair -- the jar really does produce an inverted box. Widening first and adding in `f64` would give
+`2147483648.0` and fail that one row.
+
+`aabb.equals` had been recording `args args` for the swapped-operand row while constructing a
+*different* box, so a third of that group was only countable and never assertable. Re-emitted to
+record the real operand: 50 of its 75 rows now carry an operand different from the box itself.
+
+**Golden regenerated. Group count unchanged at 235, line count unchanged at 294749, 34 lines
+changed -- and 9 of them are in `vec3.subtractScalar`, differing ONLY in the NaN payload
+(`0x7ff8...` vs `0xfff8...`).** Nothing in the oracle edit can affect that group, so **the golden
+is not byte-reproducible across oracle runs for NaN payloads.** Harmless, and only because
+`f64_bits_match` treats any two NaNs as equal while `NAN_BITS_OBSERVABLE` is empty -- the first
+concrete evidence that the empty allowlist is load-bearing rather than theoretical. A future
+session must not read a NaN-payload diff as a regression.
+
+**[2026-10-11 12:23:59 +0500] 36d978c item 2: seven of the eight BlockPos disagreements were ONE oracle bug | groups 45/46 | commit 36d978c**
+
+`COVERED 172 -> 180`, `BLOCKED 63 -> 55`, 272 tests green.
+
+**Seven groups, one bug, and the probe rule found it in one command.** `p.BpProbe` calls the jar's
+real methods on the exact failing inputs. It shows every `BlockPos` iterator yields the SAME
+`MutableBlockPos` cursor: `betweenClosed((0,0,0),(1,2,3))` has 24 elements and reports `1,2,3`
+for all of them -- the last one.
+
+The oracle did `it.forEach(list::add)`, storing N references to that one object, then read
+`list.get(i)` back per row. So the golden recorded the walk's **final** position on every row of
+the run. Affected: `betweenClosed`, `betweenClosedAABB`, `withinManhattan`, `neighborColumn`,
+`betweenCornersInDirection`, `randomBetweenClosed`, `randomBetweenClosedDegenerate`, `randomInCube`.
+**Not one of them was a port bug.** `neighborColumn`'s five identical `(-1,0,0)` rows, which
+`javap` could not explain in session 12, are explained: it is the cursor's final value.
+
+`blockpos.spiralAround` already copied inline, which is why it passed and gave no hint that its
+seven neighbours were broken. A group passing for a reason unrelated to why its neighbours fail is
+what hid this for two sessions.
+
+The same latent bug was also fixed in two **`chunkpos`** sites (`rangeClosed`,
+`rangeClosedFromTo`) that had not been ported yet and would have inherited it.
+
+**`clampLocationWithin` stays BLOCKED.** The port and the golden demand contradictory constants:
+with the `f32` inset the `x = 0` rows match to the bit (line 72176 wants `0x3ee4f8b580000000`,
+which IS `1.0E-5F` widened, 29 low mantissa bits zero) and then `x = 1` fails (line 72201 wants
+`0x3ff0000a80000000`, the `f32` reading gives `0x3ff0000a7c5ac000`); with an `f64` inset 72176
+fails immediately with `0x3ee4f8b588e368f1`. One constant cannot be both, and the probe at
+`x = 1` agrees with 72201 while the golden agrees with 72176. Left BLOCKED with the measurements
+rather than resolved by picking a side.
+
+I got the `f32`/`f64` question wrong **three times** across two sessions by theorising about hex
+digits. The probe answers it in one line. Recorded in the port's doc comment.
+
+**The session-12 disjointness guard caught me on this commit.** Moving the eight groups into
+`COVERED` left them in `BLOCKED` too; `COVERED + BLOCKED` read 243 against a golden of 235 and
+`covered_and_blocked_are_disjoint` failed. First use of that guard on a real mistake rather than a
+hypothetical -- which is the argument for having written it.
