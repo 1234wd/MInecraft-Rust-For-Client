@@ -236,7 +236,194 @@ fn quart_pos_constants_match_the_jar() {
     }
 }
 
+// ===========================================================================
+// Cursor3D -- the walk order and the boundary classification are the contract,
+// so these assert them structurally rather than against a golden.
+// ===========================================================================
+
 #[test]
+fn cursor3d_constants_match_the_jar() {
+    for (f, v) in [
+        ("TYPE_INSIDE", 0),
+        ("TYPE_FACE", 1),
+        ("TYPE_EDGE", 2),
+        ("TYPE_CORNER", 3),
+    ] {
+        assert_const("net.minecraft.core.Cursor3D", f, &format!("i32:{v}"));
+    }
+}
+
+#[test]
+fn cursor3d_walks_x_fastest_then_y_then_z() {
+    use minecraft_rust::net::minecraft::core::Cursor3D::Cursor3D;
+
+    let mut c = Cursor3D::new(0, 0, 0, 1, 1, 1);
+    let mut seen = Vec::new();
+    while c.advance() {
+        seen.push((c.next_x(), c.next_y(), c.next_z()));
+    }
+    // 2x2x2 = 8 cells. x fastest, then y, then z -- this EXACT list is the traversal order, and
+    // a reordered walk changes which block wins when two placements collide.
+    assert_eq!(
+        seen,
+        vec![
+            (0, 0, 0),
+            (1, 0, 0),
+            (0, 1, 0),
+            (1, 1, 0),
+            (0, 0, 1),
+            (1, 0, 1),
+            (0, 1, 1),
+            (1, 1, 1),
+        ],
+        "the index decomposition is x = i % width, y = (i / width) % height, z = i / width / height"
+    );
+}
+
+#[test]
+fn cursor3d_advance_stops_without_moving_at_the_end() {
+    use minecraft_rust::net::minecraft::core::Cursor3D::Cursor3D;
+
+    // A 1x1x1 cursor: one position, then `advance` returns false FOREVER rather than wrapping.
+    let mut c = Cursor3D::new(5, 6, 7, 5, 6, 7);
+    assert!(c.advance());
+    assert_eq!((c.next_x(), c.next_y(), c.next_z()), (5, 6, 7));
+    assert!(!c.advance());
+    assert!(!c.advance(), "advance must stay false, not re-yield the last cell");
+    assert_eq!((c.next_x(), c.next_y(), c.next_z()), (5, 6, 7), "and must not move");
+}
+
+#[test]
+fn cursor3d_type_counts_boundary_axes() {
+    use minecraft_rust::net::minecraft::core::Cursor3D::{Cursor3D, TYPE_CORNER, TYPE_EDGE, TYPE_FACE, TYPE_INSIDE};
+
+    // 3x3x3: the centre is TYPE_INSIDE, each face centre TYPE_FACE, each edge TYPE_EDGE, and
+    // every corner TYPE_CORNER. Counting axes independently is the whole method.
+    let mut c = Cursor3D::new(0, 0, 0, 2, 2, 2);
+    let mut counts = [0usize; 4];
+    while c.advance() {
+        counts[c.get_next_type() as usize] += 1;
+    }
+    assert_eq!(counts[TYPE_INSIDE as usize], 1, "one interior cell");
+    assert_eq!(counts[TYPE_FACE as usize], 6, "six face centres");
+    assert_eq!(counts[TYPE_EDGE as usize], 12, "twelve edge cells");
+    assert_eq!(counts[TYPE_CORNER as usize], 8, "eight corners");
+    assert_eq!(counts.iter().sum::<usize>(), 27, "every cell visited exactly once");
+}
+
+#[test]
+fn cursor3d_walk_does_not_depend_on_where_the_box_sits() {
+    use minecraft_rust::net::minecraft::core::Cursor3D::Cursor3D;
+
+    // Same box size at a wildly different origin must produce the same TYPE sequence. That is
+    // what makes `getNextType` usable without knowing where the box is, and it holds because the
+    // method reads the OFFSET (`x == 0 || x == width - 1`), never the world coordinate.
+    let mut a = Cursor3D::new(0, 0, 0, 2, 1, 1);
+    let mut b = Cursor3D::new(-40, 1000, 7, -38, 1001, 8);
+    loop {
+        let ea = a.advance();
+        let eb = b.advance();
+        assert_eq!(ea, eb, "the same box size yields the same number of cells");
+        if !ea {
+            break;
+        }
+        assert_eq!(
+            a.get_next_type(),
+            b.get_next_type(),
+            "the type sequence is origin-independent"
+        );
+    }
+}
+
+// ===========================================================================
+// AxisCycle
+// ===========================================================================
+
+#[test]
+fn axis_cycle_matches_the_jar() {
+    assert_enum(
+        "net.minecraft.core.AxisCycle",
+        &[("NONE", 0), ("FORWARD", 1), ("BACKWARD", 2)],
+    );
+}
+
+#[test]
+fn axis_cycle_inverse_is_an_involution() {
+    use minecraft_rust::net::minecraft::core::AxisCycle::AxisCycle;
+
+    for c in [AxisCycle::None, AxisCycle::Forward, AxisCycle::Backward] {
+        assert_eq!(c.inverse().inverse(), c, "inverse must undo itself");
+    }
+    assert_eq!(AxisCycle::None.inverse(), AxisCycle::None, "NONE is its own inverse");
+    assert_eq!(AxisCycle::Forward.inverse(), AxisCycle::Backward);
+}
+
+#[test]
+fn axis_cycle_forward_and_backward_are_inverse_triple_rotations() {
+    use minecraft_rust::net::minecraft::core::AxisCycle::AxisCycle;
+    use minecraft_rust::net::minecraft::core::Direction::Axis;
+
+    // FORWARD maps the WHOLE triple (x,y,z) -> (z,x,y) and BACKWARD maps it (x,y,z) -> (y,z,x).
+    // They are inverses as triple permutations, so composing them needs the ROTATED triple fed
+    // back in -- applying both to the same arguments is not an identity, and my first version of
+    // this test did exactly that and asserted something false.
+    //
+    // The reason both orderings were worth checking: FORWARD reads `axis.choose(z, x, y)` and
+    // BACKWARD reads `axis.choose(y, z, x)`. Writing BACKWARD as the "obvious" other order,
+    // `axis.choose(x, z, y)`, would still look plausible and would break this.
+    for (x, y, z) in [(1i32, 2, 3), (-4, 5, -6), (0, 0, 0)] {
+        let rotated: Vec<i32> = [Axis::X, Axis::Y, Axis::Z]
+            .iter()
+            .map(|a| AxisCycle::Forward.cycle_int(x, y, z, *a))
+            .collect();
+        assert_eq!(rotated, vec![z, x, y], "FORWARD rotates (x,y,z) to (z,x,y)");
+
+        let back: Vec<i32> = [Axis::X, Axis::Y, Axis::Z]
+            .iter()
+            .map(|a| AxisCycle::Backward.cycle_int(rotated[0], rotated[1], rotated[2], *a))
+            .collect();
+        assert_eq!(back, vec![x, y, z], "BACKWARD undoes FORWARD");
+
+        // NONE is the identity in both directions.
+        assert_eq!(
+            [
+                AxisCycle::None.cycle_int(x, y, z, Axis::X),
+                AxisCycle::None.cycle_int(x, y, z, Axis::Y),
+                AxisCycle::None.cycle_int(x, y, z, Axis::Z),
+            ],
+            [x, y, z]
+        );
+    }
+}
+
+#[test]
+fn axis_cycle_axis_rotation_wraps_instead_of_throwing() {
+    use minecraft_rust::net::minecraft::core::AxisCycle::{between, AxisCycle};
+    use minecraft_rust::net::minecraft::core::Direction::Axis;
+
+    // `Math.floorMod(ordinal - 1, 3)` -- with `%` this would be -1 and indexing AXIS_VALUES[-1]
+    // would throw. This is the case the floorMod is there for.
+    assert_eq!(AxisCycle::Backward.cycle_axis(Axis::X), Axis::Z, "X - 1 wraps to Z");
+    assert_eq!(AxisCycle::Forward.cycle_axis(Axis::Z), Axis::X, "Z + 1 wraps to X");
+    assert_eq!(AxisCycle::None.cycle_axis(Axis::Y), Axis::Y);
+
+    // `between(X, X)` is NONE; `between(X, Y)` and `between(Y, X)` differ.
+    assert_eq!(between(Axis::X, Axis::X), AxisCycle::None);
+    assert_eq!(between(Axis::X, Axis::Y), AxisCycle::Forward);
+    assert_eq!(between(Axis::Y, Axis::X), AxisCycle::Backward);
+    assert_eq!(between(Axis::Z, Axis::Z), AxisCycle::None, "2 steps round 3 is forward");
+    // `between` followed by its cycle must land on `to`.
+    for from in [Axis::X, Axis::Y, Axis::Z] {
+        for to in [Axis::X, Axis::Y, Axis::Z] {
+            assert_eq!(
+                between(from, to).cycle_axis(from),
+                to,
+                "between({from:?}, {to:?}).cycle_axis(from) must be `to`"
+            );
+        }
+    }
+}
+    #[test]
 fn quart_pos_shifts_match_the_jar_semantics() {
     use minecraft_rust::net::minecraft::core::QuartPos::QuartPos;
 

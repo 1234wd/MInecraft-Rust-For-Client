@@ -845,3 +845,50 @@ digits. The probe answers it in one line. Recorded in the port's doc comment.
 `COVERED` left them in `BLOCKED` too; `COVERED + BLOCKED` read 243 against a golden of 235 and
 `covered_and_blocked_are_disjoint` failed. First use of that guard on a real mistake rather than a
 hypothetical -- which is the argument for having written it.
+
+---
+
+# Session 14 - maximum output
+
+**[2026-10-13 18:26:18 +0500] bd9faf5 generic constant dump | QuartPos, PacketFlow, DialogAction VERIFIED | tests 290 | commit bd9faf5**
+
+`COVERED 180`, `BLOCKED 55`, partition exact. 290 tests green in debug and release (was 272).
+
+**The generic constant dump, built (30-minute budget, inside it).**
+`_porting/java-oracle/ConstOracle.java` reflects over the JAR's own class objects and emits one row
+per enum constant and per comparable `static final` field: **1,740 classes, 22,973 constants** --
+every enum in the game. It walks `MANIFEST.csv`, so the corpus is the whole game rather than a
+hand-kept list, and it loads with `initialize=false` so the sweep does not bootstrap the registry.
+Classes are `reflect`-loaded but not initialised, and only the handful that turn out to be enums
+are actually touched.
+
+Three bugs found while building it, each of which would have made the dump silently useless:
+
+1. **`Out.str` escapes spaces as `\s`.** I hand-rolled the `str:` prefix instead. One String
+   constant containing a space -- `"Please make sure you have up-to-date drivers (see ...)"` --
+   split into five tokens and made **all 24,721 lines unparseable**.
+2. **`Class.forName(name, false, ..)` succeeding does not mean the class is usable.**
+   `getFields()` resolves each field's *type*, and Minecraft has classes with fields whose types
+   are optional dependencies absent from this classpath (`joptsimple` was the first). That
+   surfaces as `NoClassDefFoundError` -- an **Error**, so `catch (Exception)` missed it and one
+   unresolvable class aborted the sweep of all 7,055.
+3. **`getFields()` returns only PUBLIC fields.** The dump had ordinals and no payload:
+   `PacketFlow#id` and `DialogAction#id`/`#name` are `private final`, and those are exactly the
+   values that matter -- the persisted strings and the `BY_ID` keys. Now
+   `getDeclaredFields()` + `setAccessible`.
+
+**The more important bug was not in the dump.** `tier2_smoke.rs` and `consts.rs` were written and
+never registered as `[[test]]` targets in `Cargo.toml`, so they were **not compiled and not run**.
+`cargo test` reported success over 272 tests while both files were silently absent -- and
+`tier2_smoke.rs` did not even compile (`world.inventory.ClickAction` written with a dot). A test
+file outside a `[[test]]` block is invisible to the build, which is the same failure mode
+`every_batch2_group_is_covered` exists to prevent, and it applies to *targets* as well as to groups.
+Found only because adding `consts` made me look at the target list.
+
+Ported against the dump: `core/QuartPos`, `network/protocol/PacketFlow`,
+`server/dialog/DialogAction` -- all `VERIFIED` for constants, ordinals and every declared field
+value.
+
+`QuartPos#fromSection` is a plain `<< 2`, **not** "a section is 64 quarts" (`<< 6`) as the method
+name suggests. My first test asserted 48 and the port returned 12, which is what caught the
+mistake in my own reasoning rather than in the port.

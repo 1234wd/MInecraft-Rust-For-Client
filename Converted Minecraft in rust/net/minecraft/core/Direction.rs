@@ -722,6 +722,31 @@ impl Axis {
         }
     }
 
+    /// Port of `Direction.Axis#choose(int, int, int)`.
+    ///
+    /// The `int` overload of [`Direction::Axis::choose`], which `AxisCycle` needs. Rust has no
+    /// method overloading, so this and the `f64` version carry different names rather than one
+    /// generic body: a single generic would have to pick a return type, and `x as f64 as i32`
+    /// would silently truncate on the way out.
+    #[inline]
+    pub const fn choose_int(&self, x: i32, y: i32, z: i32) -> i32 {
+        match self {
+            Axis::X => x,
+            Axis::Y => y,
+            Axis::Z => z,
+        }
+    }
+
+    /// Port of `Direction.Axis#choose(boolean, boolean, boolean)`.
+    #[inline]
+    pub const fn choose_bool(&self, x: bool, y: bool, z: bool) -> bool {
+        match self {
+            Axis::X => x,
+            Axis::Y => y,
+            Axis::Z => z,
+        }
+    }
+
     /// Port of `Vec3i#relative(Axis, int)`.
     #[inline]
     pub fn relative_to(&self, from: Vec3i, steps: i32) -> Vec3i {
