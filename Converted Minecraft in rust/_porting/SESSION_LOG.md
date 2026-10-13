@@ -892,3 +892,41 @@ value.
 `QuartPos#fromSection` is a plain `<< 2`, **not** "a section is 64 quarts" (`<< 6`) as the method
 name suggests. My first test asserted 48 and the port returned 12, which is what caught the
 mistake in my own reasoning rather than in the port.
+
+**[2026-10-13 18:48:48 +0500] 47a357b Cursor3D, AxisCycle | Direction::choose_int/choose_bool added | tests 299 | commit 47a357b**
+
+**[2026-10-13 19:02:15 +0500] 0401b28 MemoryStatus, PathComputationType, StructureCheckResult, Density, AdvancementType | tests 304 | commit 0401b28**
+
+**The root cause of the lost `[[test]]` entries, which cost two sessions: `mirror.py`
+REGENERATES `Cargo.toml`** from a hardcoded `CARGO_TOML` template (line 416). Its own comment at
+line 59 says a new parity test must be added *there*, not to `Cargo.toml` directly, and that the
+symptom is `no test target named parity_X` — "which reads like a typo rather than a lost entry".
+I did not read that comment, added the targets to `Cargo.toml`, ran `mirror.py` in the gate, and
+watched them disappear — twice. The targets now live in the template.
+
+That is the second time this project has been bitten by a generator that owns a file someone also
+edits by hand (`MANIFEST.csv` and the `Status:` headers were the first). The general lesson is
+recorded at the call site.
+
+**`Cursor3D`** — the index decomposition `x = i % width`, `y = (i / width) % height`,
+`z = i / width / height` **is** the traversal order, asserted as an exact 8-element list. `end` is
+an `int` product computed once in the constructor, so a wrapped size reproduces Java's overflow
+rather than accidentally avoiding it.
+
+**`AxisCycle`** — `FORWARD` reads `axis.choose(z, x, y)` and `BACKWARD` reads
+`axis.choose(y, z, x)`; the "obvious" other ordering `choose(x, z, y)` would look plausible and is
+wrong. `Math.floorMod` matters: `BACKWARD` on `Axis::X` must return `Z`, where `%` would give `-1`
+and `AXIS_VALUES[-1]` would throw, so the port uses `rem_euclid`.
+
+**My test was wrong, not the port.** I first asserted `BACKWARD(FORWARD(v)) == v` while feeding
+both the *same* triple. They are inverse triple *permutations*, so the rotated triple has to be
+fed back in. Corrected, and it now asserts the full rotation `(x,y,z) -> (z,x,y) -> (x,y,z)`.
+
+**Dump improvement:** an enum-typed field now records `name()` rather than `toString()`.
+`AdvancementType.chatColor` was recording `"§a"` — `ChatFormatting`'s legacy colour code — instead
+of `"GREEN"`, which made the field useless for the only thing it exists to check.
+
+`AdvancementType` is `PARTIAL`: `TASK` and `GOAL` are **both** `GREEN`, which looks like a typo
+worth "fixing" and is not. `ChatFormatting` is still a SKELETON so the Rust port cannot hold the
+value, but the colour is asserted in `consts.txt`. `getDisplayName` and `createAnnouncement` are
+`todo!` on `Component` / `AdvancementHolder` / `ServerPlayer`.
