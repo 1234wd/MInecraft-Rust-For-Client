@@ -73,6 +73,14 @@ public final class Oracle {
 		"net.minecraft.resources.Identifier",
 		// --- session 05: batch 2 additions ---
 		"net.minecraft.world.phys.Vec2",
+		// --- session 14: generic constant dump ---
+		// Populated from `const-classes.txt` instead, so that adding a class does not require
+		// editing this array. The names below are the ones whose origin has already been proved
+		// by an earlier session, kept here so a broken classpath still fails loudly.
+		"net.minecraft.world.level.LightLayer",
+		"net.minecraft.world.level.block.RenderShape",
+		"net.minecraft.world.level.chunk.status.ChunkType",
+		"net.minecraft.world.inventory.ClickAction",
 	};
 
 	public static void main(final String[] args) throws Exception {
@@ -164,6 +172,15 @@ public final class Oracle {
 		}
 		if (only == null || only.equals("batch2")) {
 			stage("batch2", () -> Batch2Oracle.emit(testData.resolve("batch2.txt")));
+		}
+		// Generic constant dump. The class list is a FILE (`const-classes.txt`) rather than an
+		// array so the corpus grows without a recompile, which is what keeps this stage cheaper
+		// than hand-written golden groups for every structure file.
+		if (only == null || only.equals("consts")) {
+			Path list = Path.of(System.getProperty("const.list", "const-classes.txt"));
+			stage("consts", () -> ConstOracle.emitFromManifest(
+					testData.resolve("consts.txt"), Path.of(System.getProperty(
+							"const.manifest", "../MANIFEST.csv"))));
 		}
 
 		System.out.println("done.");

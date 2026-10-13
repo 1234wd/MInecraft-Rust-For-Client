@@ -174,6 +174,13 @@ Write-Host "==> javac  (oracle sources + $compiledVanilla vanilla, jars: $($jars
     -implicit:none -Xmaxerrs 40 $files
 if ($LASTEXITCODE -ne 0) { throw "javac failed ($LASTEXITCODE)" }
 
+# The generic constant dump reads its class list from `const-classes.txt` so that growing the
+# corpus is a one-line edit with no recompile. Passing it as a system property (rather than
+# relying on the working directory) is what makes that reliable: the oracle is launched from
+# whichever directory the caller happens to be in.
+$constList = Join-Path $Here 'const-classes.txt'
+$constManifest = Join-Path $Porting 'MANIFEST.csv'
+
 # Prove every tracked class came from where this mode says it should. In Jar mode a
 # class coming from `classes/` would mean we are testing our own recompilation rather
 # than Mojang's bytecode -- the exact mistake this mode exists to prevent.
@@ -185,7 +192,7 @@ if ($NoWrite) {
     & java -cp "$Classes;$cp" oracle.Oracle $tmp --expect-origin $expectFrom --no-write
     Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue
 } else {
-    & java -cp "$Classes;$cp" oracle.Oracle $OutDir --expect-origin $expectFrom
+    & java "-Dconst.list=$constList" "-Dconst.manifest=$constManifest" -cp "$Classes;$cp" oracle.Oracle $OutDir --expect-origin $expectFrom
 }
 if ($LASTEXITCODE -ne 0) { throw "oracle failed ($LASTEXITCODE)" }
 

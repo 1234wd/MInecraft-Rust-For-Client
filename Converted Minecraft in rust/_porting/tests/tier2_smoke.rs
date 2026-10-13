@@ -31,12 +31,12 @@ use minecraft_rust::net::minecraft::world::entity::ItemSteerable::ItemSteerable;
 use minecraft_rust::net::minecraft::world::entity::PlayerRideable::PlayerRideable;
 use minecraft_rust::net::minecraft::world::entity::SpawnGroupData::SpawnGroupData;
 use minecraft_rust::net::minecraft::world::entity::npc::Npc::Npc;
-use minecraft_rust::net::minecraft::world::inventory.ClickAction::ClickAction;
-use minecraft_rust::net::minecraft::world::inventory.tooltip::TooltipComponent::TooltipComponent;
-use minecraft_rust::net::minecraft::world::item.crafting::ExtendedRecipeBookCategory::ExtendedRecipeBookCategory;
-use minecraft_rust::net::minecraft::world::item.equipment::EquipmentAsset::EquipmentAsset;
+use minecraft_rust::net::minecraft::world::inventory::ClickAction::ClickAction;
+use minecraft_rust::net::minecraft::world::inventory::tooltip::TooltipComponent::TooltipComponent;
+use minecraft_rust::net::minecraft::world::item::crafting::ExtendedRecipeBookCategory::ExtendedRecipeBookCategory;
+use minecraft_rust::net::minecraft::world::item::equipment::EquipmentAsset::EquipmentAsset;
 use minecraft_rust::net::minecraft::world::level::LightLayer::LightLayer;
-use minecraft_rust::net::minecraft::world::level::block.GameMasterBlock::GameMasterBlock;
+use minecraft_rust::net::minecraft::world::level::block::GameMasterBlock::GameMasterBlock;
 use minecraft_rust::net::minecraft::world::level::block::RenderShape::RenderShape;
 use minecraft_rust::net::minecraft::world::level::block::entity::LidBlockEntity::LidBlockEntity;
 use minecraft_rust::net::minecraft::world::level::chunk::status::ChunkType::ChunkType;
@@ -179,8 +179,11 @@ fn single_method_interfaces_are_callable() {
 }
 
 struct Varint(i32);
+// `Vec<u8>` rather than `[u8]`: the trait's `I` is implicitly `Sized`, and `[u8]` is not. Making
+// the port's buffer parameter `?Sized` would be the tidier signature, but that is a change to the
+// ported file driven by a test, which is backwards -- the test should fit the port.
 impl StreamDecoder<Vec<u8>, i32> for Varint {
-    fn decode(&self, input: &[u8]) -> i32 {
+    fn decode(&self, input: &Vec<u8>) -> i32 {
         input.iter().fold(0i32, |acc, b| (acc << 7) | i32::from(b & 0x7F))
     }
 }
@@ -193,7 +196,7 @@ impl StreamEncoder<Vec<u8>, i32> for Varint {
 #[test]
 fn stream_codec_halves_round_trip() {
     let codec = Varint(0);
-    assert_eq!(codec.decode(&[0x00, 0x00, 0x7F]), 127);
+    assert_eq!(codec.decode(&vec![0x00, 0x00, 0x7F]), 127);
     let mut out = Vec::new();
     codec.encode(&mut out, 42);
     assert_eq!(out, vec![42u8]);
