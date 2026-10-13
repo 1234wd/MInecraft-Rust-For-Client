@@ -1005,3 +1005,18 @@ for the second; and the upper threshold for `linearToSrgbChannel` is not `1.0` b
 `1024/1023 ~= 1.000977`, because `floor(1.0001 * 1023)` is `1023` -- the last valid index.
 Both times the port was right and the test was wrong. A test that is wrong in the
 permissive direction is the one kind of wrong that does not announce itself.
+
+## Golden data is not byte-reproducible for NaN payloads
+
+Measured in session 13: regenerating `batch2.txt` with `run.ps1 -Mode Jar` on the **same**
+JDK 25 changed 9 rows of `vec3.subtractScalar`, and the only difference was the NaN payload
+(`0x7ff8000000000000` vs `0xfff8000000000000`). Nothing in the oracle edit that caused the
+regeneration could affect that group, so the churn is intrinsic.
+
+**Consequence: "the golden file changed" is not by itself a signal.** Before treating a
+regeneration diff as a regression, check whether the changed lines differ *only* in NaN
+payloads. `f64_bits_match` / `f32_bits_match` treat any two NaNs as equal while
+`NAN_BITS_OBSERVABLE` is empty, so payload-only churn cannot break a test -- and that
+allowlist is load-bearing for exactly this reason, not decorative. A group whose NaN bits
+genuinely matter must be opted in by name, with the observable site written down, and it will
+then be non-reproducible until the payload is pinned deliberately.

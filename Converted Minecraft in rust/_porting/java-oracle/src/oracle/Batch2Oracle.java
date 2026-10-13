@@ -1077,7 +1077,18 @@ final class Batch2Oracle {
 		// differ between implementations, so index rather than enumerate in full.
 		o.fn("sectionpos.blocksInside", "i32 i32 i32 i32", "i32 i32 i32");
 		for (int[] s : new int[][] {{0, 0, 0}, {1, 2, 3}, {-1, -1, -1}}) {
-			List<BlockPos> inside = SectionPos.of(s[0], s[1], s[2]).blocksInside().toList();
+			// `blocksInside()` delegates to `BlockPos.betweenClosedStream(int x6)`, which is
+			// `StreamSupport.stream(betweenClosed(...).spliterator(), false)` -- and THAT wraps the
+			// reused-`MutableBlockPos` cursor. So a bare `.toList()` here would store 4096
+			// references to one object and record its final value on every row. The `.map(...)`
+			// copy is load-bearing; it is the same fix as `collect()` above, applied through the
+			// Stream API.
+			//
+			// Checked and left alone: `SectionPos.betweenClosedStream` (and therefore `cube` and
+			// `aroundChunk`) builds its own `AbstractSpliterator` whose `tryAdvance` calls
+			// `new SectionPos(...)` on every step, so those `.toList()` calls are safe.
+			List<BlockPos> inside = SectionPos.of(s[0], s[1], s[2]).blocksInside()
+				.map(p -> new BlockPos(p.getX(), p.getY(), p.getZ())).toList();
 			for (int i : new int[] {0, 1, 2, 3, 15, 16, 100, 2047, 2048, 4095}) {
 				if (i < inside.size()) {
 					o.row(Out.join(Out.i32(s[0]), Out.i32(s[1]), Out.i32(s[2]), Out.i32(i)),
