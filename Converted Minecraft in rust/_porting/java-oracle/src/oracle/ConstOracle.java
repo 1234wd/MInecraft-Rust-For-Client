@@ -293,6 +293,15 @@ public final class ConstOracle {
 		if (v instanceof Double d) {
 			return "f64:" + String.format("0x%016x", Double.doubleToRawLongBits(d));
 		}
+		// An enum-typed field records `name()`, NOT `toString()`. This is load-bearing rather than
+		// cosmetic: `AdvancementType.chatColor` is a `ChatFormatting`, whose `toString()` is the
+		// LEGACY colour code -- `ChatFormatting.GREEN` renders as `"§a"`. Recording that instead
+		// of `"GREEN"` makes the dump useless for checking which colour an enum uses, which is
+		// the only reason to record the field at all. An arbitrary object's `toString()` is
+		// still recorded as-is below, because there is nothing better to record.
+		if (v instanceof Enum<?> e) {
+			return "str:" + e.name();
+		}
 		return "str:" + v;
 	}
 }

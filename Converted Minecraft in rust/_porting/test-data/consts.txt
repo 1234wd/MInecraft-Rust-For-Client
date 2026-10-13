@@ -154,9 +154,9 @@ str:WORLD_VERSION -> str:value=i32:4903
 #fn const.net.minecraft.SystemReport -> str str
 str:BYTES_PER_MEBIBYTE -> str:value=i64:1048576
 #fn const.net.minecraft.advancements.AdvancementType -> str str
-str:CHALLENGE -> str:ordinal=1 str:name=str:challenge str:chatColor=str:§5 str:displayName=str:translation{key='advancements.toast.challenge',\sargs=[]}
-str:GOAL -> str:ordinal=2 str:name=str:goal str:chatColor=str:§a str:displayName=str:translation{key='advancements.toast.goal',\sargs=[]}
-str:TASK -> str:ordinal=0 str:name=str:task str:chatColor=str:§a str:displayName=str:translation{key='advancements.toast.task',\sargs=[]}
+str:CHALLENGE -> str:ordinal=1 str:name=str:challenge str:chatColor=str:DARK_PURPLE str:displayName=str:translation{key='advancements.toast.challenge',\sargs=[]}
+str:GOAL -> str:ordinal=2 str:name=str:goal str:chatColor=str:GREEN str:displayName=str:translation{key='advancements.toast.goal',\sargs=[]}
+str:TASK -> str:ordinal=0 str:name=str:task str:chatColor=str:GREEN str:displayName=str:translation{key='advancements.toast.task',\sargs=[]}
 #fn const.net.minecraft.advancements.predicates.NbtPredicate -> str str
 str:SELECTED_ITEM_TAG -> str:value=str:SelectedItem
 #fn const.net.minecraft.advancements.predicates.entity.PlayerPredicate -> str str
@@ -488,11 +488,11 @@ str:Z_FIGHTER -> str:value=f32:0x3a83126f
 #fn const.net.minecraft.client.gui.font.providers.BitmapProvider -> str str
 str:BASELINE -> str:value=f32:0x40e00000
 #fn const.net.minecraft.client.gui.font.providers.GlyphProviderType -> str str
-str:BITMAP -> str:ordinal=0 str:name=str:bitmap str:codec=str:RecordCodec[UnitDecoder[net.minecraft.client.gui.font.providers.BitmapProvider$Definition$$Lambda/0x0000000031e2b478@1f03e65c]\s*\sField[file:\sString[comapFlatMapped]]\s*\sOptionalFieldCodec[height:\sInt][xmapped]\s*\sField[ascent:\sInt]\s*\sField[chars:\sListCodec[String][xmapped][flatXmapped]]][flatXmapped]
-str:REFERENCE -> str:ordinal=4 str:name=str:reference str:codec=str:RecordCodec[UnitDecoder[net.minecraft.client.gui.font.providers.ProviderReferenceDefinition$$Lambda/0x0000000031e31220@53deaaf5]\s*\sField[id:\sString[comapFlatMapped]]]
-str:SPACE -> str:ordinal=2 str:name=str:space str:codec=str:RecordCodec[UnitDecoder[com.mojang.blaze3d.font.SpaceProvider$Definition$$Lambda/0x0000000031e2fb60@15fe9f6c]\s*\sField[advances:\sUnboundedMapCodec[String[comapFlatMapped]\s->\sFloat]]]
-str:TTF -> str:ordinal=1 str:name=str:ttf str:codec=str:RecordCodec[UnitDecoder[net.minecraft.client.gui.font.providers.TrueTypeGlyphProviderDefinition$$Lambda/0x0000000031e2efc0@49324087][mapped]\s*\sField[file:\sString[comapFlatMapped]]\s*\sOptionalFieldCodec[size:\sFloat][xmapped]\s*\sOptionalFieldCodec[oversample:\sFloat][xmapped]\s*\sOptionalFieldCodec[shift:\sListCodec[Float[flatXmapped]][comapFlatMapped]][xmapped]\s*\sOptionalFieldCodec[skip:\sEitherCodec[first=String,\ssecond=ListCodec[String]][xmapped]][xmapped]]
-str:UNIHEX -> str:ordinal=3 str:name=str:unihex str:codec=str:RecordCodec[UnitDecoder[net.minecraft.client.gui.font.providers.UnihexProvider$Definition$$Lambda/0x0000000031e30b58@53ef97d2]\s*\sField[hex_file:\sString[comapFlatMapped]]\s*\sOptionalFieldCodec[size_overrides:\sListCodec[RecordCodec[UnitDecoder[net.minecraft.client.gui.font.providers.UnihexProvider$OverrideRange$$Lambda/0x0000000031e30480@20afae5c]\s*\sField[from:\sString[comapFlatMapped]]\s*\sField[to:\sString[comapFlatMapped]]\s*\sRecordCodec[UnitDecoder[net.minecraft.client.gui.font.providers.UnihexProvider$Dimensions$$Lambda/0x0000000031e30000@124da4a9]\s*\sField[left:\sInt]\s*\sField[right:\sInt]]][flatXmapped]]][xmapped]]
+str:BITMAP -> str:ordinal=0 str:name=str:bitmap str:codec=str:RecordCodec[UnitDecoder[net.minecraft.client.gui.font.providers.BitmapProvider$Definition$$Lambda/0x0000000021e2a490@5c600e1b]\s*\sField[file:\sString[comapFlatMapped]]\s*\sOptionalFieldCodec[height:\sInt][xmapped]\s*\sField[ascent:\sInt]\s*\sField[chars:\sListCodec[String][xmapped][flatXmapped]]][flatXmapped]
+str:REFERENCE -> str:ordinal=4 str:name=str:reference str:codec=str:RecordCodec[UnitDecoder[net.minecraft.client.gui.font.providers.ProviderReferenceDefinition$$Lambda/0x0000000021e32888@15fe9f6c]\s*\sField[id:\sString[comapFlatMapped]]]
+str:SPACE -> str:ordinal=2 str:name=str:space str:codec=str:RecordCodec[UnitDecoder[com.mojang.blaze3d.font.SpaceProvider$Definition$$Lambda/0x0000000021e29ba0@1f03e65c]\s*\sField[advances:\sUnboundedMapCodec[String[comapFlatMapped]\s->\sFloat]]]
+str:TTF -> str:ordinal=1 str:name=str:ttf str:codec=str:RecordCodec[UnitDecoder[net.minecraft.client.gui.font.providers.TrueTypeGlyphProviderDefinition$$Lambda/0x0000000021e29000@2bbdbd5c][mapped]\s*\sField[file:\sString[comapFlatMapped]]\s*\sOptionalFieldCodec[size:\sFloat][xmapped]\s*\sOptionalFieldCodec[oversample:\sFloat][xmapped]\s*\sOptionalFieldCodec[shift:\sListCodec[Float[flatXmapped]][comapFlatMapped]][xmapped]\s*\sOptionalFieldCodec[skip:\sEitherCodec[first=String,\ssecond=ListCodec[String]][xmapped]][xmapped]]
+str:UNIHEX -> str:ordinal=3 str:name=str:unihex str:codec=str:RecordCodec[UnitDecoder[net.minecraft.client.gui.font.providers.UnihexProvider$Definition$$Lambda/0x0000000021e321c0@49324087]\s*\sField[hex_file:\sString[comapFlatMapped]]\s*\sOptionalFieldCodec[size_overrides:\sListCodec[RecordCodec[UnitDecoder[net.minecraft.client.gui.font.providers.UnihexProvider$OverrideRange$$Lambda/0x0000000021e31ae8@6f1ff437]\s*\sField[from:\sString[comapFlatMapped]]\s*\sField[to:\sString[comapFlatMapped]]\s*\sRecordCodec[UnitDecoder[net.minecraft.client.gui.font.providers.UnihexProvider$Dimensions$$Lambda/0x0000000021e31668@10db51d2]\s*\sField[left:\sInt]\s*\sField[right:\sInt]]][flatXmapped]]][xmapped]]
 #fn const.net.minecraft.client.gui.font.providers.UnihexProvider -> str str
 str:BASELINE -> str:value=f32:0x40e00000
 #fn const.net.minecraft.client.gui.layouts.HeaderAndFooterLayout -> str str
@@ -507,10 +507,10 @@ str:USAGE -> str:ordinal=3
 str:HORIZONTAL -> str:ordinal=0
 str:VERTICAL -> str:ordinal=1
 #fn const.net.minecraft.client.gui.navigation.ScreenDirection -> str str
-str:DOWN -> str:ordinal=1 str:coordinateValueComparator=str:net.minecraft.client.gui.navigation.ScreenDirection$$Lambda/0x0000000031e31c90@80e095
-str:LEFT -> str:ordinal=2 str:coordinateValueComparator=str:net.minecraft.client.gui.navigation.ScreenDirection$$Lambda/0x0000000031e31c90@67bba01c
-str:RIGHT -> str:ordinal=3 str:coordinateValueComparator=str:net.minecraft.client.gui.navigation.ScreenDirection$$Lambda/0x0000000031e31c90@22a9bcfb
-str:UP -> str:ordinal=0 str:coordinateValueComparator=str:net.minecraft.client.gui.navigation.ScreenDirection$$Lambda/0x0000000031e31c90@7c94903e
+str:DOWN -> str:ordinal=1 str:coordinateValueComparator=str:net.minecraft.client.gui.navigation.ScreenDirection$$Lambda/0x0000000021e332f8@2aadff57
+str:LEFT -> str:ordinal=2 str:coordinateValueComparator=str:net.minecraft.client.gui.navigation.ScreenDirection$$Lambda/0x0000000021e332f8@7c94903e
+str:RIGHT -> str:ordinal=3 str:coordinateValueComparator=str:net.minecraft.client.gui.navigation.ScreenDirection$$Lambda/0x0000000021e332f8@80e095
+str:UP -> str:ordinal=0 str:coordinateValueComparator=str:net.minecraft.client.gui.navigation.ScreenDirection$$Lambda/0x0000000021e332f8@26f83485
 #fn const.net.minecraft.client.gui.render.GuiRenderer -> str str
 str:DEFAULT_ITEM_SIZE -> str:value=i32:16
 str:GUI_3D_Z_FAR -> str:value=i32:1000
@@ -1228,10 +1228,10 @@ str:STATIC -> str:ordinal=0
 #fn const.net.minecraft.client.multiplayer.LevelLoadTracker -> str str
 str:LEVEL_LOAD_CLOSE_DELAY_MS -> str:value=i64:500
 #fn const.net.minecraft.client.multiplayer.chat.ChatRestriction -> str str
-str:CHAT_AND_COMMANDS_DISABLED_BY_OPTIONS -> str:ordinal=0 str:display=str:translation{key='chat_restriction.chat_and_commands_disabled_by_options',\sargs=[]} str:action=str:Optional[Action[title=translation{key='chat_restriction.chat_disabled_by_options.action',\sargs=[]},\srunnable=net.minecraft.client.multiplayer.chat.ChatRestriction$Action$$Lambda/0x0000000031e3a370@74295b73]]
-str:CHAT_DISABLED_BY_OPTIONS -> str:ordinal=1 str:display=str:translation{key='chat_restriction.chat_disabled_by_options',\sargs=[]} str:action=str:Optional[Action[title=translation{key='chat_restriction.chat_disabled_by_options.action',\sargs=[]},\srunnable=net.minecraft.client.multiplayer.chat.ChatRestriction$Action$$Lambda/0x0000000031e3a370@74295b73]]
+str:CHAT_AND_COMMANDS_DISABLED_BY_OPTIONS -> str:ordinal=0 str:display=str:translation{key='chat_restriction.chat_and_commands_disabled_by_options',\sargs=[]} str:action=str:Optional[Action[title=translation{key='chat_restriction.chat_disabled_by_options.action',\sargs=[]},\srunnable=net.minecraft.client.multiplayer.chat.ChatRestriction$Action$$Lambda/0x0000000021e3e018@5d956215]]
+str:CHAT_DISABLED_BY_OPTIONS -> str:ordinal=1 str:display=str:translation{key='chat_restriction.chat_disabled_by_options',\sargs=[]} str:action=str:Optional[Action[title=translation{key='chat_restriction.chat_disabled_by_options.action',\sargs=[]},\srunnable=net.minecraft.client.multiplayer.chat.ChatRestriction$Action$$Lambda/0x0000000021e3e018@5d956215]]
 str:DISABLED_BY_LAUNCHER -> str:ordinal=2 str:display=str:translation{key='chat_restriction.disabled_by_launcher',\sargs=[]} str:action=str:Optional.empty
-str:DISABLED_BY_PROFILE -> str:ordinal=3 str:display=str:translation{key='chat_restriction.disabled_by_profile',\sargs=[]} str:action=str:Optional[Action[title=translation{key='chat_restriction.disabled_by_profile.action',\sargs=[]},\srunnable=net.minecraft.client.multiplayer.chat.ChatRestriction$Action$$Lambda/0x0000000031e3a138@17304e57]]
+str:DISABLED_BY_PROFILE -> str:ordinal=3 str:display=str:translation{key='chat_restriction.disabled_by_profile',\sargs=[]} str:action=str:Optional[Action[title=translation{key='chat_restriction.disabled_by_profile.action',\sargs=[]},\srunnable=net.minecraft.client.multiplayer.chat.ChatRestriction$Action$$Lambda/0x0000000021e3dde0@630b5933]]
 #fn const.net.minecraft.client.multiplayer.chat.ChatTrustLevel -> str str
 str:MODIFIED -> str:ordinal=1 str:serializedName=str:modified
 str:NOT_SECURE -> str:ordinal=2 str:serializedName=str:not_secure
@@ -1527,12 +1527,12 @@ str:TRANSFORM_UBO_SIZE -> str:value=i32:160
 #fn const.net.minecraft.client.renderer.EndFlashState -> str str
 str:SOUND_DELAY_IN_TICKS -> str:value=i32:30
 #fn const.net.minecraft.client.renderer.FaceInfo -> str str
-str:DOWN -> str:ordinal=0 str:infos=str:[Lnet.minecraft.client.renderer.FaceInfo$VertexInfo;@71bce710
-str:EAST -> str:ordinal=5 str:infos=str:[Lnet.minecraft.client.renderer.FaceInfo$VertexInfo;@76e10707
-str:NORTH -> str:ordinal=2 str:infos=str:[Lnet.minecraft.client.renderer.FaceInfo$VertexInfo;@36f83777
-str:SOUTH -> str:ordinal=3 str:infos=str:[Lnet.minecraft.client.renderer.FaceInfo$VertexInfo;@2cf81141
-str:UP -> str:ordinal=1 str:infos=str:[Lnet.minecraft.client.renderer.FaceInfo$VertexInfo;@65853853
-str:WEST -> str:ordinal=4 str:infos=str:[Lnet.minecraft.client.renderer.FaceInfo$VertexInfo;@3aeae7a9
+str:DOWN -> str:ordinal=0 str:infos=str:[Lnet.minecraft.client.renderer.FaceInfo$VertexInfo;@68876539
+str:EAST -> str:ordinal=5 str:infos=str:[Lnet.minecraft.client.renderer.FaceInfo$VertexInfo;@2cf81141
+str:NORTH -> str:ordinal=2 str:infos=str:[Lnet.minecraft.client.renderer.FaceInfo$VertexInfo;@71bce710
+str:SOUTH -> str:ordinal=3 str:infos=str:[Lnet.minecraft.client.renderer.FaceInfo$VertexInfo;@65853853
+str:UP -> str:ordinal=1 str:infos=str:[Lnet.minecraft.client.renderer.FaceInfo$VertexInfo;@7b8c32c3
+str:WEST -> str:ordinal=4 str:infos=str:[Lnet.minecraft.client.renderer.FaceInfo$VertexInfo;@36f83777
 #fn const.net.minecraft.client.renderer.GameRenderer -> str str
 str:MAX_BLUR_RADIUS -> str:value=i32:10
 str:PROJECTION_3D_HUD_Z_FAR -> str:value=f32:0x42c80000
@@ -1563,8 +1563,8 @@ str:CUTOUT -> str:ordinal=1 str:pipeline=str:minecraft:pipeline/cutout_terrain s
 str:SOLID -> str:ordinal=0 str:pipeline=str:minecraft:pipeline/solid_terrain str:bufferSize=i32:4194304 str:translucent=bool:false str:label=str:solid
 str:TRANSLUCENT -> str:ordinal=2 str:pipeline=str:minecraft:pipeline/translucent_terrain str:bufferSize=i32:786432 str:translucent=bool:true str:label=str:translucent
 #fn const.net.minecraft.client.renderer.chunk.ChunkSectionLayerGroup -> str str
-str:OPAQUE -> str:ordinal=0 str:label=str:opaque str:layers=str:[Lnet.minecraft.client.renderer.chunk.ChunkSectionLayer;@6245ce60
-str:TRANSLUCENT -> str:ordinal=1 str:label=str:translucent str:layers=str:[Lnet.minecraft.client.renderer.chunk.ChunkSectionLayer;@2784862c
+str:OPAQUE -> str:ordinal=0 str:label=str:opaque str:layers=str:[Lnet.minecraft.client.renderer.chunk.ChunkSectionLayer;@3be349ed
+str:TRANSLUCENT -> str:ordinal=1 str:label=str:translucent str:layers=str:[Lnet.minecraft.client.renderer.chunk.ChunkSectionLayer;@6b692fde
 #fn const.net.minecraft.client.renderer.chunk.RenderSectionRegion -> str str
 str:RADIUS -> str:value=i32:1
 str:SIZE -> str:value=i32:3
@@ -2117,12 +2117,12 @@ str:OPEN_AL_SOFT_PREFIX_LENGTH -> str:value=i32:15
 #fn const.net.minecraft.client.sounds.SoundEngineExecutor -> str str
 str:BLOCK_TIME_NANOS -> str:value=i64:100000
 #fn const.net.minecraft.client.tutorial.TutorialSteps -> str str
-str:CRAFT_PLANKS -> str:ordinal=4 str:name=str:craft_planks str:constructor=str:net.minecraft.client.tutorial.TutorialSteps$$Lambda/0x0000000031e5c400@3702e019
-str:FIND_TREE -> str:ordinal=1 str:name=str:find_tree str:constructor=str:net.minecraft.client.tutorial.TutorialSteps$$Lambda/0x0000000031e5c800@4b4800b6
-str:MOVEMENT -> str:ordinal=0 str:name=str:movement str:constructor=str:net.minecraft.client.tutorial.TutorialSteps$$Lambda/0x0000000031e5dd70@3d93bcb1
-str:NONE -> str:ordinal=5 str:name=str:none str:constructor=str:net.minecraft.client.tutorial.TutorialSteps$$Lambda/0x0000000031e60000@3c440bff
-str:OPEN_INVENTORY -> str:ordinal=3 str:name=str:open_inventory str:constructor=str:net.minecraft.client.tutorial.TutorialSteps$$Lambda/0x0000000031e5cc90@1754b076
-str:PUNCH_TREE -> str:ordinal=2 str:name=str:punch_tree str:constructor=str:net.minecraft.client.tutorial.TutorialSteps$$Lambda/0x0000000031e5ca48@735c11c
+str:CRAFT_PLANKS -> str:ordinal=4 str:name=str:craft_planks str:constructor=str:net.minecraft.client.tutorial.TutorialSteps$$Lambda/0x0000000021e61690@735c11c
+str:FIND_TREE -> str:ordinal=1 str:name=str:find_tree str:constructor=str:net.minecraft.client.tutorial.TutorialSteps$$Lambda/0x0000000021e60fb8@1ff1e00c
+str:MOVEMENT -> str:ordinal=0 str:name=str:movement str:constructor=str:net.minecraft.client.tutorial.TutorialSteps$$Lambda/0x0000000021e60d70@d78293a
+str:NONE -> str:ordinal=5 str:name=str:none str:constructor=str:net.minecraft.client.tutorial.TutorialSteps$$Lambda/0x0000000021e618d8@1754b076
+str:OPEN_INVENTORY -> str:ordinal=3 str:name=str:open_inventory str:constructor=str:net.minecraft.client.tutorial.TutorialSteps$$Lambda/0x0000000021e61448@4b4800b6
+str:PUNCH_TREE -> str:ordinal=2 str:name=str:punch_tree str:constructor=str:net.minecraft.client.tutorial.TutorialSteps$$Lambda/0x0000000021e61200@3d93bcb1
 #fn const.net.minecraft.commands.Commands -> str str
 str:COMMAND_PREFIX -> str:value=str:/
 #fn const.net.minecraft.commands.arguments.coordinates.LocalCoordinates -> str str
@@ -2158,12 +2158,12 @@ str:DEFAULT -> str:value=i32:-1
 #fn const.net.minecraft.core.DefaultedRegistry -> str str
 str:DEFAULT -> str:value=i32:-1
 #fn const.net.minecraft.core.Direction -> str str
-str:DOWN -> str:ordinal=0 str:data3d=i32:0 str:oppositeIndex=i32:1 str:data2d=i32:-1 str:name=str:down str:axis=str:y str:axisDirection=str:Towards\snegative str:normal=str:Vec3i{x=0,\sy=-1,\sz=0} str:normalVec3=str:(0.0,\s-1.0,\s0.0) str:normalVec3f=str:(\s0.000E+0\s-1.000E+0\s\s0.000E+0)
-str:EAST -> str:ordinal=5 str:data3d=i32:5 str:oppositeIndex=i32:4 str:data2d=i32:3 str:name=str:east str:axis=str:x str:axisDirection=str:Towards\spositive str:normal=str:Vec3i{x=1,\sy=0,\sz=0} str:normalVec3=str:(1.0,\s0.0,\s0.0) str:normalVec3f=str:(\s1.000E+0\s\s0.000E+0\s\s0.000E+0)
-str:NORTH -> str:ordinal=2 str:data3d=i32:2 str:oppositeIndex=i32:3 str:data2d=i32:2 str:name=str:north str:axis=str:z str:axisDirection=str:Towards\snegative str:normal=str:Vec3i{x=0,\sy=0,\sz=-1} str:normalVec3=str:(0.0,\s0.0,\s-1.0) str:normalVec3f=str:(\s0.000E+0\s\s0.000E+0\s-1.000E+0)
-str:SOUTH -> str:ordinal=3 str:data3d=i32:3 str:oppositeIndex=i32:2 str:data2d=i32:0 str:name=str:south str:axis=str:z str:axisDirection=str:Towards\spositive str:normal=str:Vec3i{x=0,\sy=0,\sz=1} str:normalVec3=str:(0.0,\s0.0,\s1.0) str:normalVec3f=str:(\s0.000E+0\s\s0.000E+0\s\s1.000E+0)
-str:UP -> str:ordinal=1 str:data3d=i32:1 str:oppositeIndex=i32:0 str:data2d=i32:-1 str:name=str:up str:axis=str:y str:axisDirection=str:Towards\spositive str:normal=str:Vec3i{x=0,\sy=1,\sz=0} str:normalVec3=str:(0.0,\s1.0,\s0.0) str:normalVec3f=str:(\s0.000E+0\s\s1.000E+0\s\s0.000E+0)
-str:WEST -> str:ordinal=4 str:data3d=i32:4 str:oppositeIndex=i32:5 str:data2d=i32:1 str:name=str:west str:axis=str:x str:axisDirection=str:Towards\snegative str:normal=str:Vec3i{x=-1,\sy=0,\sz=0} str:normalVec3=str:(-1.0,\s0.0,\s0.0) str:normalVec3f=str:(-1.000E+0\s\s0.000E+0\s\s0.000E+0)
+str:DOWN -> str:ordinal=0 str:data3d=i32:0 str:oppositeIndex=i32:1 str:data2d=i32:-1 str:name=str:down str:axis=str:Y str:axisDirection=str:NEGATIVE str:normal=str:Vec3i{x=0,\sy=-1,\sz=0} str:normalVec3=str:(0.0,\s-1.0,\s0.0) str:normalVec3f=str:(\s0.000E+0\s-1.000E+0\s\s0.000E+0)
+str:EAST -> str:ordinal=5 str:data3d=i32:5 str:oppositeIndex=i32:4 str:data2d=i32:3 str:name=str:east str:axis=str:X str:axisDirection=str:POSITIVE str:normal=str:Vec3i{x=1,\sy=0,\sz=0} str:normalVec3=str:(1.0,\s0.0,\s0.0) str:normalVec3f=str:(\s1.000E+0\s\s0.000E+0\s\s0.000E+0)
+str:NORTH -> str:ordinal=2 str:data3d=i32:2 str:oppositeIndex=i32:3 str:data2d=i32:2 str:name=str:north str:axis=str:Z str:axisDirection=str:NEGATIVE str:normal=str:Vec3i{x=0,\sy=0,\sz=-1} str:normalVec3=str:(0.0,\s0.0,\s-1.0) str:normalVec3f=str:(\s0.000E+0\s\s0.000E+0\s-1.000E+0)
+str:SOUTH -> str:ordinal=3 str:data3d=i32:3 str:oppositeIndex=i32:2 str:data2d=i32:0 str:name=str:south str:axis=str:Z str:axisDirection=str:POSITIVE str:normal=str:Vec3i{x=0,\sy=0,\sz=1} str:normalVec3=str:(0.0,\s0.0,\s1.0) str:normalVec3f=str:(\s0.000E+0\s\s0.000E+0\s\s1.000E+0)
+str:UP -> str:ordinal=1 str:data3d=i32:1 str:oppositeIndex=i32:0 str:data2d=i32:-1 str:name=str:up str:axis=str:Y str:axisDirection=str:POSITIVE str:normal=str:Vec3i{x=0,\sy=1,\sz=0} str:normalVec3=str:(0.0,\s1.0,\s0.0) str:normalVec3f=str:(\s0.000E+0\s\s1.000E+0\s\s0.000E+0)
+str:WEST -> str:ordinal=4 str:data3d=i32:4 str:oppositeIndex=i32:5 str:data2d=i32:1 str:name=str:west str:axis=str:X str:axisDirection=str:NEGATIVE str:normal=str:Vec3i{x=-1,\sy=0,\sz=0} str:normalVec3=str:(-1.0,\s0.0,\s0.0) str:normalVec3f=str:(-1.000E+0\s\s0.000E+0\s\s0.000E+0)
 #fn const.net.minecraft.core.Direction8 -> str str
 str:EAST -> str:ordinal=2 str:directions=str:[east] str:step=str:Vec3i{x=1,\sy=0,\sz=0}
 str:NORTH -> str:ordinal=0 str:directions=str:[north] str:step=str:Vec3i{x=0,\sy=0,\sz=-1}
@@ -2174,18 +2174,18 @@ str:SOUTH_EAST -> str:ordinal=3 str:directions=str:[south,\seast] str:step=str:V
 str:SOUTH_WEST -> str:ordinal=5 str:directions=str:[south,\swest] str:step=str:Vec3i{x=-1,\sy=0,\sz=1}
 str:WEST -> str:ordinal=6 str:directions=str:[west] str:step=str:Vec3i{x=-1,\sy=0,\sz=0}
 #fn const.net.minecraft.core.FrontAndTop -> str str
-str:DOWN_EAST -> str:ordinal=0 str:name=str:down_east str:top=str:east str:front=str:down
-str:DOWN_NORTH -> str:ordinal=1 str:name=str:down_north str:top=str:north str:front=str:down
-str:DOWN_SOUTH -> str:ordinal=2 str:name=str:down_south str:top=str:south str:front=str:down
-str:DOWN_WEST -> str:ordinal=3 str:name=str:down_west str:top=str:west str:front=str:down
-str:EAST_UP -> str:ordinal=9 str:name=str:east_up str:top=str:up str:front=str:east
-str:NORTH_UP -> str:ordinal=10 str:name=str:north_up str:top=str:up str:front=str:north
-str:SOUTH_UP -> str:ordinal=11 str:name=str:south_up str:top=str:up str:front=str:south
-str:UP_EAST -> str:ordinal=4 str:name=str:up_east str:top=str:east str:front=str:up
-str:UP_NORTH -> str:ordinal=5 str:name=str:up_north str:top=str:north str:front=str:up
-str:UP_SOUTH -> str:ordinal=6 str:name=str:up_south str:top=str:south str:front=str:up
-str:UP_WEST -> str:ordinal=7 str:name=str:up_west str:top=str:west str:front=str:up
-str:WEST_UP -> str:ordinal=8 str:name=str:west_up str:top=str:up str:front=str:west
+str:DOWN_EAST -> str:ordinal=0 str:name=str:down_east str:top=str:EAST str:front=str:DOWN
+str:DOWN_NORTH -> str:ordinal=1 str:name=str:down_north str:top=str:NORTH str:front=str:DOWN
+str:DOWN_SOUTH -> str:ordinal=2 str:name=str:down_south str:top=str:SOUTH str:front=str:DOWN
+str:DOWN_WEST -> str:ordinal=3 str:name=str:down_west str:top=str:WEST str:front=str:DOWN
+str:EAST_UP -> str:ordinal=9 str:name=str:east_up str:top=str:UP str:front=str:EAST
+str:NORTH_UP -> str:ordinal=10 str:name=str:north_up str:top=str:UP str:front=str:NORTH
+str:SOUTH_UP -> str:ordinal=11 str:name=str:south_up str:top=str:UP str:front=str:SOUTH
+str:UP_EAST -> str:ordinal=4 str:name=str:up_east str:top=str:EAST str:front=str:UP
+str:UP_NORTH -> str:ordinal=5 str:name=str:up_north str:top=str:NORTH str:front=str:UP
+str:UP_SOUTH -> str:ordinal=6 str:name=str:up_south str:top=str:SOUTH str:front=str:UP
+str:UP_WEST -> str:ordinal=7 str:name=str:up_west str:top=str:WEST str:front=str:UP
+str:WEST_UP -> str:ordinal=8 str:name=str:west_up str:top=str:UP str:front=str:WEST
 #fn const.net.minecraft.core.IdMap -> str str
 str:DEFAULT -> str:value=i32:-1
 #fn const.net.minecraft.core.IdMapper -> str str
@@ -3282,9 +3282,9 @@ str:DEFAULT -> str:ordinal=0 str:id=str:default
 str:FALL_VARIANTS -> str:ordinal=1 str:id=str:fall_variants
 str:INTENTIONAL_GAME_DESIGN -> str:ordinal=2 str:id=str:intentional_game_design
 #fn const.net.minecraft.world.effect.MobEffectCategory -> str str
-str:BENEFICIAL -> str:ordinal=0 str:tooltipFormatting=str:§9
-str:HARMFUL -> str:ordinal=1 str:tooltipFormatting=str:§c
-str:NEUTRAL -> str:ordinal=2 str:tooltipFormatting=str:§9
+str:BENEFICIAL -> str:ordinal=0 str:tooltipFormatting=str:BLUE
+str:HARMFUL -> str:ordinal=1 str:tooltipFormatting=str:RED
+str:NEUTRAL -> str:ordinal=2 str:tooltipFormatting=str:BLUE
 #fn const.net.minecraft.world.effect.MobEffectInstance -> str str
 str:INFINITE_DURATION -> str:value=i32:-1
 str:MAX_AMPLIFIER -> str:value=i32:255
@@ -3593,10 +3593,10 @@ str:TAG_UUID -> str:value=str:UUID
 str:TOTAL_AIR_SUPPLY -> str:value=i32:300
 str:WILDCARD_NAME -> str:value=str:*
 #fn const.net.minecraft.world.entity.EntityAttachment -> str str
-str:NAME_TAG -> str:ordinal=2 str:fallback=str:net.minecraft.world.entity.EntityAttachment$Fallback$$Lambda/0x00000000315cf510@4978fcc1
-str:PASSENGER -> str:ordinal=0 str:fallback=str:net.minecraft.world.entity.EntityAttachment$Fallback$$Lambda/0x00000000315cf510@4978fcc1
-str:VEHICLE -> str:ordinal=1 str:fallback=str:net.minecraft.world.entity.EntityAttachment$Fallback$$Lambda/0x00000000315cf2e8@2df6cca5
-str:WARDEN_CHEST -> str:ordinal=3 str:fallback=str:net.minecraft.world.entity.EntityAttachment$Fallback$$Lambda/0x00000000315cf738@1c8ced72
+str:NAME_TAG -> str:ordinal=2 str:fallback=str:net.minecraft.world.entity.EntityAttachment$Fallback$$Lambda/0x00000000215cf510@f37df86
+str:PASSENGER -> str:ordinal=0 str:fallback=str:net.minecraft.world.entity.EntityAttachment$Fallback$$Lambda/0x00000000215cf510@f37df86
+str:VEHICLE -> str:ordinal=1 str:fallback=str:net.minecraft.world.entity.EntityAttachment$Fallback$$Lambda/0x00000000215cf2e8@616bf8c4
+str:WARDEN_CHEST -> str:ordinal=3 str:fallback=str:net.minecraft.world.entity.EntityAttachment$Fallback$$Lambda/0x00000000215cf738@4978fcc1
 #fn const.net.minecraft.world.entity.EntityEvent -> str str
 str:ARMADILLO_PEEK -> str:value=i32:64
 str:ARMORSTAND_WOBBLE -> str:value=i32:32
@@ -3690,17 +3690,17 @@ str:MAINHAND -> str:ordinal=0 str:type=str:HAND str:index=i32:0 str:countLimit=i
 str:OFFHAND -> str:ordinal=1 str:type=str:HAND str:index=i32:1 str:countLimit=i32:0 str:id=i32:5 str:name=str:offhand
 str:SADDLE -> str:ordinal=7 str:type=str:SADDLE str:index=i32:0 str:countLimit=i32:1 str:id=i32:7 str:name=str:saddle
 #fn const.net.minecraft.world.entity.EquipmentSlotGroup -> str str
-str:ANY -> str:ordinal=0 str:id=i32:0 str:key=str:any str:predicate=str:net.minecraft.world.entity.EquipmentSlotGroup$$Lambda/0x00000000314cf098@37878749 str:slots=str:[MAINHAND,\sOFFHAND,\sFEET,\sLEGS,\sCHEST,\sHEAD,\sBODY,\sSADDLE]
-str:ARMOR -> str:ordinal=8 str:id=i32:8 str:key=str:armor str:predicate=str:net.minecraft.world.entity.EquipmentSlotGroup$$Lambda/0x00000000314d04b8@597d0d2e str:slots=str:[FEET,\sLEGS,\sCHEST,\sHEAD,\sBODY]
-str:BODY -> str:ordinal=9 str:id=i32:9 str:key=str:body str:predicate=str:net.minecraft.world.entity.EquipmentSlotGroup$$Lambda/0x00000000314d0000@a22a902 str:slots=str:[BODY]
-str:CHEST -> str:ordinal=6 str:id=i32:6 str:key=str:chest str:predicate=str:net.minecraft.world.entity.EquipmentSlotGroup$$Lambda/0x00000000314d0000@61264932 str:slots=str:[CHEST]
-str:FEET -> str:ordinal=4 str:id=i32:4 str:key=str:feet str:predicate=str:net.minecraft.world.entity.EquipmentSlotGroup$$Lambda/0x00000000314d0000@4a4357f5 str:slots=str:[FEET]
-str:HAND -> str:ordinal=3 str:id=i32:3 str:key=str:hand str:predicate=str:net.minecraft.world.entity.EquipmentSlotGroup$$Lambda/0x00000000314d0260@41f53d4d str:slots=str:[MAINHAND,\sOFFHAND]
-str:HEAD -> str:ordinal=7 str:id=i32:7 str:key=str:head str:predicate=str:net.minecraft.world.entity.EquipmentSlotGroup$$Lambda/0x00000000314d0000@9511f0e str:slots=str:[HEAD]
-str:LEGS -> str:ordinal=5 str:id=i32:5 str:key=str:legs str:predicate=str:net.minecraft.world.entity.EquipmentSlotGroup$$Lambda/0x00000000314d0000@5e11a3a0 str:slots=str:[LEGS]
-str:MAINHAND -> str:ordinal=1 str:id=i32:1 str:key=str:mainhand str:predicate=str:net.minecraft.world.entity.EquipmentSlotGroup$$Lambda/0x00000000314d0000@4c9b1bb6 str:slots=str:[MAINHAND]
-str:OFFHAND -> str:ordinal=2 str:id=i32:2 str:key=str:offhand str:predicate=str:net.minecraft.world.entity.EquipmentSlotGroup$$Lambda/0x00000000314d0000@1285b1a9 str:slots=str:[OFFHAND]
-str:SADDLE -> str:ordinal=10 str:id=i32:10 str:key=str:saddle str:predicate=str:net.minecraft.world.entity.EquipmentSlotGroup$$Lambda/0x00000000314d0000@599e1ead str:slots=str:[SADDLE]
+str:ANY -> str:ordinal=0 str:id=i32:0 str:key=str:any str:predicate=str:net.minecraft.world.entity.EquipmentSlotGroup$$Lambda/0x00000000214cf098@229f8bff str:slots=str:[MAINHAND,\sOFFHAND,\sFEET,\sLEGS,\sCHEST,\sHEAD,\sBODY,\sSADDLE]
+str:ARMOR -> str:ordinal=8 str:id=i32:8 str:key=str:armor str:predicate=str:net.minecraft.world.entity.EquipmentSlotGroup$$Lambda/0x00000000214d04b8@61264932 str:slots=str:[FEET,\sLEGS,\sCHEST,\sHEAD,\sBODY]
+str:BODY -> str:ordinal=9 str:id=i32:9 str:key=str:body str:predicate=str:net.minecraft.world.entity.EquipmentSlotGroup$$Lambda/0x00000000214d0000@9511f0e str:slots=str:[BODY]
+str:CHEST -> str:ordinal=6 str:id=i32:6 str:key=str:chest str:predicate=str:net.minecraft.world.entity.EquipmentSlotGroup$$Lambda/0x00000000214d0000@4a4357f5 str:slots=str:[CHEST]
+str:FEET -> str:ordinal=4 str:id=i32:4 str:key=str:feet str:predicate=str:net.minecraft.world.entity.EquipmentSlotGroup$$Lambda/0x00000000214d0000@1285b1a9 str:slots=str:[FEET]
+str:HAND -> str:ordinal=3 str:id=i32:3 str:key=str:hand str:predicate=str:net.minecraft.world.entity.EquipmentSlotGroup$$Lambda/0x00000000214d0260@4c9b1bb6 str:slots=str:[MAINHAND,\sOFFHAND]
+str:HEAD -> str:ordinal=7 str:id=i32:7 str:key=str:head str:predicate=str:net.minecraft.world.entity.EquipmentSlotGroup$$Lambda/0x00000000214d0000@5e11a3a0 str:slots=str:[HEAD]
+str:LEGS -> str:ordinal=5 str:id=i32:5 str:key=str:legs str:predicate=str:net.minecraft.world.entity.EquipmentSlotGroup$$Lambda/0x00000000214d0000@41f53d4d str:slots=str:[LEGS]
+str:MAINHAND -> str:ordinal=1 str:id=i32:1 str:key=str:mainhand str:predicate=str:net.minecraft.world.entity.EquipmentSlotGroup$$Lambda/0x00000000214d0000@2c8fe599 str:slots=str:[MAINHAND]
+str:OFFHAND -> str:ordinal=2 str:id=i32:2 str:key=str:offhand str:predicate=str:net.minecraft.world.entity.EquipmentSlotGroup$$Lambda/0x00000000214d0000@37878749 str:slots=str:[OFFHAND]
+str:SADDLE -> str:ordinal=10 str:id=i32:10 str:key=str:saddle str:predicate=str:net.minecraft.world.entity.EquipmentSlotGroup$$Lambda/0x00000000214d0000@597d0d2e str:slots=str:[SADDLE]
 #fn const.net.minecraft.world.entity.ExperienceOrb -> str str
 str:BASE_SAFE_FALL_DISTANCE -> str:value=i32:3
 str:BASE_TICKS_REQUIRED_TO_FREEZE -> str:value=i32:140
@@ -3741,11 +3741,11 @@ str:WILDCARD_NAME -> str:value=str:*
 str:LEFT -> str:ordinal=0 str:id=i32:0 str:name=str:left str:caption=str:translation{key='options.mainHand.left',\sargs=[]}
 str:RIGHT -> str:ordinal=1 str:id=i32:1 str:name=str:right str:caption=str:translation{key='options.mainHand.right',\sargs=[]}
 #fn const.net.minecraft.world.entity.InsideBlockEffectType -> str str
-str:CLEAR_FREEZE -> str:ordinal=1 str:effect=str:net.minecraft.world.entity.InsideBlockEffectType$$Lambda/0x0000000031ec5e08@560b74b8
-str:EXTINGUISH -> str:ordinal=4 str:effect=str:net.minecraft.world.entity.InsideBlockEffectType$$Lambda/0x0000000031ec64b0@6bae6890
-str:FIRE_IGNITE -> str:ordinal=2 str:effect=str:net.minecraft.world.entity.InsideBlockEffectType$$Lambda/0x0000000031ec6040@5f68009e
-str:FREEZE -> str:ordinal=0 str:effect=str:net.minecraft.world.entity.InsideBlockEffectType$$Lambda/0x0000000031ec5bd0@7cea65f4
-str:LAVA_IGNITE -> str:ordinal=3 str:effect=str:net.minecraft.world.entity.InsideBlockEffectType$$Lambda/0x0000000031ec6278@44c46039
+str:CLEAR_FREEZE -> str:ordinal=1 str:effect=str:net.minecraft.world.entity.InsideBlockEffectType$$Lambda/0x0000000021ec6e90@d36c96
+str:EXTINGUISH -> str:ordinal=4 str:effect=str:net.minecraft.world.entity.InsideBlockEffectType$$Lambda/0x0000000021ec7538@5f68009e
+str:FIRE_IGNITE -> str:ordinal=2 str:effect=str:net.minecraft.world.entity.InsideBlockEffectType$$Lambda/0x0000000021ec70c8@7cea65f4
+str:FREEZE -> str:ordinal=0 str:effect=str:net.minecraft.world.entity.InsideBlockEffectType$$Lambda/0x0000000021ec6c58@45099c63
+str:LAVA_IGNITE -> str:ordinal=3 str:effect=str:net.minecraft.world.entity.InsideBlockEffectType$$Lambda/0x0000000021ec7300@560b74b8
 #fn const.net.minecraft.world.entity.Interaction -> str str
 str:BASE_SAFE_FALL_DISTANCE -> str:value=i32:3
 str:BASE_TICKS_REQUIRED_TO_FREEZE -> str:value=i32:140
@@ -18025,22 +18025,22 @@ str:ABSOLUTE_MAX_STACK_SIZE -> str:value=i32:99
 str:DEFAULT_MAX_STACK_SIZE -> str:value=i32:64
 str:MAX_BAR_WIDTH -> str:value=i32:13
 #fn const.net.minecraft.world.item.DyeColor -> str str
-str:BLACK -> str:ordinal=15 str:id=i32:15 str:name=str:black str:mapColor=str:net.minecraft.world.level.material.MapColor@65bfaa2e str:terracottaColor=str:net.minecraft.world.level.material.MapColor@2ab0a111 str:textureDiffuseColor=i32:-14869215 str:fireworkColor=i32:1973019 str:textColor=i32:-16777216
-str:BLUE -> str:ordinal=11 str:id=i32:11 str:name=str:blue str:mapColor=str:net.minecraft.world.level.material.MapColor@75afdb63 str:terracottaColor=str:net.minecraft.world.level.material.MapColor@4ae5753e str:textureDiffuseColor=i32:-12827478 str:fireworkColor=i32:2437522 str:textColor=i32:-16776961
-str:BROWN -> str:ordinal=12 str:id=i32:12 str:name=str:brown str:mapColor=str:net.minecraft.world.level.material.MapColor@331df3e str:terracottaColor=str:net.minecraft.world.level.material.MapColor@74e8403b str:textureDiffuseColor=i32:-8170446 str:fireworkColor=i32:5320730 str:textColor=i32:-7650029
-str:CYAN -> str:ordinal=9 str:id=i32:9 str:name=str:cyan str:mapColor=str:net.minecraft.world.level.material.MapColor@6f0914b9 str:terracottaColor=str:net.minecraft.world.level.material.MapColor@5a1cad2d str:textureDiffuseColor=i32:-15295332 str:fireworkColor=i32:2651799 str:textColor=i32:-16711681
-str:GRAY -> str:ordinal=7 str:id=i32:7 str:name=str:gray str:mapColor=str:net.minecraft.world.level.material.MapColor@14c78cf0 str:terracottaColor=str:net.minecraft.world.level.material.MapColor@d470cf1 str:textureDiffuseColor=i32:-12103854 str:fireworkColor=i32:4408131 str:textColor=i32:-8355712
-str:GREEN -> str:ordinal=13 str:id=i32:13 str:name=str:green str:mapColor=str:net.minecraft.world.level.material.MapColor@7f17f906 str:terracottaColor=str:net.minecraft.world.level.material.MapColor@1eba2f5f str:textureDiffuseColor=i32:-10585066 str:fireworkColor=i32:3887386 str:textColor=i32:-16711936
-str:LIGHT_BLUE -> str:ordinal=3 str:id=i32:3 str:name=str:light_blue str:mapColor=str:net.minecraft.world.level.material.MapColor@1416f26e str:terracottaColor=str:net.minecraft.world.level.material.MapColor@6e1d27f5 str:textureDiffuseColor=i32:-12930086 str:fireworkColor=i32:6719955 str:textColor=i32:-6635315
-str:LIGHT_GRAY -> str:ordinal=8 str:id=i32:8 str:name=str:light_gray str:mapColor=str:net.minecraft.world.level.material.MapColor@4b513ca0 str:terracottaColor=str:net.minecraft.world.level.material.MapColor@4781a0b5 str:textureDiffuseColor=i32:-6447721 str:fireworkColor=i32:11250603 str:textColor=i32:-2894893
-str:LIME -> str:ordinal=5 str:id=i32:5 str:name=str:lime str:mapColor=str:net.minecraft.world.level.material.MapColor@3660b034 str:terracottaColor=str:net.minecraft.world.level.material.MapColor@31c50b82 str:textureDiffuseColor=i32:-8337633 str:fireworkColor=i32:4312372 str:textColor=i32:-4194560
-str:MAGENTA -> str:ordinal=2 str:id=i32:2 str:name=str:magenta str:mapColor=str:net.minecraft.world.level.material.MapColor@319b0734 str:terracottaColor=str:net.minecraft.world.level.material.MapColor@f83a037 str:textureDiffuseColor=i32:-3715395 str:fireworkColor=i32:12801229 str:textColor=i32:-65281
-str:ORANGE -> str:ordinal=1 str:id=i32:1 str:name=str:orange str:mapColor=str:net.minecraft.world.level.material.MapColor@14e1fdf4 str:terracottaColor=str:net.minecraft.world.level.material.MapColor@78804e2f str:textureDiffuseColor=i32:-425955 str:fireworkColor=i32:15435844 str:textColor=i32:-38881
-str:PINK -> str:ordinal=6 str:id=i32:6 str:name=str:pink str:mapColor=str:net.minecraft.world.level.material.MapColor@7d82118 str:terracottaColor=str:net.minecraft.world.level.material.MapColor@27956926 str:textureDiffuseColor=i32:-816214 str:fireworkColor=i32:14188952 str:textColor=i32:-38476
-str:PURPLE -> str:ordinal=10 str:id=i32:10 str:name=str:purple str:mapColor=str:net.minecraft.world.level.material.MapColor@18ea3ef2 str:terracottaColor=str:net.minecraft.world.level.material.MapColor@52a4a152 str:textureDiffuseColor=i32:-7785800 str:fireworkColor=i32:8073150 str:textColor=i32:-6283024
-str:RED -> str:ordinal=14 str:id=i32:14 str:name=str:red str:mapColor=str:net.minecraft.world.level.material.MapColor@13ffcb99 str:terracottaColor=str:net.minecraft.world.level.material.MapColor@2520a845 str:textureDiffuseColor=i32:-5231066 str:fireworkColor=i32:11743532 str:textColor=i32:-65536
-str:WHITE -> str:ordinal=0 str:id=i32:0 str:name=str:white str:mapColor=str:net.minecraft.world.level.material.MapColor@7e36fc8f str:terracottaColor=str:net.minecraft.world.level.material.MapColor@67db3fb7 str:textureDiffuseColor=i32:-393218 str:fireworkColor=i32:15790320 str:textColor=i32:-1
-str:YELLOW -> str:ordinal=4 str:id=i32:4 str:name=str:yellow str:mapColor=str:net.minecraft.world.level.material.MapColor@7562fa5 str:terracottaColor=str:net.minecraft.world.level.material.MapColor@15c6a560 str:textureDiffuseColor=i32:-75715 str:fireworkColor=i32:14602026 str:textColor=i32:-256
+str:BLACK -> str:ordinal=15 str:id=i32:15 str:name=str:black str:mapColor=str:net.minecraft.world.level.material.MapColor@13ffcb99 str:terracottaColor=str:net.minecraft.world.level.material.MapColor@2520a845 str:textureDiffuseColor=i32:-14869215 str:fireworkColor=i32:1973019 str:textColor=i32:-16777216
+str:BLUE -> str:ordinal=11 str:id=i32:11 str:name=str:blue str:mapColor=str:net.minecraft.world.level.material.MapColor@18ea3ef2 str:terracottaColor=str:net.minecraft.world.level.material.MapColor@52a4a152 str:textureDiffuseColor=i32:-12827478 str:fireworkColor=i32:2437522 str:textColor=i32:-16776961
+str:BROWN -> str:ordinal=12 str:id=i32:12 str:name=str:brown str:mapColor=str:net.minecraft.world.level.material.MapColor@75afdb63 str:terracottaColor=str:net.minecraft.world.level.material.MapColor@4ae5753e str:textureDiffuseColor=i32:-8170446 str:fireworkColor=i32:5320730 str:textColor=i32:-7650029
+str:CYAN -> str:ordinal=9 str:id=i32:9 str:name=str:cyan str:mapColor=str:net.minecraft.world.level.material.MapColor@4b513ca0 str:terracottaColor=str:net.minecraft.world.level.material.MapColor@4781a0b5 str:textureDiffuseColor=i32:-15295332 str:fireworkColor=i32:2651799 str:textColor=i32:-16711681
+str:GRAY -> str:ordinal=7 str:id=i32:7 str:name=str:gray str:mapColor=str:net.minecraft.world.level.material.MapColor@7d82118 str:terracottaColor=str:net.minecraft.world.level.material.MapColor@27956926 str:textureDiffuseColor=i32:-12103854 str:fireworkColor=i32:4408131 str:textColor=i32:-8355712
+str:GREEN -> str:ordinal=13 str:id=i32:13 str:name=str:green str:mapColor=str:net.minecraft.world.level.material.MapColor@331df3e str:terracottaColor=str:net.minecraft.world.level.material.MapColor@74e8403b str:textureDiffuseColor=i32:-10585066 str:fireworkColor=i32:3887386 str:textColor=i32:-16711936
+str:LIGHT_BLUE -> str:ordinal=3 str:id=i32:3 str:name=str:light_blue str:mapColor=str:net.minecraft.world.level.material.MapColor@319b0734 str:terracottaColor=str:net.minecraft.world.level.material.MapColor@f83a037 str:textureDiffuseColor=i32:-12930086 str:fireworkColor=i32:6719955 str:textColor=i32:-6635315
+str:LIGHT_GRAY -> str:ordinal=8 str:id=i32:8 str:name=str:light_gray str:mapColor=str:net.minecraft.world.level.material.MapColor@14c78cf0 str:terracottaColor=str:net.minecraft.world.level.material.MapColor@d470cf1 str:textureDiffuseColor=i32:-6447721 str:fireworkColor=i32:11250603 str:textColor=i32:-2894893
+str:LIME -> str:ordinal=5 str:id=i32:5 str:name=str:lime str:mapColor=str:net.minecraft.world.level.material.MapColor@7562fa5 str:terracottaColor=str:net.minecraft.world.level.material.MapColor@15c6a560 str:textureDiffuseColor=i32:-8337633 str:fireworkColor=i32:4312372 str:textColor=i32:-4194560
+str:MAGENTA -> str:ordinal=2 str:id=i32:2 str:name=str:magenta str:mapColor=str:net.minecraft.world.level.material.MapColor@14e1fdf4 str:terracottaColor=str:net.minecraft.world.level.material.MapColor@78804e2f str:textureDiffuseColor=i32:-3715395 str:fireworkColor=i32:12801229 str:textColor=i32:-65281
+str:ORANGE -> str:ordinal=1 str:id=i32:1 str:name=str:orange str:mapColor=str:net.minecraft.world.level.material.MapColor@7e36fc8f str:terracottaColor=str:net.minecraft.world.level.material.MapColor@67db3fb7 str:textureDiffuseColor=i32:-425955 str:fireworkColor=i32:15435844 str:textColor=i32:-38881
+str:PINK -> str:ordinal=6 str:id=i32:6 str:name=str:pink str:mapColor=str:net.minecraft.world.level.material.MapColor@3660b034 str:terracottaColor=str:net.minecraft.world.level.material.MapColor@31c50b82 str:textureDiffuseColor=i32:-816214 str:fireworkColor=i32:14188952 str:textColor=i32:-38476
+str:PURPLE -> str:ordinal=10 str:id=i32:10 str:name=str:purple str:mapColor=str:net.minecraft.world.level.material.MapColor@6f0914b9 str:terracottaColor=str:net.minecraft.world.level.material.MapColor@5a1cad2d str:textureDiffuseColor=i32:-7785800 str:fireworkColor=i32:8073150 str:textColor=i32:-6283024
+str:RED -> str:ordinal=14 str:id=i32:14 str:name=str:red str:mapColor=str:net.minecraft.world.level.material.MapColor@7f17f906 str:terracottaColor=str:net.minecraft.world.level.material.MapColor@1eba2f5f str:textureDiffuseColor=i32:-5231066 str:fireworkColor=i32:11743532 str:textColor=i32:-65536
+str:WHITE -> str:ordinal=0 str:id=i32:0 str:name=str:white str:mapColor=str:net.minecraft.world.level.material.MapColor@7430ef2f str:terracottaColor=str:net.minecraft.world.level.material.MapColor@3baaf4eb str:textureDiffuseColor=i32:-393218 str:fireworkColor=i32:15790320 str:textColor=i32:-1
+str:YELLOW -> str:ordinal=4 str:id=i32:4 str:name=str:yellow str:mapColor=str:net.minecraft.world.level.material.MapColor@1416f26e str:terracottaColor=str:net.minecraft.world.level.material.MapColor@6e1d27f5 str:textureDiffuseColor=i32:-75715 str:fireworkColor=i32:14602026 str:textColor=i32:-256
 #fn const.net.minecraft.world.item.DyeItem -> str str
 str:ABSOLUTE_MAX_STACK_SIZE -> str:value=i32:99
 str:DEFAULT_MAX_STACK_SIZE -> str:value=i32:64
@@ -18227,10 +18227,10 @@ str:ABSOLUTE_MAX_STACK_SIZE -> str:value=i32:99
 str:DEFAULT_MAX_STACK_SIZE -> str:value=i32:64
 str:MAX_BAR_WIDTH -> str:value=i32:13
 #fn const.net.minecraft.world.item.Rarity -> str str
-str:COMMON -> str:ordinal=0 str:id=i32:0 str:name=str:common str:color=str:§f
-str:EPIC -> str:ordinal=3 str:id=i32:3 str:name=str:epic str:color=str:§d
-str:RARE -> str:ordinal=2 str:id=i32:2 str:name=str:rare str:color=str:§b
-str:UNCOMMON -> str:ordinal=1 str:id=i32:1 str:name=str:uncommon str:color=str:§e
+str:COMMON -> str:ordinal=0 str:id=i32:0 str:name=str:common str:color=str:WHITE
+str:EPIC -> str:ordinal=3 str:id=i32:3 str:name=str:epic str:color=str:LIGHT_PURPLE
+str:RARE -> str:ordinal=2 str:id=i32:2 str:name=str:rare str:color=str:AQUA
+str:UNCOMMON -> str:ordinal=1 str:id=i32:1 str:name=str:uncommon str:color=str:YELLOW
 #fn const.net.minecraft.world.item.ScaffoldingBlockItem -> str str
 str:ABSOLUTE_MAX_STACK_SIZE -> str:value=i32:99
 str:DEFAULT_MAX_STACK_SIZE -> str:value=i32:64
@@ -21404,9 +21404,9 @@ str:UPDATE_SKIP_ON_PLACE -> str:value=i32:512
 str:UPDATE_SKIP_SHAPE_UPDATE_ON_WIRE -> str:value=i32:128
 str:UPDATE_SUPPRESS_DROPS -> str:value=i32:32
 #fn const.net.minecraft.world.level.block.Mirror -> str str
-str:FRONT_BACK -> str:ordinal=2 str:id=str:front_back str:symbol=str:translation{key='mirror.front_back',\sargs=[]} str:rotation=str:invert_x
-str:LEFT_RIGHT -> str:ordinal=1 str:id=str:left_right str:symbol=str:translation{key='mirror.left_right',\sargs=[]} str:rotation=str:invert_z
-str:NONE -> str:ordinal=0 str:id=str:none str:symbol=str:translation{key='mirror.none',\sargs=[]} str:rotation=str:identity
+str:FRONT_BACK -> str:ordinal=2 str:id=str:front_back str:symbol=str:translation{key='mirror.front_back',\sargs=[]} str:rotation=str:INVERT_X
+str:LEFT_RIGHT -> str:ordinal=1 str:id=str:left_right str:symbol=str:translation{key='mirror.left_right',\sargs=[]} str:rotation=str:INVERT_Z
+str:NONE -> str:ordinal=0 str:id=str:none str:symbol=str:translation{key='mirror.none',\sargs=[]} str:rotation=str:IDENTITY
 #fn const.net.minecraft.world.level.block.MossyCarpetBlock -> str str
 str:INDESTRUCTIBLE -> str:value=f32:0xbf800000
 str:INSTANT -> str:value=f32:0x00000000
@@ -22129,10 +22129,10 @@ str:UPDATE_SKIP_ON_PLACE -> str:value=i32:512
 str:UPDATE_SKIP_SHAPE_UPDATE_ON_WIRE -> str:value=i32:128
 str:UPDATE_SUPPRESS_DROPS -> str:value=i32:32
 #fn const.net.minecraft.world.level.block.Rotation -> str str
-str:CLOCKWISE_180 -> str:ordinal=2 str:index=i32:2 str:id=str:180 str:rotation=str:rot_180_face_xz
-str:CLOCKWISE_90 -> str:ordinal=1 str:index=i32:1 str:id=str:clockwise_90 str:rotation=str:rot_90_y_neg
-str:COUNTERCLOCKWISE_90 -> str:ordinal=3 str:index=i32:3 str:id=str:counterclockwise_90 str:rotation=str:rot_90_y_pos
-str:NONE -> str:ordinal=0 str:index=i32:0 str:id=str:none str:rotation=str:identity
+str:CLOCKWISE_180 -> str:ordinal=2 str:index=i32:2 str:id=str:180 str:rotation=str:ROT_180_FACE_XZ
+str:CLOCKWISE_90 -> str:ordinal=1 str:index=i32:1 str:id=str:clockwise_90 str:rotation=str:ROT_90_Y_NEG
+str:COUNTERCLOCKWISE_90 -> str:ordinal=3 str:index=i32:3 str:id=str:counterclockwise_90 str:rotation=str:ROT_90_Y_POS
+str:NONE -> str:ordinal=0 str:index=i32:0 str:id=str:none str:rotation=str:IDENTITY
 #fn const.net.minecraft.world.level.block.SandBlock -> str str
 str:INDESTRUCTIBLE -> str:value=f32:0xbf800000
 str:INSTANT -> str:value=f32:0x00000000
@@ -24062,12 +24062,12 @@ str:LOOT_TABLE_TAG -> str:value=str:LootTable
 #fn const.net.minecraft.world.level.block.entity.trialspawner.TrialSpawner -> str str
 str:DETECT_PLAYER_SPAWN_BUFFER -> str:value=i32:40
 #fn const.net.minecraft.world.level.block.entity.trialspawner.TrialSpawnerState -> str str
-str:ACTIVE -> str:ordinal=2 str:name=str:active str:lightLevel=i32:8 str:spinningMobSpeed=f64:0x408f400000000000 str:particleEmission=str:net.minecraft.world.level.block.entity.trialspawner.TrialSpawnerState$ParticleEmission$$Lambda/0x0000000031285450@c47ff28 str:isCapableOfSpawning=bool:true
-str:COOLDOWN -> str:ordinal=5 str:name=str:cooldown str:lightLevel=i32:0 str:spinningMobSpeed=f64:0xbff0000000000000 str:particleEmission=str:net.minecraft.world.level.block.entity.trialspawner.TrialSpawnerState$ParticleEmission$$Lambda/0x0000000031285678@19348e7 str:isCapableOfSpawning=bool:false
-str:EJECTING_REWARD -> str:ordinal=4 str:name=str:ejecting_reward str:lightLevel=i32:8 str:spinningMobSpeed=f64:0xbff0000000000000 str:particleEmission=str:net.minecraft.world.level.block.entity.trialspawner.TrialSpawnerState$ParticleEmission$$Lambda/0x0000000031285228@1c4501e8 str:isCapableOfSpawning=bool:false
-str:INACTIVE -> str:ordinal=0 str:name=str:inactive str:lightLevel=i32:0 str:spinningMobSpeed=f64:0xbff0000000000000 str:particleEmission=str:net.minecraft.world.level.block.entity.trialspawner.TrialSpawnerState$ParticleEmission$$Lambda/0x0000000031285000@32d4ad7b str:isCapableOfSpawning=bool:false
-str:WAITING_FOR_PLAYERS -> str:ordinal=1 str:name=str:waiting_for_players str:lightLevel=i32:4 str:spinningMobSpeed=f64:0x4069000000000000 str:particleEmission=str:net.minecraft.world.level.block.entity.trialspawner.TrialSpawnerState$ParticleEmission$$Lambda/0x0000000031285228@1c4501e8 str:isCapableOfSpawning=bool:true
-str:WAITING_FOR_REWARD_EJECTION -> str:ordinal=3 str:name=str:waiting_for_reward_ejection str:lightLevel=i32:8 str:spinningMobSpeed=f64:0xbff0000000000000 str:particleEmission=str:net.minecraft.world.level.block.entity.trialspawner.TrialSpawnerState$ParticleEmission$$Lambda/0x0000000031285228@1c4501e8 str:isCapableOfSpawning=bool:false
+str:ACTIVE -> str:ordinal=2 str:name=str:active str:lightLevel=i32:8 str:spinningMobSpeed=f64:0x408f400000000000 str:particleEmission=str:net.minecraft.world.level.block.entity.trialspawner.TrialSpawnerState$ParticleEmission$$Lambda/0x0000000021285450@32d4ad7b str:isCapableOfSpawning=bool:true
+str:COOLDOWN -> str:ordinal=5 str:name=str:cooldown str:lightLevel=i32:0 str:spinningMobSpeed=f64:0xbff0000000000000 str:particleEmission=str:net.minecraft.world.level.block.entity.trialspawner.TrialSpawnerState$ParticleEmission$$Lambda/0x0000000021285678@1c4501e8 str:isCapableOfSpawning=bool:false
+str:EJECTING_REWARD -> str:ordinal=4 str:name=str:ejecting_reward str:lightLevel=i32:8 str:spinningMobSpeed=f64:0xbff0000000000000 str:particleEmission=str:net.minecraft.world.level.block.entity.trialspawner.TrialSpawnerState$ParticleEmission$$Lambda/0x0000000021285228@2824afa8 str:isCapableOfSpawning=bool:false
+str:INACTIVE -> str:ordinal=0 str:name=str:inactive str:lightLevel=i32:0 str:spinningMobSpeed=f64:0xbff0000000000000 str:particleEmission=str:net.minecraft.world.level.block.entity.trialspawner.TrialSpawnerState$ParticleEmission$$Lambda/0x0000000021285000@4eabc737 str:isCapableOfSpawning=bool:false
+str:WAITING_FOR_PLAYERS -> str:ordinal=1 str:name=str:waiting_for_players str:lightLevel=i32:4 str:spinningMobSpeed=f64:0x4069000000000000 str:particleEmission=str:net.minecraft.world.level.block.entity.trialspawner.TrialSpawnerState$ParticleEmission$$Lambda/0x0000000021285228@2824afa8 str:isCapableOfSpawning=bool:true
+str:WAITING_FOR_REWARD_EJECTION -> str:ordinal=3 str:name=str:waiting_for_reward_ejection str:lightLevel=i32:8 str:spinningMobSpeed=f64:0xbff0000000000000 str:particleEmission=str:net.minecraft.world.level.block.entity.trialspawner.TrialSpawnerState$ParticleEmission$$Lambda/0x0000000021285228@2824afa8 str:isCapableOfSpawning=bool:false
 #fn const.net.minecraft.world.level.block.entity.vault.VaultClientData -> str str
 str:ROTATION_SPEED -> str:value=f32:0x41200000
 #error net.minecraft.world.level.block.entity.vault.VaultConfig -> java.lang.ExceptionInInitializerError: null
@@ -24197,8 +24197,8 @@ str:UPROOTED -> str:ordinal=0 str:name=str:uprooted
 str:LEFT -> str:ordinal=0
 str:RIGHT -> str:ordinal=1
 #fn const.net.minecraft.world.level.block.state.properties.DoubleBlockHalf -> str str
-str:LOWER -> str:ordinal=1 str:directionToOther=str:up
-str:UPPER -> str:ordinal=0 str:directionToOther=str:down
+str:LOWER -> str:ordinal=1 str:directionToOther=str:UP
+str:UPPER -> str:ordinal=0 str:directionToOther=str:DOWN
 #fn const.net.minecraft.world.level.block.state.properties.Half -> str str
 str:BOTTOM -> str:ordinal=1 str:name=str:bottom
 str:TOP -> str:ordinal=0 str:name=str:top
@@ -24465,8 +24465,8 @@ str:MAX_HEIGHT -> str:value=i32:80
 #fn const.net.minecraft.world.level.levelgen.feature.trunkplacers.UpwardsBranchingTrunkPlacer -> str str
 str:MAX_HEIGHT -> str:value=i32:80
 #fn const.net.minecraft.world.level.levelgen.placement.CaveSurface -> str str
-str:CEILING -> str:ordinal=0 str:direction=str:up str:y=i32:1 str:id=str:ceiling
-str:FLOOR -> str:ordinal=1 str:direction=str:down str:y=i32:-1 str:id=str:floor
+str:CEILING -> str:ordinal=0 str:direction=str:UP str:y=i32:1 str:id=str:ceiling
+str:FLOOR -> str:ordinal=1 str:direction=str:DOWN str:y=i32:-1 str:id=str:floor
 #fn const.net.minecraft.world.level.levelgen.structure.StructureCheckResult -> str str
 str:CHUNK_LOAD_NEEDED -> str:ordinal=2
 str:START_NOT_PRESENT -> str:ordinal=1

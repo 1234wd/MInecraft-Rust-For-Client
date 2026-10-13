@@ -340,10 +340,86 @@ fn cursor3d_walk_does_not_depend_on_where_the_box_sits() {
 // ===========================================================================
 
 #[test]
+fn advancement_type_matches_the_jar() {
+    assert_enum(
+        "net.minecraft.advancements.AdvancementType",
+        &[("TASK", 0), ("CHALLENGE", 1), ("GOAL", 2)],
+    );
+    for (c, name) in [("TASK", "task"), ("CHALLENGE", "challenge"), ("GOAL", "goal")] {
+        assert_enum_field(
+            "net.minecraft.advancements.AdvancementType",
+            c,
+            "name",
+            &format!("str:{name}"),
+        );
+    }
+    // TASK and GOAL are BOTH `GREEN` in the jar. That looks like a typo worth "fixing" and is
+    // not -- so it is asserted here, where a future edit that changes it will be caught.
+    // `ChatFormatting` is still a SKELETON, so the Rust port cannot hold the value; the dump can.
+    for (c, colour) in [
+        ("TASK", "GREEN"),
+        ("CHALLENGE", "DARK_PURPLE"),
+        ("GOAL", "GREEN"),
+    ] {
+        assert_enum_field(
+            "net.minecraft.advancements.AdvancementType",
+            c,
+            "chatColor",
+            &format!("str:{colour}"),
+        );
+    }
+}
+
+#[test]
 fn axis_cycle_matches_the_jar() {
     assert_enum(
         "net.minecraft.core.AxisCycle",
         &[("NONE", 0), ("FORWARD", 1), ("BACKWARD", 2)],
+    );
+}
+
+// ===========================================================================
+// Session 14 batch 2: plain enums and constant holders.
+// ===========================================================================
+
+#[test]
+fn memory_status_matches_the_jar() {
+    assert_enum(
+        "net.minecraft.world.entity.ai.memory.MemoryStatus",
+        &[("VALUE_PRESENT", 0), ("VALUE_ABSENT", 1), ("REGISTERED", 2)],
+    );
+}
+
+#[test]
+fn path_computation_type_matches_the_jar() {
+    assert_enum(
+        "net.minecraft.world.level.pathfinder.PathComputationType",
+        &[("LAND", 0), ("WATER", 1), ("AIR", 2)],
+    );
+}
+
+#[test]
+fn structure_check_result_matches_the_jar() {
+    assert_enum(
+        "net.minecraft.world.level.levelgen.structure.StructureCheckResult",
+        &[("START_PRESENT", 0), ("START_NOT_PRESENT", 1), ("CHUNK_LOAD_NEEDED", 2)],
+    );
+}
+
+#[test]
+fn density_constants_match_the_jar_bit_for_bit() {
+    // Raw bits, so a `-0.0` written where `0.0` is meant cannot pass. The dump hex-encodes
+    // doubles via `Double.doubleToRawLongBits` for exactly this reason.
+    assert_const("net.minecraft.world.level.levelgen.Density", "SURFACE", "f64:0x0000000000000000");
+    assert_const(
+        "net.minecraft.world.level.levelgen.Density",
+        "UNRECOVERABLY_DENSE",
+        "f64:0x4050000000000000",
+    );
+    assert_const(
+        "net.minecraft.world.level.levelgen.Density",
+        "UNRECOVERABLY_THIN",
+        "f64:0xc050000000000000",
     );
 }
 
