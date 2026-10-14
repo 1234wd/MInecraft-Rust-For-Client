@@ -499,6 +499,125 @@ fn axis_cycle_axis_rotation_wraps_instead_of_throwing() {
         }
     }
 }
+// ===========================================================================
+// Session 15: Difficulty, InteractionHand, DamageScaling, DeathMessageType,
+// RecipeBookType, MobEffectCategory -- all verified against the constant dump.
+// ===========================================================================
+
+#[test]
+fn difficulty_matches_the_jar() {
+    // Ordinals: PEACEFUL=0, EASY=1, NORMAL=2, HARD=3. Both the ordinal and the `id` field are
+    // persisted (ordinal in some legacy paths, id in modern saves), so both are checked.
+    assert_enum(
+        "net.minecraft.world.Difficulty",
+        &[
+            ("PEACEFUL", 0),
+            ("EASY", 1),
+            ("NORMAL", 2),
+            ("HARD", 3),
+        ],
+    );
+    for (c, id, key) in [
+        ("PEACEFUL", 0, "peaceful"),
+        ("EASY", 1, "easy"),
+        ("NORMAL", 2, "normal"),
+        ("HARD", 3, "hard"),
+    ] {
+        assert_enum_field("net.minecraft.world.Difficulty", c, "id", &format!("i32:{id}"));
+        assert_enum_field("net.minecraft.world.Difficulty", c, "key", &format!("str:{key}"));
+    }
+}
+
+#[test]
+fn interaction_hand_matches_the_jar() {
+    assert_enum(
+        "net.minecraft.world.InteractionHand",
+        &[("MAIN_HAND", 0), ("OFF_HAND", 1)],
+    );
+    assert_enum_field("net.minecraft.world.InteractionHand", "MAIN_HAND", "id", "i32:0");
+    assert_enum_field("net.minecraft.world.InteractionHand", "OFF_HAND", "id", "i32:1");
+}
+
+#[test]
+fn damage_scaling_matches_the_jar() {
+    // NEVER is ordinal 0, not ALWAYS -- declaration order drives ordinals.
+    assert_enum(
+        "net.minecraft.world.damagesource.DamageScaling",
+        &[
+            ("NEVER", 0),
+            ("WHEN_CAUSED_BY_LIVING_NON_PLAYER", 1),
+            ("ALWAYS", 2),
+        ],
+    );
+    for (c, id) in [
+        ("NEVER", "never"),
+        ("WHEN_CAUSED_BY_LIVING_NON_PLAYER", "when_caused_by_living_non_player"),
+        ("ALWAYS", "always"),
+    ] {
+        assert_enum_field("net.minecraft.world.damagesource.DamageScaling", c, "id", &format!("str:{id}"));
+    }
+}
+
+#[test]
+fn death_message_type_matches_the_jar() {
+    assert_enum(
+        "net.minecraft.world.damagesource.DeathMessageType",
+        &[
+            ("DEFAULT", 0),
+            ("FALL_VARIANTS", 1),
+            ("INTENTIONAL_GAME_DESIGN", 2),
+        ],
+    );
+    for (c, id) in [
+        ("DEFAULT", "default"),
+        ("FALL_VARIANTS", "fall_variants"),
+        ("INTENTIONAL_GAME_DESIGN", "intentional_game_design"),
+    ] {
+        assert_enum_field(
+            "net.minecraft.world.damagesource.DeathMessageType",
+            c,
+            "id",
+            &format!("str:{id}"),
+        );
+    }
+}
+
+#[test]
+fn recipe_book_type_matches_the_jar() {
+    // No payload fields -- only ordinals matter here.
+    assert_enum(
+        "net.minecraft.world.inventory.RecipeBookType",
+        &[
+            ("CRAFTING", 0),
+            ("FURNACE", 1),
+            ("BLAST_FURNACE", 2),
+            ("SMOKER", 3),
+        ],
+    );
+}
+
+#[test]
+fn mob_effect_category_matches_the_jar() {
+    assert_enum(
+        "net.minecraft.world.effect.MobEffectCategory",
+        &[("BENEFICIAL", 0), ("HARMFUL", 1), ("NEUTRAL", 2)],
+    );
+    // BENEFICIAL and NEUTRAL BOTH map to BLUE -- this is intentional in vanilla, not a typo.
+    // HARMFUL maps to RED.
+    for (c, colour) in [
+        ("BENEFICIAL", "BLUE"),
+        ("HARMFUL", "RED"),
+        ("NEUTRAL", "BLUE"),
+    ] {
+        assert_enum_field(
+            "net.minecraft.world.effect.MobEffectCategory",
+            c,
+            "tooltipFormatting",
+            &format!("str:{colour}"),
+        );
+    }
+}
+
     #[test]
 fn quart_pos_shifts_match_the_jar_semantics() {
     use minecraft_rust::net::minecraft::core::QuartPos::QuartPos;

@@ -930,3 +930,27 @@ of `"GREEN"`, which made the field useless for the only thing it exists to check
 worth "fixing" and is not. `ChatFormatting` is still a SKELETON so the Rust port cannot hold the
 value, but the colour is asserted in `consts.txt`. `getDisplayName` and `createAnnouncement` are
 `todo!` on `Component` / `AdvancementHolder` / `ServerPlayer`.
+
+---
+
+# Session 15 - Difficulty, InteractionHand, DamageScaling, DeathMessageType, RecipeBookType, MobEffectCategory
+
+Baseline `b019620b`: 304 tests green in debug and release.
+
+**Ported 6 enum files against the constant dump. 310 tests green in debug and release (+6).**
+
+| file | status | methods | groups | notes |
+|---|---|---|---|---|
+| `net/minecraft/world/Difficulty.rs` | VERIFIED | `getId`, `getSerializedName` | `const.net.minecraft.world.Difficulty` | 4 constants; `id` == ordinal by coincidence; `byId` PORT-BLOCKED on ByIdMap |
+| `net/minecraft/world/InteractionHand.rs` | VERIFIED | `id` | `const.net.minecraft.world.InteractionHand` | 2 constants; `asEquipmentSlot` PORT-BLOCKED on EquipmentSlot |
+| `net/minecraft/world/damagesource/DamageScaling.rs` | VERIFIED | `getSerializedName` | `const.net.minecraft.world.damagesource.DamageScaling` | NEVER is ordinal 0, not ALWAYS |
+| `net/minecraft/world/damagesource/DeathMessageType.rs` | VERIFIED | `getSerializedName` | `const.net.minecraft.world.damagesource.DeathMessageType` | INTENTIONAL_GAME_DESIGN is ordinal 2 |
+| `net/minecraft/world/inventory/RecipeBookType.rs` | VERIFIED | (none) | `const.net.minecraft.world.inventory.RecipeBookType` | no payload fields; ordinals only |
+| `net/minecraft/world/effect/MobEffectCategory.rs` | VERIFIED | (none) | `const.net.minecraft.world.effect.MobEffectCategory` | `getTooltipFormatting` PORT-BLOCKED on ChatFormatting; BENEFICIAL and NEUTRAL both map to BLUE |
+
+**Notable facts pinned by the tests:**
+- `DamageScaling.NEVER` is ordinal 0, `ALWAYS` is ordinal 2 -- alphabetical order does not drive ordinals, declaration order does.
+- `MobEffectCategory.BENEFICIAL` and `NEUTRAL` both map to `ChatFormatting.BLUE`. This looks like a typo and is not.
+- `RecipeBookType` has no payload fields at all; only ordinals are persisted.
+
+All 6 new tests added to `_porting/tests/consts.rs`. MANIFEST.csv regenerated via `mirror.py`.
