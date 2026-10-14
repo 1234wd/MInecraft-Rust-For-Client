@@ -42,9 +42,18 @@ fn each(g: &Golden, group: &str, mut f: impl FnMut(&Row)) {
 // Vec3
 // =============================================================================
 
-use minecraft_rust::net::minecraft::core::Direction::{Axis, Direction};
+use minecraft_rust::net::minecraft::core::Direction::{Axis, Direction, VALUES as DIR_VALUES};
 use minecraft_rust::net::minecraft::core::Vec3i::Vec3i;
 use minecraft_rust::net::minecraft::world::phys::Vec3::Vec3;
+// ── ChunkPos & SectionPos (session 16) ──
+use minecraft_rust::net::minecraft::world::level::ChunkPos::{
+    ChunkPos, HASH_Z_XOR, INVALID_CHUNK_POS, REGION_BITS, REGION_MASK, REGION_MAX_INDEX,
+    REGION_SIZE, ZERO as CP_ZERO,
+};
+use minecraft_rust::net::minecraft::core::SectionPos::{
+    SectionPos, SECTION_BITS, SECTION_BLOCK_COUNT, SECTION_HALF_SIZE, SECTION_MASK,
+    SECTION_MAX_INDEX, SECTION_SIZE,
+};
 
 /// Read a 3-component expected value, so the tests read as `assert_vec3`.
 fn exp3(r: &Row, i: usize) -> [f64; 3] {
@@ -1099,6 +1108,52 @@ const COVERED: &[&str] = &[
     "vec3.rotation",
     "vec3.applyLocalCoordinates",
     "vec3.addLocalCoordinates",
+    // -- chunkpos: all 19 groups ported in session 16 --
+    "chunkpos.constants",
+    "chunkpos.pack",
+    "chunkpos.unpackRoundTrip",
+    "chunkpos.hash",
+    "chunkpos.packBlockPos",
+    "chunkpos.unpack",
+    "chunkpos.getXZ",
+    "chunkpos.fromSectionNode",
+    "chunkpos.regionOfPacked",
+    "chunkpos.hashCode",
+    "chunkpos.toString",
+    "chunkpos.equals",
+    "chunkpos.isValid",
+    "chunkpos.blockCoords",
+    "chunkpos.region",
+    "chunkpos.distances",
+    "chunkpos.minMaxFromRegion",
+    "chunkpos.rangeClosed",
+    "chunkpos.rangeClosedFromTo",
+    // -- sectionpos: all 25 groups ported in session 16 --
+    "sectionpos.constants",
+    "sectionpos.asLong",
+    "sectionpos.getXYZ",
+    "sectionpos.ofLong",
+    "sectionpos.offsetLong",
+    "sectionpos.offsetLongDir",
+    "sectionpos.blockToSection",
+    "sectionpos.getZeroNode",
+    "sectionpos.sectionToChunk",
+    "sectionpos.getZeroNodeXZ",
+    "sectionpos.asLongBlockPos",
+    "sectionpos.blockToSectionCoord",
+    "sectionpos.sectionRelative",
+    "sectionpos.sectionToBlockCoord",
+    "sectionpos.posToSectionCoord",
+    "sectionpos.blockToSectionCoordD",
+    "sectionpos.sectionRelativePos",
+    "sectionpos.blockCoords",
+    "sectionpos.instanceMisc",
+    "sectionpos.relativeToBlock",
+    "sectionpos.blocksInside",
+    "sectionpos.cube",
+    "sectionpos.aroundChunk",
+    "sectionpos.betweenClosedStream",
+    "sectionpos.aroundAndAtBlockPos",
 ];
 
 /// Groups the oracle emits that no test claims yet.
@@ -1136,26 +1191,6 @@ const BLOCKED_ON_UNPORTED_TYPES: &[&str] = &[
     // 72201 and contradicting 72176. Not a golden fix and not a port fix -- left here with the
     // measurements rather than resolved by picking a side.
     "blockpos.clampLocationWithin",
-    // -- chunkpos --
-    "chunkpos.constants",  // port not started
-    "chunkpos.pack",  // port not started
-    "chunkpos.unpackRoundTrip",  // port not started
-    "chunkpos.hash",  // port not started
-    "chunkpos.packBlockPos",  // port not started
-    "chunkpos.unpack",  // port not started
-    "chunkpos.getXZ",  // port not started
-    "chunkpos.fromSectionNode",  // port not started
-    "chunkpos.regionOfPacked",  // port not started
-    "chunkpos.hashCode",  // port not started
-    "chunkpos.toString",  // port not started
-    "chunkpos.equals",  // port not started
-    "chunkpos.isValid",  // port not started
-    "chunkpos.blockCoords",  // port not started
-    "chunkpos.region",  // port not started
-    "chunkpos.distances",  // port not started
-    "chunkpos.minMaxFromRegion",  // port not started
-    "chunkpos.rangeClosed",  // port not started
-    "chunkpos.rangeClosedFromTo",  // port not started
     // -- mth --
     "mth.mulAndTruncate",
     "mth.rayIntersectsAABB",
@@ -1167,32 +1202,6 @@ const BLOCKED_ON_UNPORTED_TYPES: &[&str] = &[
     "plane.getRandomDirection",  // Direction.Plane is item 9 of the session-06 loop
     "plane.getRandomAxis",  // Direction.Plane is item 9 of the session-06 loop
     "plane.shuffledCopy",  // Direction.Plane is item 9 of the session-06 loop
-    // -- sectionpos --
-    "sectionpos.constants",  // port not started
-    "sectionpos.asLong",  // port not started
-    "sectionpos.getXYZ",  // port not started
-    "sectionpos.ofLong",  // port not started
-    "sectionpos.offsetLong",  // port not started
-    "sectionpos.offsetLongDir",  // port not started
-    "sectionpos.blockToSection",  // port not started
-    "sectionpos.getZeroNode",  // port not started
-    "sectionpos.sectionToChunk",  // port not started
-    "sectionpos.getZeroNodeXZ",  // port not started
-    "sectionpos.asLongBlockPos",  // port not started
-    "sectionpos.blockToSectionCoord",  // port not started
-    "sectionpos.sectionRelative",  // port not started
-    "sectionpos.sectionToBlockCoord",  // port not started
-    "sectionpos.posToSectionCoord",  // port not started
-    "sectionpos.blockToSectionCoordD",  // port not started
-    "sectionpos.sectionRelativePos",  // port not started
-    "sectionpos.blockCoords",  // port not started
-    "sectionpos.instanceMisc",  // port not started
-    "sectionpos.relativeToBlock",  // port not started
-    "sectionpos.blocksInside",  // port not started
-    "sectionpos.cube",  // port not started
-    "sectionpos.aroundChunk",  // port not started
-    "sectionpos.betweenClosedStream",  // port not started
-    "sectionpos.aroundAndAtBlockPos",  // port not started
 ];
 
 /// Every group the oracle emits must be claimed by a test or listed as blocked.
@@ -4150,4 +4159,723 @@ fn aabb_builder_error_text() {
         catch_panic_message(|| bd.build()).is_none(),
         "a Builder with one include must build"
     );
+}
+
+// =============================================================================
+// ChunkPos & SectionPos tests (session 16)
+// =============================================================================
+
+/// Build a ChunkPos from two consecutive i32 args starting at `arg_base`.
+fn cp(r: &Row, arg_base: usize) -> ChunkPos {
+    ChunkPos::new(r.arg(arg_base).as_i32(), r.arg(arg_base + 1).as_i32())
+}
+
+#[test]
+fn chunkpos_constants() {
+    let g = Golden::load("batch2.txt");
+    // Golden puts constant values as ARGS (before `->`) and emits `str:constants` as result.
+    each(&g, "chunkpos.constants", |r| {
+        assert_eq!(r.arg(0).as_i32(), REGION_BITS, "REGION_BITS");
+        assert_eq!(r.arg(1).as_i32(), REGION_SIZE, "REGION_SIZE");
+        assert_eq!(r.arg(2).as_i32(), REGION_MASK, "REGION_MASK");
+        assert_eq!(r.arg(3).as_i32(), REGION_MAX_INDEX, "REGION_MAX_INDEX");
+        assert_eq!(r.arg(4).as_i32(), CP_ZERO.x, "ZERO.x");
+        assert_eq!(r.arg(5).as_i32(), CP_ZERO.z, "ZERO.z");
+        assert_eq!(r.arg(6).as_i64(), INVALID_CHUNK_POS, "INVALID_CHUNK_POS");
+        assert_eq!(r.arg(7).as_i32(), ChunkPos::get_x(INVALID_CHUNK_POS), "getX(INVALID)");
+        assert_eq!(r.arg(8).as_i32(), HASH_Z_XOR, "HASH_Z_XOR");
+    });
+}
+
+#[test]
+fn chunkpos_pack() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "chunkpos.pack", |r| {
+        let (x, z) = (r.arg(0).as_i32(), r.arg(1).as_i32());
+        assert_eq!(ChunkPos::pack(x, z), r.exp(0).as_i64(), "pack({x},{z})");
+    });
+}
+
+#[test]
+fn chunkpos_unpack_round_trip() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "chunkpos.unpackRoundTrip", |r| {
+        let (x, z) = (r.arg(0).as_i32(), r.arg(1).as_i32());
+        let packed = ChunkPos::pack(x, z);
+        let c = ChunkPos::unpack(packed);
+        assert_eq!(c.x, r.exp(0).as_i32(), "unpack_x({x},{z})");
+        assert_eq!(c.z, r.exp(1).as_i32(), "unpack_z({x},{z})");
+    });
+}
+
+#[test]
+fn chunkpos_hash() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "chunkpos.hash", |r| {
+        let (x, z) = (r.arg(0).as_i32(), r.arg(1).as_i32());
+        assert_eq!(ChunkPos::hash(x, z), r.exp(0).as_i32(), "hash({x},{z})");
+    });
+}
+
+#[test]
+fn chunkpos_pack_block_pos() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "chunkpos.packBlockPos", |r| {
+        let (bx, by, bz) = (r.arg(0).as_i32(), r.arg(1).as_i32(), r.arg(2).as_i32());
+        let packed = ChunkPos::pack_block_pos(bx, by, bz);
+        assert_eq!(packed, r.exp(0).as_i64(), "packBlockPos({bx},{by},{bz}) packed");
+        assert_eq!(ChunkPos::get_x(packed), r.exp(1).as_i32(), "packBlockPos x");
+        assert_eq!(ChunkPos::get_z(packed), r.exp(2).as_i32(), "packBlockPos z");
+    });
+}
+
+#[test]
+fn chunkpos_unpack() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "chunkpos.unpack", |r| {
+        let key = r.arg(0).as_i64();
+        let c = ChunkPos::unpack(key);
+        assert_eq!(c.x, r.exp(0).as_i32(), "unpack x {key}");
+        assert_eq!(c.z, r.exp(1).as_i32(), "unpack z {key}");
+    });
+}
+
+#[test]
+fn chunkpos_get_xz() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "chunkpos.getXZ", |r| {
+        let key = r.arg(0).as_i64();
+        assert_eq!(ChunkPos::get_x(key), r.exp(0).as_i32(), "getX {key}");
+        assert_eq!(ChunkPos::get_z(key), r.exp(1).as_i32(), "getZ {key}");
+    });
+}
+
+#[test]
+fn chunkpos_from_section_node() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "chunkpos.fromSectionNode", |r| {
+        let p = r.arg(0).as_i64();
+        assert_eq!(
+            ChunkPos::from_section_node(p),
+            r.exp(0).as_i64(),
+            "fromSectionNode {p}"
+        );
+    });
+}
+
+#[test]
+fn chunkpos_region_of_packed() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "chunkpos.regionOfPacked", |r| {
+        let p = r.arg(0).as_i64();
+        assert_eq!(ChunkPos::get_region_x(p), r.exp(0).as_i32(), "getRegionX {p}");
+        assert_eq!(ChunkPos::get_region_z(p), r.exp(1).as_i32(), "getRegionZ {p}");
+    });
+}
+
+#[test]
+fn chunkpos_hash_code() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "chunkpos.hashCode", |r| {
+        let c = cp(r, 0);
+        assert_eq!(c.java_hash_code(), r.exp(0).as_i32(), "hashCode({},{})", c.x, c.z);
+    });
+}
+
+#[test]
+fn chunkpos_to_string() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "chunkpos.toString", |r| {
+        let c = cp(r, 0);
+        assert_eq!(
+            c.java_to_string(),
+            r.exp(0).as_opt_str().unwrap_or(""),
+            "toString({},{})",
+            c.x,
+            c.z
+        );
+    });
+}
+
+#[test]
+fn chunkpos_equals() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "chunkpos.equals", |r| {
+        let a = cp(r, 0);
+        let b = cp(r, 2);
+        let expected = r.exp(0).as_bool();
+        assert_eq!(
+            a.java_equals(&b),
+            expected,
+            "equals({},{}) vs ({},{})",
+            a.x,
+            a.z,
+            b.x,
+            b.z
+        );
+    });
+}
+
+#[test]
+fn chunkpos_is_valid() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "chunkpos.isValid", |r| {
+        let c = cp(r, 0);
+        assert_eq!(
+            c.is_valid_self(),
+            r.exp(0).as_bool(),
+            "isValid({},{})",
+            c.x,
+            c.z
+        );
+    });
+}
+
+#[test]
+fn chunkpos_block_coords() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "chunkpos.blockCoords", |r| {
+        let c = cp(r, 0);
+        assert_eq!(c.get_min_block_x(), r.exp(0).as_i32(), "minBlockX");
+        assert_eq!(c.get_max_block_x(), r.exp(1).as_i32(), "maxBlockX");
+        assert_eq!(c.get_middle_block_x(), r.exp(2).as_i32(), "middleBlockX");
+        assert_eq!(c.get_block_x(5), r.exp(3).as_i32(), "blockX(5)");
+        assert_eq!(c.get_min_block_z(), r.exp(4).as_i32(), "minBlockZ");
+        assert_eq!(c.get_max_block_z(), r.exp(5).as_i32(), "maxBlockZ");
+        assert_eq!(c.get_middle_block_z(), r.exp(6).as_i32(), "middleBlockZ");
+        assert_eq!(c.get_block_z(5), r.exp(7).as_i32(), "blockZ(5)");
+        assert_eq!(c.get_world_position_y(), r.exp(8).as_i32(), "worldPositionY");
+    });
+}
+
+#[test]
+fn chunkpos_region() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "chunkpos.region", |r| {
+        let c = cp(r, 0);
+        assert_eq!(c.get_region_x_self(), r.exp(0).as_i32(), "regionX");
+        assert_eq!(c.get_region_z_self(), r.exp(1).as_i32(), "regionZ");
+        assert_eq!(c.get_region_local_x(), r.exp(2).as_i32(), "regionLocalX");
+        assert_eq!(c.get_region_local_z(), r.exp(3).as_i32(), "regionLocalZ");
+    });
+}
+
+#[test]
+fn chunkpos_distances() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "chunkpos.distances", |r| {
+        let c = cp(r, 0);
+        let other = cp(r, 2);
+        // contains(BlockPos): the block is at c.x*16 + offset.x, 0, c.z*16 + offset.z
+        let bx = c.x.wrapping_mul(16).wrapping_add(other.x);
+        let bz = c.z.wrapping_mul(16).wrapping_add(other.z);
+        assert_eq!(c.contains(bx, bz), r.exp(0).as_bool(), "contains");
+        assert_eq!(
+            c.get_chessboard_distance(other.x, other.z),
+            r.exp(1).as_i32(),
+            "chessboard"
+        );
+        assert_eq!(
+            c.distance_squared_from(&other),
+            r.exp(2).as_i32(),
+            "distanceSqCP"
+        );
+        let packed_other = ChunkPos::pack(other.x, other.z);
+        assert_eq!(
+            c.distance_squared_packed(packed_other),
+            r.exp(3).as_i32(),
+            "distanceSqPacked"
+        );
+    });
+}
+
+#[test]
+fn chunkpos_min_max_from_region() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "chunkpos.minMaxFromRegion", |r| {
+        let (rx, rz) = (r.arg(0).as_i32(), r.arg(1).as_i32());
+        let mn = ChunkPos::min_from_region(rx, rz);
+        let mx = ChunkPos::max_from_region(rx, rz);
+        assert_eq!(mn.x, r.exp(0).as_i32(), "minFromRegion.x");
+        assert_eq!(mn.z, r.exp(1).as_i32(), "minFromRegion.z");
+        assert_eq!(mx.x, r.exp(2).as_i32(), "maxFromRegion.x");
+        assert_eq!(mx.z, r.exp(3).as_i32(), "maxFromRegion.z");
+    });
+}
+
+#[test]
+fn chunkpos_range_closed() {
+    let g = Golden::load("batch2.txt");
+    let rows = g.rows("chunkpos.rangeClosed");
+    let mut i = 0;
+    while i < rows.len() {
+        let (cx, cz, r) = (
+            rows[i].arg(0).as_i32(),
+            rows[i].arg(1).as_i32(),
+            rows[i].arg(2).as_i32(),
+        );
+        let mut expected = Vec::new();
+        while i < rows.len()
+            && rows[i].arg(0).as_i32() == cx
+            && rows[i].arg(1).as_i32() == cz
+            && rows[i].arg(2).as_i32() == r
+        {
+            expected.push((rows[i].exp(0).as_i32(), rows[i].exp(1).as_i32()));
+            i += 1;
+        }
+        let got = ChunkPos::range_closed(cx, cz, r);
+        let got_capped: Vec<_> = got.iter().take(expected.len()).collect();
+        assert_eq!(
+            got_capped.len(),
+            expected.len(),
+            "rangeClosed({cx},{cz},{r}) length"
+        );
+        for (k, (p, e)) in got_capped.iter().zip(expected.iter()).enumerate() {
+            assert_eq!(
+                (p.x, p.z),
+                *e,
+                "rangeClosed({cx},{cz},{r})[{k}]"
+            );
+        }
+    }
+}
+
+#[test]
+fn chunkpos_range_closed_from_to() {
+    let g = Golden::load("batch2.txt");
+    let rows = g.rows("chunkpos.rangeClosedFromTo");
+    let mut i = 0;
+    while i < rows.len() {
+        let (x1, z1, x2, z2) = (
+            rows[i].arg(0).as_i32(),
+            rows[i].arg(1).as_i32(),
+            rows[i].arg(2).as_i32(),
+            rows[i].arg(3).as_i32(),
+        );
+        let mut expected = Vec::new();
+        while i < rows.len()
+            && rows[i].arg(0).as_i32() == x1
+            && rows[i].arg(1).as_i32() == z1
+            && rows[i].arg(2).as_i32() == x2
+            && rows[i].arg(3).as_i32() == z2
+        {
+            expected.push((rows[i].exp(0).as_i32(), rows[i].exp(1).as_i32()));
+            i += 1;
+        }
+        let got = ChunkPos::range_closed_from_to(x1, z1, x2, z2);
+        let got_capped: Vec<_> = got.iter().take(expected.len()).collect();
+        assert_eq!(
+            got_capped.len(),
+            expected.len(),
+            "rangeClosedFromTo({x1},{z1},{x2},{z2}) length"
+        );
+        for (k, (p, e)) in got_capped.iter().zip(expected.iter()).enumerate() {
+            assert_eq!(
+                (p.x, p.z),
+                *e,
+                "rangeClosedFromTo({x1},{z1},{x2},{z2})[{k}]"
+            );
+        }
+    }
+}
+
+// =============================================================================
+// SectionPos
+// =============================================================================
+
+
+#[test]
+fn sectionpos_constants() {
+    let g = Golden::load("batch2.txt");
+    // Golden puts constant values as ARGS (before `->`) and emits `str:constants` as result.
+    each(&g, "sectionpos.constants", |r| {
+        assert_eq!(r.arg(0).as_i32(), SECTION_BITS, "SECTION_BITS");
+        assert_eq!(r.arg(1).as_i32(), SECTION_SIZE, "SECTION_SIZE");
+        assert_eq!(r.arg(2).as_i32(), SECTION_BLOCK_COUNT, "SECTION_BLOCK_COUNT");
+        assert_eq!(r.arg(3).as_i32(), SECTION_MASK, "SECTION_MASK");
+        assert_eq!(r.arg(4).as_i32(), SECTION_HALF_SIZE, "SECTION_HALF_SIZE");
+        assert_eq!(r.arg(5).as_i32(), SECTION_MAX_INDEX, "SECTION_MAX_INDEX");
+        // Layout lengths are private but the oracle emits them as 22, 20, 22.
+        assert_eq!(r.arg(6).as_i32(), 22, "PACKED_X_LENGTH");
+        assert_eq!(r.arg(7).as_i32(), 20, "PACKED_Y_LENGTH");
+        assert_eq!(r.arg(8).as_i32(), 22, "PACKED_Z_LENGTH");
+    });
+}
+
+#[test]
+fn sectionpos_as_long() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "sectionpos.asLong", |r| {
+        let (x, y, z) = (r.arg(0).as_i32(), r.arg(1).as_i32(), r.arg(2).as_i32());
+        assert_eq!(
+            SectionPos::as_long_xyz(x, y, z),
+            r.exp(0).as_i64(),
+            "asLong({x},{y},{z})"
+        );
+    });
+}
+
+#[test]
+fn sectionpos_get_xyz() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "sectionpos.getXYZ", |r| {
+        let p = r.arg(0).as_i64();
+        assert_eq!(SectionPos::x(p), r.exp(0).as_i32(), "x({p})");
+        assert_eq!(SectionPos::y(p), r.exp(1).as_i32(), "y({p})");
+        assert_eq!(SectionPos::z(p), r.exp(2).as_i32(), "z({p})");
+    });
+}
+
+#[test]
+fn sectionpos_of_long() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "sectionpos.ofLong", |r| {
+        let p = r.arg(0).as_i64();
+        let s = SectionPos::of_long(p);
+        assert_eq!(s.x, r.exp(0).as_i32(), "ofLong x");
+        assert_eq!(s.y, r.exp(1).as_i32(), "ofLong y");
+        assert_eq!(s.z, r.exp(2).as_i32(), "ofLong z");
+    });
+}
+
+#[test]
+fn sectionpos_offset_long() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "sectionpos.offsetLong", |r| {
+        let p = r.arg(0).as_i64();
+        let (dx, dy, dz) = (r.arg(1).as_i32(), r.arg(2).as_i32(), r.arg(3).as_i32());
+        assert_eq!(
+            SectionPos::offset_long(p, dx, dy, dz),
+            r.exp(0).as_i64(),
+            "offsetLong({p},{dx},{dy},{dz})"
+        );
+    });
+}
+
+#[test]
+fn sectionpos_offset_long_dir() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "sectionpos.offsetLongDir", |r| {
+        let p = r.arg(0).as_i64();
+        let di = r.arg(1).as_i32() as usize;
+        let dir = DIR_VALUES[di];
+        assert_eq!(
+            SectionPos::offset_long_dir(p, &dir),
+            r.exp(0).as_i64(),
+            "offsetLongDir({p}, dir[{di}])"
+        );
+    });
+}
+
+#[test]
+fn sectionpos_block_to_section() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "sectionpos.blockToSection", |r| {
+        let p = r.arg(0).as_i64();
+        assert_eq!(
+            SectionPos::block_to_section(p),
+            r.exp(0).as_i64(),
+            "blockToSection({p})"
+        );
+    });
+}
+
+#[test]
+fn sectionpos_get_zero_node() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "sectionpos.getZeroNode", |r| {
+        let p = r.arg(0).as_i64();
+        assert_eq!(
+            SectionPos::get_zero_node_long(p),
+            r.exp(0).as_i64(),
+            "getZeroNode({p})"
+        );
+    });
+}
+
+#[test]
+fn sectionpos_section_to_chunk() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "sectionpos.sectionToChunk", |r| {
+        let p = r.arg(0).as_i64();
+        assert_eq!(
+            SectionPos::section_to_chunk(p),
+            r.exp(0).as_i64(),
+            "sectionToChunk({p})"
+        );
+    });
+}
+
+#[test]
+fn sectionpos_get_zero_node_xz() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "sectionpos.getZeroNodeXZ", |r| {
+        let (x, z) = (r.arg(0).as_i32(), r.arg(1).as_i32());
+        assert_eq!(
+            SectionPos::get_zero_node_xz(x, z),
+            r.exp(0).as_i64(),
+            "getZeroNodeXZ({x},{z})"
+        );
+    });
+}
+
+#[test]
+fn sectionpos_as_long_block_pos() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "sectionpos.asLongBlockPos", |r| {
+        let (bx, by, bz) = (r.arg(0).as_i32(), r.arg(1).as_i32(), r.arg(2).as_i32());
+        assert_eq!(
+            SectionPos::as_long_block_pos(bx, by, bz),
+            r.exp(0).as_i64(),
+            "asLongBlockPos({bx},{by},{bz})"
+        );
+    });
+}
+
+#[test]
+fn sectionpos_block_to_section_coord() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "sectionpos.blockToSectionCoord", |r| {
+        let x = r.arg(0).as_i32();
+        assert_eq!(
+            SectionPos::block_to_section_coord_i32(x),
+            r.exp(0).as_i32(),
+            "blockToSectionCoord({x})"
+        );
+    });
+}
+
+#[test]
+fn sectionpos_section_relative() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "sectionpos.sectionRelative", |r| {
+        let x = r.arg(0).as_i32();
+        assert_eq!(
+            SectionPos::section_relative(x),
+            r.exp(0).as_i32(),
+            "sectionRelative({x})"
+        );
+    });
+}
+
+#[test]
+fn sectionpos_section_to_block_coord() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "sectionpos.sectionToBlockCoord", |r| {
+        let x = r.arg(0).as_i32();
+        assert_eq!(
+            SectionPos::section_to_block_coord(x),
+            r.exp(0).as_i32(),
+            "sectionToBlockCoord({x})"
+        );
+        assert_eq!(
+            SectionPos::section_to_block_coord_with_offset(x, 5),
+            r.exp(1).as_i32(),
+            "sectionToBlockCoord({x},5)"
+        );
+    });
+}
+
+#[test]
+fn sectionpos_pos_to_section_coord() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "sectionpos.posToSectionCoord", |r| {
+        let d = r.arg(0).as_f64();
+        assert_eq!(
+            SectionPos::pos_to_section_coord(d),
+            r.exp(0).as_i32(),
+            "posToSectionCoord({d})"
+        );
+    });
+}
+
+#[test]
+fn sectionpos_block_to_section_coord_d() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "sectionpos.blockToSectionCoordD", |r| {
+        let d = r.arg(0).as_f64();
+        assert_eq!(
+            SectionPos::block_to_section_coord_f64(d),
+            r.exp(0).as_i32(),
+            "blockToSectionCoordD({d})"
+        );
+    });
+}
+
+#[test]
+fn sectionpos_section_relative_pos() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "sectionpos.sectionRelativePos", |r| {
+        let (bx, by, bz) = (r.arg(0).as_i32(), r.arg(1).as_i32(), r.arg(2).as_i32());
+        let rel = SectionPos::section_relative_pos(bx, by, bz);
+        assert_eq!(rel, r.exp(0).as_i32(), "sectionRelativePos packed ({bx},{by},{bz})");
+        assert_eq!(SectionPos::section_relative_x(rel), r.exp(1).as_i32(), "relX");
+        assert_eq!(SectionPos::section_relative_y(rel), r.exp(2).as_i32(), "relY");
+        assert_eq!(SectionPos::section_relative_z(rel), r.exp(3).as_i32(), "relZ");
+    });
+}
+
+#[test]
+fn sectionpos_block_coords() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "sectionpos.blockCoords", |r| {
+        let (x, y, z) = (r.arg(0).as_i32(), r.arg(1).as_i32(), r.arg(2).as_i32());
+        let s = SectionPos::of_xyz(x, y, z);
+        // Outputs: x, y, z, minX, minY, minZ, maxX, maxY, maxZ, origin.y, center.x, chunk.x, chunk.z
+        assert_eq!(s.get_x(), r.exp(0).as_i32(), "x");
+        assert_eq!(s.get_y(), r.exp(1).as_i32(), "y");
+        assert_eq!(s.get_z(), r.exp(2).as_i32(), "z");
+        assert_eq!(s.min_block_x(), r.exp(3).as_i32(), "minBlockX");
+        assert_eq!(s.min_block_y(), r.exp(4).as_i32(), "minBlockY");
+        assert_eq!(s.min_block_z(), r.exp(5).as_i32(), "minBlockZ");
+        assert_eq!(s.max_block_x(), r.exp(6).as_i32(), "maxBlockX");
+        assert_eq!(s.max_block_y(), r.exp(7).as_i32(), "maxBlockY");
+        assert_eq!(s.max_block_z(), r.exp(8).as_i32(), "maxBlockZ");
+        assert_eq!(s.origin().1, r.exp(9).as_i32(), "origin.y");
+        assert_eq!(s.center().0, r.exp(10).as_i32(), "center.x");
+        assert_eq!(s.chunk().x, r.exp(11).as_i32(), "chunk.x");
+        assert_eq!(s.chunk().z, r.exp(12).as_i32(), "chunk.z");
+    });
+}
+
+#[test]
+fn sectionpos_instance_misc() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "sectionpos.instanceMisc", |r| {
+        let (x, y, _) = (r.arg(0).as_i32(), r.arg(1).as_i32(), r.arg(2).as_i32());
+        // Oracle: SectionPos.of(x, y, x) (z == x always in this group)
+        let s = SectionPos::of_xyz(x, y, x);
+        assert_eq!(s.offset(1, 0, 0).get_x(), r.exp(0).as_i32(), "offset(1,0,0).x");
+        assert_eq!(s.offset(0, 1, 0).get_y(), r.exp(1).as_i32(), "offset(0,1,0).y");
+        assert_eq!(s.offset(0, 0, 1).get_z(), r.exp(2).as_i32(), "offset(0,0,1).z");
+        assert_eq!(s.offset(0, 0, 0).get_x(), r.exp(3).as_i32(), "offset(0,0,0).x");
+        // asLong() == asLong(x,y,x) ? 1 : 0
+        let matches = if s.as_long() == SectionPos::as_long_xyz(x, y, x) { 1 } else { 0 };
+        assert_eq!(matches, r.exp(4).as_i32(), "asLong matches");
+        assert_eq!(s.origin().0, r.exp(5).as_i32(), "origin.x");
+        assert_eq!(s.origin().2, r.exp(6).as_i32(), "origin.z");
+        assert_eq!(s.center().1, r.exp(7).as_i32(), "center.y");
+        assert_eq!(s.center().2, r.exp(8).as_i32(), "center.z");
+        // fromBlock = SectionPos.of(BlockPos(x*16, y*16, x*16))
+        let fb = SectionPos::of_block_xyz(x.wrapping_mul(16), y.wrapping_mul(16), x.wrapping_mul(16));
+        assert_eq!(fb.get_x(), r.exp(9).as_i32(), "fromBlock.x");
+        assert_eq!(fb.get_y(), r.exp(10).as_i32(), "fromBlock.y");
+        assert_eq!(fb.get_z(), r.exp(11).as_i32(), "fromBlock.z");
+        // fromVec = SectionPos.of(Vec3(x*16.0, y*16.0, x*16.0))
+        let fv = SectionPos::of_vec3(
+            (x as f64) * 16.0,
+            (y as f64) * 16.0,
+            (x as f64) * 16.0,
+        );
+        assert_eq!(fv.get_x(), r.exp(12).as_i32(), "fromVec.x");
+        assert_eq!(fv.get_y(), r.exp(13).as_i32(), "fromVec.y");
+        assert_eq!(fv.get_z(), r.exp(14).as_i32(), "fromVec.z");
+        // SectionPos.of(ChunkPos(x, x), y).y()
+        let fc = SectionPos::of_chunk_pos(&ChunkPos::new(x, x), y);
+        assert_eq!(fc.get_y(), r.exp(15).as_i32(), "ofChunkPos.y");
+    });
+}
+
+#[test]
+fn sectionpos_relative_to_block() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "sectionpos.relativeToBlock", |r| {
+        let (x, y, z) = (r.arg(0).as_i32(), r.arg(1).as_i32(), r.arg(2).as_i32());
+        // Oracle: SectionPos.of(x, y, x) (z == x in this group)
+        let s = SectionPos::of_xyz(x, y, x);
+        // 4th arg is the raw int value cast to short by oracle
+        let rel_raw = r.arg(3).as_i32();
+        // Oracle casts to short: `short r = (short) rel;`
+        let rel = (rel_raw as i16) as i32;
+        let _ = z; // z == x, already used above
+        assert_eq!(s.relative_to_block_x(rel), r.exp(0).as_i32(), "relToBlockX");
+        assert_eq!(s.relative_to_block_y(rel), r.exp(1).as_i32(), "relToBlockY");
+        assert_eq!(s.relative_to_block_z(rel), r.exp(2).as_i32(), "relToBlockZ");
+        let (px, py, pz) = s.relative_to_block_pos(rel);
+        assert_eq!(px, r.exp(3).as_i32(), "relToBlockPos.x");
+        assert_eq!(py, r.exp(4).as_i32(), "relToBlockPos.y");
+        assert_eq!(pz, r.exp(5).as_i32(), "relToBlockPos.z");
+        assert_eq!(SectionPos::section_relative_x(rel), r.exp(6).as_i32(), "relX");
+        assert_eq!(SectionPos::section_relative_y(rel), r.exp(7).as_i32(), "relY");
+        assert_eq!(SectionPos::section_relative_z(rel), r.exp(8).as_i32(), "relZ");
+    });
+}
+
+#[test]
+fn sectionpos_blocks_inside() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "sectionpos.blocksInside", |r| {
+        let (x, y, z) = (r.arg(0).as_i32(), r.arg(1).as_i32(), r.arg(2).as_i32());
+        let idx = r.arg(3).as_i32() as usize;
+        let s = SectionPos::of_xyz(x, y, z);
+        let blocks = s.blocks_inside();
+        let p = blocks[idx];
+        assert_eq!(p.0, r.exp(0).as_i32(), "blocksInside[{idx}].x");
+        assert_eq!(p.1, r.exp(1).as_i32(), "blocksInside[{idx}].y");
+        assert_eq!(p.2, r.exp(2).as_i32(), "blocksInside[{idx}].z");
+    });
+}
+
+#[test]
+fn sectionpos_cube() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "sectionpos.cube", |r| {
+        let (cx, cy, cz, radius) = (
+            r.arg(0).as_i32(),
+            r.arg(1).as_i32(),
+            r.arg(2).as_i32(),
+            r.arg(3).as_i32(),
+        );
+        let idx = r.arg(4).as_i32() as usize;
+        let list = SectionPos::cube(cx, cy, cz, radius);
+        let p = &list[idx];
+        assert_eq!(p.x, r.exp(0).as_i32(), "cube[{idx}].x");
+        assert_eq!(p.y, r.exp(1).as_i32(), "cube[{idx}].y");
+        assert_eq!(p.z, r.exp(2).as_i32(), "cube[{idx}].z");
+    });
+}
+
+#[test]
+fn sectionpos_around_chunk() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "sectionpos.aroundChunk", |r| {
+        let (cx, cz, radius) = (r.arg(0).as_i32(), r.arg(1).as_i32(), r.arg(2).as_i32());
+        let idx = r.arg(3).as_i32() as usize;
+        // Oracle uses minSection=-4, maxSection=4
+        let list = SectionPos::around_chunk(cx, cz, radius, -4, 4);
+        let p = &list[idx];
+        assert_eq!(p.x, r.exp(0).as_i32(), "aroundChunk[{idx}].x");
+        assert_eq!(p.y, r.exp(1).as_i32(), "aroundChunk[{idx}].y");
+        assert_eq!(p.z, r.exp(2).as_i32(), "aroundChunk[{idx}].z");
+    });
+}
+
+#[test]
+fn sectionpos_between_closed_stream() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "sectionpos.betweenClosedStream", |r| {
+        let (min_x, min_y, min_z) = (r.arg(0).as_i32(), r.arg(1).as_i32(), r.arg(2).as_i32());
+        let (max_x, max_y, max_z) = (r.arg(3).as_i32(), r.arg(4).as_i32(), r.arg(5).as_i32());
+        let idx = r.arg(6).as_i32() as usize;
+        let list = SectionPos::between_closed_stream(min_x, min_y, min_z, max_x, max_y, max_z);
+        let p = &list[idx];
+        assert_eq!(p.x, r.exp(0).as_i32(), "betweenClosed[{idx}].x");
+        assert_eq!(p.y, r.exp(1).as_i32(), "betweenClosed[{idx}].y");
+        assert_eq!(p.z, r.exp(2).as_i32(), "betweenClosed[{idx}].z");
+    });
+}
+
+#[test]
+fn sectionpos_around_and_at_block_pos() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "sectionpos.aroundAndAtBlockPos", |r| {
+        let (bx, by, bz) = (r.arg(0).as_i32(), r.arg(1).as_i32(), r.arg(2).as_i32());
+        let mut got: Vec<i64> = Vec::new();
+        SectionPos::around_and_at_block_pos(bx, by, bz, &mut got);
+        let expected_count = r.exp(0).as_i32() as usize;
+        assert_eq!(got.len(), expected_count, "aroundAndAtBlockPos({bx},{by},{bz}) count");
+        for i in 0..expected_count {
+            assert_eq!(got[i], r.exp(1 + i).as_i64(), "aroundAndAt[{i}]");
+        }
+    });
 }

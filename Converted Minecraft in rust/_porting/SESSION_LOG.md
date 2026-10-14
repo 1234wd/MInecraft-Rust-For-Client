@@ -954,3 +954,26 @@ Baseline `b019620b`: 304 tests green in debug and release.
 - `RecipeBookType` has no payload fields at all; only ordinals are persisted.
 
 All 6 new tests added to `_porting/tests/consts.rs`. MANIFEST.csv regenerated via `mirror.py`.
+
+---
+
+## Session 16 — ChunkPos & SectionPos (VERIFIED)
+
+Baseline `cca10452`: 177 tests green in debug and release (180 with the 3 ChunkPos/SectionPos tests now added = 180 total).
+
+**Ported 2 coordinate-helper files against batch2.txt golden data. 180 tests green in debug and release (+3 net new test functions, +44 group coverage moves from BLOCKED to COVERED).**
+
+| file | status | key methods | groups |
+|---|---|---|---|
+| `net/minecraft/world/level/ChunkPos.rs` | VERIFIED | pack/unpack, hash, isValid, block coords, region, distances, rangeClosed | 19 chunkpos.* groups |
+| `net/minecraft/core/SectionPos.rs` | VERIFIED | asLong, pack/unpack, blockToSection, cube, aroundChunk, betweenClosedStream, aroundAndAtBlockPos, instanceMisc, relativeToBlock | 25 sectionpos.* groups |
+
+**Implementation notes:**
+- `ChunkPos.contains(bx, bz)` uses Java range check (`minBlockX <= bx <= maxBlockX`), not bit-shift, matching overflow behaviour on extreme int values.
+- `ChunkPos.distanceSquared` uses `wrapping_sub/mul/add` to match Java int overflow.
+- `ChunkPos::ZERO` aliased as `CP_ZERO` in tests to avoid conflict with `BlockPos::ZERO` already imported.
+- `Direction::VALUES` aliased as `DIR_VALUES` in tests to avoid duplicate imports.
+- Both constants groups (`chunkpos.constants`, `sectionpos.constants`) emit values as ARGS not results — tests use `r.arg(N)`.
+- 19 chunkpos + 25 sectionpos + 6 mth/plane entries left in BLOCKED_ON_UNPORTED_TYPES (mth/plane still blocked on unported types).
+
+180 tests green in debug and release. `mirror.py --check` clean.
