@@ -2,6 +2,10 @@
 //! Java class(es): Direction, Direction.Axis, Direction.AxisDirection, Direction.Plane
 //! Status: PARTIAL
 //!
+//! `Direction.Plane` ported in session 17, golden-verified in `parity_batch2`
+//! (groups: plane.constants, plane.iterate, plane.test, plane.getRandomDirection,
+//!  plane.getRandomAxis, plane.shuffledCopy).
+//!
 //! Everything except the DataFixerUpper / netty codec fields, which are `todo!()` per
 //! the batch rule. Those are:
 //!
@@ -12,13 +16,14 @@
 //! lookup the rules ask to verify and it depends only on `get3DDataValue`.
 //! See DESIGN_DECISIONS.md (#dfu-proposal).
 //!
-//! `Direction.Plane` is NOT ported -- see the `todo!` below.
+//! `Direction.Plane` is ported below as the `Plane` enum.
 //!
 //! Everything that IS implemented here is oracle-verified against `core.txt`
 //! (48 groups, 320 604 rows) -- see `_porting/tests/parity_core.rs`.
 
 use crate::javacompat::java_lang;
 use crate::net::minecraft::core::Vec3i::Vec3i;
+use crate::net::minecraft::util::RandomSource::RandomSource;
 
 /// Port of `net.minecraft.core.Direction`.
 ///
@@ -758,6 +763,25 @@ impl Axis {
         let z_step = if *self == Axis::Z { steps } else { 0 };
         from.offset(x_step, y_step, z_step)
     }
+
+    /// Port of `Direction.Axis#getPlane()`.
+    ///
+    /// Returns the plane (`HORIZONTAL` or `VERTICAL`) that this axis belongs to.
+    /// `X` and `Z` are horizontal; `Y` is vertical.
+    ///
+    /// # Note
+    ///
+    /// This method forward-references `Plane`, which is defined further down in this file.
+    /// That is fine in Rust (item ordering within a module does not matter for visibility),
+    /// but be aware that `Plane`'s statics (`HORIZONTAL_FACES`, etc.) may not be initialised
+    /// yet at const-eval time. The method itself is not `const`, so no issue arises.
+    #[inline]
+    pub fn get_plane(&self) -> Plane {
+        match self {
+            Axis::X | Axis::Z => Plane::Horizontal,
+            Axis::Y => Plane::Vertical,
+        }
+    }
 }
 
 /// Java: `private static final ImmutableList<Direction.Axis> YXZ_AXIS_ORDER`.
@@ -799,14 +823,161 @@ pub fn axis_step_order(movement: &crate::net::minecraft::world::phys::Vec3::Vec3
     }
 }
 
+// =============================================================================
+// Direction.Plane
+// =============================================================================
+
+/// The faces belonging to `Plane::Horizontal`: NORTH, EAST, SOUTH, WEST.
+///
+/// Declaration order matches `Direction.Plane.HORIZONTAL`'s constructor in Java:
+/// `new Direction[]{Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST}`.
+static HORIZONTAL_FACES: [Direction; 4] = [
+    Direction::North,
+    Direction::East,
+    Direction::South,
+    Direction::West,
+];
+
+/// The faces belonging to `Plane::Vertical`: UP, DOWN.
+///
+/// Declaration order matches Java: `new Direction[]{Direction.UP, Direction.DOWN}`.
+static VERTICAL_FACES: [Direction; 2] = [Direction::Up, Direction::Down];
+
+/// The axes belonging to `Plane::Horizontal`: X, Z.
+static HORIZONTAL_AXES: [Axis; 2] = [Axis::X, Axis::Z];
+
+/// The axes belonging to `Plane::Vertical`: Y.
+static VERTICAL_AXES: [Axis; 1] = [Axis::Y];
+
+/// All planes in declaration order, matching `Direction.Plane.values()`.
+pub const PLANE_VALUES: [Plane; 2] = [Plane::Horizontal, Plane::Vertical];
+
 /// Port of `Direction.Plane`.
 ///
-/// Not ported. It exists for `Direction#getAxisDirection`-style flattening and is only
-/// reachable from code we have not reached yet; it is a plain enum of (axis, axisDir)
-/// pairs with a lookup, so it is a short port when something needs it. Recorded here as
-/// a `todo!` rather than left silently missing.
-pub fn PLANE() -> () {
-    todo!("PORT: Direction.Plane")
+/// An inner enum of `Direction` that groups directions into `HORIZONTAL`
+/// (NORTH, EAST, SOUTH, WEST) and `VERTICAL` (UP, DOWN). Minecraft uses it
+/// both as a predicate (`Plane::test`) and as an iterable source of directions
+/// in that plane (`Plane::iterate` / `shuffled_copy`).
+///
+/// # Ordinal stability
+///
+/// `HORIZONTAL.ordinal() == 0`, `VERTICAL.ordinal() == 1`.
+/// These values reach network packets and world saves via codec look-ups, so the
+/// variant ordering is load-bearing and must not change.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[repr(u8)]
+pub enum Plane {
+    /// Port of `Direction.Plane.HORIZONTAL`.
+    Horizontal = 0,
+    /// Port of `Direction.Plane.VERTICAL`.
+    Vertical = 1,
+}
+
+impl Plane {
+    /// Port of `Direction.Plane#ordinal()`.
+    #[inline]
+    pub const fn ordinal(&self) -> i32 {
+        *self as i32
+    }
+
+    /// Returns the slice of directions that belong to this plane.
+    ///
+    /// Port of the private `faces` field (exposed via `iterator()`/`stream()`).
+    /// The order is the declaration order used in Java's constructor.
+    #[inline]
+    pub fn faces(&self) -> &'static [Direction] {
+        match self {
+            Plane::Horizontal => &HORIZONTAL_FACES,
+            Plane::Vertical => &VERTICAL_FACES,
+        }
+    }
+
+    /// Returns the slice of axes that belong to this plane.
+    ///
+    /// Port of the private `axis` field.
+    #[inline]
+    pub fn axes(&self) -> &'static [Axis] {
+        match self {
+            Plane::Horizontal => &HORIZONTAL_AXES,
+            Plane::Vertical => &VERTICAL_AXES,
+        }
+    }
+
+    /// Port of `Direction.Plane#length()`.
+    #[inline]
+    pub fn length(&self) -> i32 {
+        self.faces().len() as i32
+    }
+
+    /// Port of `Direction.Plane#getRandomDirection(RandomSource)`.
+    ///
+    /// Uses `Util.getRandom(array, random)`, which is `array[random.nextInt(array.length)]`.
+    #[inline]
+    pub fn get_random_direction(&self, random: &mut dyn RandomSource) -> Direction {
+        let faces = self.faces();
+        faces[random.next_int_bounded(faces.len() as i32) as usize]
+    }
+
+    /// Port of `Direction.Plane#getRandomAxis(RandomSource)`.
+    ///
+    /// Uses `Util.getRandom(array, random)`, which is `array[random.nextInt(array.length)]`.
+    #[inline]
+    pub fn get_random_axis(&self, random: &mut dyn RandomSource) -> Axis {
+        let axes = self.axes();
+        axes[random.next_int_bounded(axes.len() as i32) as usize]
+    }
+
+    /// Port of `Direction.Plane#test(Direction)` (the `Predicate<Direction>` method).
+    ///
+    /// Returns `true` iff `input` is non-null and its axis belongs to this plane.
+    #[inline]
+    pub fn test(&self, input: Option<Direction>) -> bool {
+        match input {
+            None => false,
+            Some(d) => d.get_axis().get_plane() == *self,
+        }
+    }
+
+    /// Returns an iterator over the faces of this plane.
+    ///
+    /// Port of `Direction.Plane#iterator()` / `Iterable<Direction>`.
+    #[inline]
+    pub fn iterate(&self) -> impl Iterator<Item = Direction> + '_ {
+        self.faces().iter().copied()
+    }
+
+    /// Port of `Direction.Plane#shuffledCopy(RandomSource)`.
+    ///
+    /// Returns a copy of the faces in a uniformly random order using the
+    /// Fisher-Yates shuffle from `Util.shuffledCopy`, which calls `Util.shuffle`.
+    ///
+    /// # Java algorithm
+    ///
+    /// ```java
+    /// // Util.shuffle(list, random):
+    /// for (int i = size; i > 1; i--) {
+    ///     int swapTo = random.nextInt(i);
+    ///     list.set(i - 1, list.set(swapTo, list.get(i - 1)));
+    /// }
+    /// ```
+    ///
+    /// This is the Knuth / Fisher-Yates partial-shuffle starting from the end,
+    /// swapping element `i-1` with a random element in `[0, i)`. It is NOT
+    /// an in-place random swap -- the order of swaps must match Java's exactly
+    /// because the oracle pins the results to specific seeds.
+    pub fn shuffled_copy(&self, random: &mut dyn RandomSource) -> Vec<Direction> {
+        let mut copy: Vec<Direction> = self.faces().to_vec();
+        let size = copy.len();
+        // Fisher-Yates from the end, matching Util.shuffle's exact loop.
+        let mut i = size as i32;
+        while i > 1 {
+            let swap_to = random.next_int_bounded(i) as usize;
+            let last = (i - 1) as usize;
+            copy.swap(swap_to, last);
+            i -= 1;
+        }
+        copy
+    }
 }
 
 /// Port of `Direction.Axis#toString()`.

@@ -2,19 +2,15 @@
 //! Java class(es): net.minecraft.util.Mth
 //! Status: VERIFIED
 //!
-//! # NOT YET PORTED (blocked on other files, see MANIFEST.csv + OPEN_QUESTIONS.md)
-//!
-//! These five methods have no Rust counterpart yet because their parameter types
-//! live in files that are still `SKELETON`. They are listed here so nothing is
-//! silently missing, and they are scheduled in `_porting/PORTING_PLAN.md`:
+//! # NOT YET PORTED
 //!
 //! | Java method                              | blocked on                          |
 //! |------------------------------------------|-------------------------------------|
 //! | `getSeed(Vec3i)`                         | `net/minecraft/core/Vec3i.rs`       |
 //! | `lerp(double, Vec3, Vec3)`                | `net/minecraft/world/phys/Vec3.rs`  |
-//! | `rayIntersectsAABB(Vec3, Vec3, AABB)`    | `Vec3.rs`, `AABB.rs`                |
-//! | `rotationAroundAxis(Vector3fc, ...)`      | JOML (`Quaternionf`/`Vector3fc`)    |
-//! | `mulAndTruncate(Fraction, int)`           | commons-lang3 `Fraction`            |
+//!
+//! Session 17 unblocked and implemented: `rayIntersectsAABB`, `rotationAroundAxis`,
+//! `mulAndTruncate`. All three are golden-verified in `parity_batch2`.
 //!
 //! # Naming
 //!
@@ -9464,6 +9460,97 @@ Mth::floor_f32(angle * 256.0 / 360.0) as i8
         hash ^= ((hash as u32) >> 13) as i32;
         hash = hash.wrapping_mul(-1028477387i32);
         hash ^ ((hash as u32) >> 16) as i32
+    }
+
+    // -------------------------------------------------------------------------
+    // Previously-blocked methods (now unblocked after porting dependencies)
+    // -------------------------------------------------------------------------
+
+    /// Port of `Mth#mulAndTruncate(Fraction, int)`.
+    ///
+    /// Java source:
+    /// ```java
+    /// return fraction.getNumerator() * factor / fraction.getDenominator();
+    /// ```
+    ///
+    /// * `int * int` overflow **wraps** in Java → `wrapping_mul`.
+    /// * Java's `/` truncates toward zero, same as Rust's `/`.
+    /// * The denominator is always non-zero for a valid `Fraction`.
+    #[inline]
+    pub fn mul_and_truncate(fraction: &crate::javacompat::fraction::Fraction, factor: i32) -> i32 {
+        fraction.numerator().wrapping_mul(factor) / fraction.denominator()
+    }
+
+    /// Port of `Mth#rayIntersectsAABB(Vec3, Vec3, AABB)`.
+    ///
+    /// Uses the Andrew Woo / Smits ray-AABB separating-axis test.  The three
+    /// separating-axis tests for the principal planes come first (early-out on
+    /// missed slabs), then the three cross-product axis tests.
+    ///
+    /// # NaN behaviour
+    ///
+    /// Java's `Math.abs` on a NaN returns NaN; comparisons with NaN are always
+    /// false; so any NaN coordinate makes all branch conditions false except the
+    /// last `Math.abs(f) < ...`, which is also false for NaN. The method therefore
+    /// returns `false` for any NaN input, matching Java exactly.
+    pub fn ray_intersects_aabb(
+        ray_start: &crate::net::minecraft::world::phys::Vec3::Vec3,
+        ray_dir: &crate::net::minecraft::world::phys::Vec3::Vec3,
+        aabb: &crate::net::minecraft::world::phys::AABB::AABB,
+    ) -> bool {
+        let center_x = (aabb.min_x + aabb.max_x) * 0.5;
+        let box_extent_x = (aabb.max_x - aabb.min_x) * 0.5;
+        let diff_x = ray_start.x - center_x;
+        if diff_x.abs() > box_extent_x && diff_x * ray_dir.x >= 0.0 {
+            return false;
+        }
+
+        let center_y = (aabb.min_y + aabb.max_y) * 0.5;
+        let box_extent_y = (aabb.max_y - aabb.min_y) * 0.5;
+        let diff_y = ray_start.y - center_y;
+        if diff_y.abs() > box_extent_y && diff_y * ray_dir.y >= 0.0 {
+            return false;
+        }
+
+        let center_z = (aabb.min_z + aabb.max_z) * 0.5;
+        let box_extent_z = (aabb.max_z - aabb.min_z) * 0.5;
+        let diff_z = ray_start.z - center_z;
+        if diff_z.abs() > box_extent_z && diff_z * ray_dir.z >= 0.0 {
+            return false;
+        }
+
+        let andrew_woo_x = ray_dir.x.abs();
+        let andrew_woo_y = ray_dir.y.abs();
+        let andrew_woo_z = ray_dir.z.abs();
+
+        let f = ray_dir.y * diff_z - ray_dir.z * diff_y;
+        if f.abs() > box_extent_y * andrew_woo_z + box_extent_z * andrew_woo_y {
+            return false;
+        }
+
+        let f = ray_dir.z * diff_x - ray_dir.x * diff_z;
+        if f.abs() > box_extent_x * andrew_woo_z + box_extent_z * andrew_woo_x {
+            return false;
+        }
+
+        let f = ray_dir.x * diff_y - ray_dir.y * diff_x;
+        f.abs() < box_extent_x * andrew_woo_y + box_extent_y * andrew_woo_x
+    }
+
+    /// Port of `Mth#rotationAroundAxis(Vector3fc, Quaternionf, Quaternionf)`.
+    ///
+    /// Delegates to the JOML-faithful implementation in `javacompat::joml`.
+    /// The `result` quaternion is mutated in place AND returned, matching JOML's
+    /// fluent style.
+    ///
+    /// See `javacompat/joml/mod.rs` for the byte-code-verified FMA details.
+    #[inline]
+    pub fn rotation_around_axis<'a>(
+        axis: &crate::javacompat::joml::Vector3f,
+        rotation: &crate::javacompat::joml::Quaternionf,
+        result: &'a mut crate::javacompat::joml::Quaternionf,
+    ) -> &'a mut crate::javacompat::joml::Quaternionf {
+        crate::javacompat::joml::rotation_around_axis(axis, rotation, result)
     }
 }
 

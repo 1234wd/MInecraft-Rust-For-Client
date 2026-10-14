@@ -42,7 +42,7 @@ fn each(g: &Golden, group: &str, mut f: impl FnMut(&Row)) {
 // Vec3
 // =============================================================================
 
-use minecraft_rust::net::minecraft::core::Direction::{Axis, Direction, VALUES as DIR_VALUES};
+use minecraft_rust::net::minecraft::core::Direction::{Axis, Direction, Plane, PLANE_VALUES, VALUES as DIR_VALUES};
 use minecraft_rust::net::minecraft::core::Vec3i::Vec3i;
 use minecraft_rust::net::minecraft::world::phys::Vec3::Vec3;
 // ── ChunkPos & SectionPos (session 16) ──
@@ -1154,6 +1154,17 @@ const COVERED: &[&str] = &[
     "sectionpos.aroundChunk",
     "sectionpos.betweenClosedStream",
     "sectionpos.aroundAndAtBlockPos",
+    // -- Direction.Plane (session 17) --
+    "plane.constants",
+    "plane.iterate",
+    "plane.test",
+    "plane.getRandomDirection",
+    "plane.getRandomAxis",
+    "plane.shuffledCopy",
+    // -- Mth blocked methods (now unblocked, session 17) --
+    "mth.mulAndTruncate",
+    "mth.rayIntersectsAABB",
+    "mth.rotationAroundAxis",
 ];
 
 /// Groups the oracle emits that no test claims yet.
@@ -1191,17 +1202,9 @@ const BLOCKED_ON_UNPORTED_TYPES: &[&str] = &[
     // 72201 and contradicting 72176. Not a golden fix and not a port fix -- left here with the
     // measurements rather than resolved by picking a side.
     "blockpos.clampLocationWithin",
-    // -- mth --
-    "mth.mulAndTruncate",
-    "mth.rayIntersectsAABB",
-    "mth.rotationAroundAxis",
-    // -- plane --
-    "plane.constants",  // Direction.Plane is item 9 of the session-06 loop
-    "plane.iterate",  // Direction.Plane is item 9 of the session-06 loop
-    "plane.test",  // Direction.Plane is item 9 of the session-06 loop
-    "plane.getRandomDirection",  // Direction.Plane is item 9 of the session-06 loop
-    "plane.getRandomAxis",  // Direction.Plane is item 9 of the session-06 loop
-    "plane.shuffledCopy",  // Direction.Plane is item 9 of the session-06 loop
+    // (session 17: mth.mulAndTruncate, mth.rayIntersectsAABB, mth.rotationAroundAxis,
+    //  plane.constants, plane.iterate, plane.test, plane.getRandomDirection,
+    //  plane.getRandomAxis, plane.shuffledCopy all moved to COVERED)
 ];
 
 /// Every group the oracle emits must be claimed by a test or listed as blocked.
@@ -4877,5 +4880,241 @@ fn sectionpos_around_and_at_block_pos() {
         for i in 0..expected_count {
             assert_eq!(got[i], r.exp(1 + i).as_i64(), "aroundAndAt[{i}]");
         }
+    });
+}
+
+// =============================================================================
+// Direction.Plane (session 17)
+// =============================================================================
+
+/// `plane.constants` — a single row whose five values sit in the ARG slot, mirroring
+/// the vec2.constants shape: the expected slot holds only the label string.
+///
+/// Golden: `i32:2 i32:0 i32:1 i32:4 i32:2 -> str:plane\sconstants`
+#[test]
+fn plane_constants() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "plane.constants", |r| {
+        assert_eq!(PLANE_VALUES.len() as i32, r.arg(0).as_i32(), "plane count");
+        assert_eq!(Plane::Horizontal.ordinal(), r.arg(1).as_i32(), "HORIZONTAL ordinal");
+        assert_eq!(Plane::Vertical.ordinal(), r.arg(2).as_i32(), "VERTICAL ordinal");
+        assert_eq!(Plane::Horizontal.length(), r.arg(3).as_i32(), "HORIZONTAL length");
+        assert_eq!(Plane::Vertical.length(), r.arg(4).as_i32(), "VERTICAL length");
+        assert_str("plane.constants", r, r.exp0().as_opt_str().unwrap_or(""));
+    });
+}
+
+/// `plane.iterate` — checks that each plane yields its faces in the correct
+/// declaration order, and that a plane shorter than the fixed-width row emits -1
+/// for the missing slots.
+///
+/// Format: `i32 -> i32 i32 i32 i32 i32` (plane ordinal -> size, face[0..3].ordinal or -1)
+#[test]
+fn plane_iterate() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "plane.iterate", |r| {
+        let p_ord = r.arg(0).as_i32();
+        let plane = PLANE_VALUES[p_ord as usize];
+        let faces: Vec<Direction> = plane.iterate().collect();
+        assert_eq!(faces.len() as i32, r.exp(0).as_i32(), "plane[{p_ord}] size");
+        for slot in 0..4usize {
+            let expected = r.exp(1 + slot).as_i32();
+            let actual = if slot < faces.len() { faces[slot].ordinal() } else { -1 };
+            assert_eq!(actual, expected, "plane[{p_ord}] face[{slot}].ordinal");
+        }
+    });
+}
+
+/// `plane.test` — for every (plane, direction-or-null) pair, checks the predicate
+/// and also the helper columns (axis ordinal and whether that axis belongs to the plane).
+///
+/// Format: `i32 i32 -> bool i32 i32`
+///   args: plane ordinal, direction ordinal (-1 = null)
+///   expected: test result, axis ordinal (-1 = null), axis.getPlane()==plane (0/1/-1)
+#[test]
+fn plane_test() {
+    let g = Golden::load("batch2.txt");
+    each(&g, "plane.test", |r| {
+        let p_ord = r.arg(0).as_i32();
+        let d_ord = r.arg(1).as_i32();
+        let plane = PLANE_VALUES[p_ord as usize];
+        let dir = if d_ord < 0 { None } else { Some(Direction::from_ordinal(d_ord)) };
+
+        let test_result = plane.test(dir);
+        assert_eq!(test_result, r.exp(0).as_bool(),
+            "plane.test: plane={p_ord} dir={d_ord} test result");
+
+        let exp_axis_ord = r.exp(1).as_i32();
+        let exp_axis_in_plane = r.exp(2).as_i32();
+
+        match dir {
+            None => {
+                assert_eq!(exp_axis_ord, -1, "plane.test: null dir → axis ordinal should be -1");
+                assert_eq!(exp_axis_in_plane, -1, "plane.test: null dir → axis-in-plane should be -1");
+            }
+            Some(d) => {
+                let axis = d.get_axis();
+                assert_eq!(axis.ordinal(), exp_axis_ord,
+                    "plane.test: dir={d_ord} axis ordinal");
+                let in_plane = if axis.get_plane() == plane { 1 } else { 0 };
+                assert_eq!(in_plane, exp_axis_in_plane,
+                    "plane.test: dir={d_ord} axis in plane {p_ord}");
+            }
+        }
+    });
+}
+
+/// `plane.getRandomDirection` — checks that each (seed, plane) produces the same
+/// direction on every fresh call.  The oracle reconstructs `RandomSource.create(seed)`
+/// for every row, so all rows with the same seed+plane give the same answer.
+///
+/// Format: `i64 i32 i32 -> i32 i32 i32 i32`
+///   args: seed, plane ordinal, iteration index (irrelevant — oracle rebuilds rng from seed)
+///   expected: direction ordinal, stepX, stepY, stepZ
+#[test]
+fn plane_get_random_direction() {
+    let g = Golden::load("batch2.txt");
+    use minecraft_rust::net::minecraft::util::RandomSource;
+    each(&g, "plane.getRandomDirection", |r| {
+        let seed = r.arg(0).as_i64();
+        let p_ord = r.arg(1).as_i32();
+        let plane = PLANE_VALUES[p_ord as usize];
+        // The oracle creates a fresh RandomSource from the seed for every row.
+        let mut random = RandomSource::create_with_seed(seed);
+        let d = plane.get_random_direction(random.as_mut());
+        assert_eq!(d.ordinal(), r.exp(0).as_i32(), "plane.getRandomDirection dir.ordinal");
+        assert_eq!(d.get_step_x(), r.exp(1).as_i32(), "plane.getRandomDirection dir.stepX");
+        assert_eq!(d.get_step_y(), r.exp(2).as_i32(), "plane.getRandomDirection dir.stepY");
+        assert_eq!(d.get_step_z(), r.exp(3).as_i32(), "plane.getRandomDirection dir.stepZ");
+    });
+}
+
+/// `plane.getRandomAxis` — like `getRandomDirection`, but returns an axis ordinal.
+///
+/// Format: `i64 i32 i32 -> i32`
+///   args: seed, plane ordinal, iteration index
+///   expected: axis ordinal
+#[test]
+fn plane_get_random_axis() {
+    let g = Golden::load("batch2.txt");
+    use minecraft_rust::net::minecraft::util::RandomSource;
+    each(&g, "plane.getRandomAxis", |r| {
+        let seed = r.arg(0).as_i64();
+        let p_ord = r.arg(1).as_i32();
+        let plane = PLANE_VALUES[p_ord as usize];
+        let mut random = RandomSource::create_with_seed(seed);
+        let axis = plane.get_random_axis(random.as_mut());
+        assert_eq!(axis.ordinal(), r.exp(0).as_i32(), "plane.getRandomAxis axis.ordinal");
+    });
+}
+
+/// `plane.shuffledCopy` — Fisher-Yates shuffle of the plane's faces.
+///
+/// Format: `i64 i32 -> i32 i32 i32 i32`
+///   args: seed, plane ordinal
+///   expected: size, face[0].ordinal, face[1].ordinal, face[2].ordinal (-1 when out of range)
+///
+/// VERTICAL has only two faces, so face[2] is -1 for that plane; the test mirrors
+/// what the oracle emits via `ordAt(sh, i)`.
+#[test]
+fn plane_shuffled_copy() {
+    let g = Golden::load("batch2.txt");
+    use minecraft_rust::net::minecraft::util::RandomSource;
+    each(&g, "plane.shuffledCopy", |r| {
+        let seed = r.arg(0).as_i64();
+        let p_ord = r.arg(1).as_i32();
+        let plane = PLANE_VALUES[p_ord as usize];
+        let mut random = RandomSource::create_with_seed(seed);
+        let shuffled = plane.shuffled_copy(random.as_mut());
+        assert_eq!(shuffled.len() as i32, r.exp(0).as_i32(),
+            "plane.shuffledCopy size (plane={p_ord})");
+        // The oracle emits three ordinals: indices 0, 1, 2 (with -1 for missing slots).
+        for slot in 0..3usize {
+            let expected = r.exp(1 + slot).as_i32();
+            let actual = if slot < shuffled.len() { shuffled[slot].ordinal() } else { -1 };
+            assert_eq!(actual, expected, "plane.shuffledCopy[{slot}] ordinal (plane={p_ord})");
+        }
+    });
+}
+
+// =============================================================================
+// Mth blocked methods (now unblocked — session 17)
+// =============================================================================
+
+/// `mth.mulAndTruncate` — integer fraction multiply-then-truncate.
+///
+/// Format: `i32 i32 i32 -> i32`
+///   args: numerator, denominator, factor
+///   expected: mulAndTruncate result
+///
+/// The oracle uses `Fraction.getFraction(num, den)` which reduces the fraction;
+/// our `Fraction::new` does the same normalisation.
+#[test]
+fn mth_mul_and_truncate() {
+    let g = Golden::load("batch2.txt");
+    use minecraft_rust::javacompat::fraction::Fraction;
+    each(&g, "mth.mulAndTruncate", |r| {
+        let num = r.arg(0).as_i32();
+        let den = r.arg(1).as_i32();
+        let factor = r.arg(2).as_i32();
+        let fraction = Fraction::new(num, den);
+        let result = Mth::mul_and_truncate(&fraction, factor);
+        assert_i32("mth.mulAndTruncate", r, result);
+    });
+}
+
+/// `mth.rayIntersectsAABB` — Andrew Woo separating-axis test.
+///
+/// Format: `f64 f64 f64 f64 f64 f64 -> bool`
+///   args: a, b, c, box.maxX, box.maxY, box.maxZ
+///   (the AABB is constructed as AABB(a,b,c, c,a,b); minima are min(a,c), min(b,a), min(c,b))
+///   rayStart = Vec3(c, a, b); rayDir = Vec3(a, c, b)
+#[test]
+fn mth_ray_intersects_aabb() {
+    let g = Golden::load("batch2.txt");
+    use minecraft_rust::net::minecraft::world::phys::AABB::AABB;
+    each(&g, "mth.rayIntersectsAABB", |r| {
+        let a = r.arg(0).as_f64();
+        let b = r.arg(1).as_f64();
+        let c = r.arg(2).as_f64();
+        // The AABB constructor normalises: minX = min(a,c), maxX = max(a,c), etc.
+        let min_x = a.min(c);
+        let min_y = b.min(a);
+        let min_z = c.min(b);
+        let max_x = r.arg(3).as_f64();
+        let max_y = r.arg(4).as_f64();
+        let max_z = r.arg(5).as_f64();
+        let aabb = AABB { min_x, min_y, min_z, max_x, max_y, max_z };
+        let ray_start = Vec3::new(c, a, b);
+        let ray_dir = Vec3::new(a, c, b);
+        let result = Mth::ray_intersects_aabb(&ray_start, &ray_dir, &aabb);
+        assert_bool("mth.rayIntersectsAABB", r, result);
+    });
+}
+
+/// `mth.rotationAroundAxis` — JOML-backed quaternion projection.
+///
+/// Format: `f32×10 -> f32×4`
+///   args 0-2: axis (ax, ay, az=0.5)
+///   args 3-6: input quaternion (qx, qy, qz, qw)
+///   args 7-9: initial result quaternion (always 0,0,0 — irrelevant because set() overwrites)
+///   expected: result.x, result.y, result.z, result.w (bit-exact)
+#[test]
+fn mth_rotation_around_axis() {
+    let g = Golden::load("batch2.txt");
+    use minecraft_rust::javacompat::joml::{Quaternionf, Vector3f};
+    each(&g, "mth.rotationAroundAxis", |r| {
+        let ax = r.arg(0).as_f32();
+        let ay = r.arg(1).as_f32();
+        let az = r.arg(2).as_f32();
+        let qx = r.arg(3).as_f32();
+        let qy = r.arg(4).as_f32();
+        let qz = r.arg(5).as_f32();
+        let qw = r.arg(6).as_f32();
+        let axis = Vector3f::new(ax, ay, az);
+        let rotation = Quaternionf::new(qx, qy, qz, qw);
+        let mut result = Quaternionf::new(0.0, 0.0, 0.0, 1.0);
+        Mth::rotation_around_axis(&axis, &rotation, &mut result);
+        assert_multi_f32("mth.rotationAroundAxis", r, &[result.x(), result.y(), result.z(), result.w()]);
     });
 }
