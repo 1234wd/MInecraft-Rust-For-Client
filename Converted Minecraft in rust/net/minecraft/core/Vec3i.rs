@@ -329,6 +329,22 @@ impl Vec3i {
         axis.relative_to(*self, steps)
     }
 
+    /// Port of `Vec3i#get(Direction.Axis)`.
+    ///
+    /// Returns the coordinate component for the given axis.
+    /// Java: `return axis.choose(this.x, this.y, this.z);`
+    #[inline]
+    pub fn get(&self, axis: crate::net::minecraft::core::Direction::Axis) -> i32 {
+        axis.choose_int(self.x, self.y, self.z)
+    }
+
+    /// Port of `Vec3i#toShortString()`.
+    ///
+    /// Java: `return this.getX() + ", " + this.getY() + ", " + this.getZ();`
+    pub fn to_short_string(&self) -> String {
+        format!("{}, {}, {}", self.x, self.y, self.z)
+    }
+
     // -----------------------------------------------------------------------
     // distances
     // -----------------------------------------------------------------------
@@ -459,9 +475,12 @@ impl Ord for Vec3i {
 }
 
 impl std::fmt::Display for Vec3i {
-    /// Port of `Vec3i#toString()`: `"[x, y, z]"`.
+    /// Port of `Vec3i#toString()`.
+    ///
+    /// Java: `MoreObjects.toStringHelper(this).add("x", getX()).add("y", getY()).add("z", getZ()).toString()`
+    /// → `"Vec3i{x=<x>, y=<y>, z=<z>}"` for a `Vec3i` instance.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "[{}, {}, {}]", self.x, self.y, self.z)
+        write!(f, "Vec3i{{x={}, y={}, z={}}}", self.x, self.y, self.z)
     }
 }
 
@@ -562,6 +581,23 @@ mod tests {
 
     #[test]
     fn to_string_matches_java() {
-        assert_eq!(Vec3i::new(1, -2, 3).to_string(), "[1, -2, 3]");
+        // Java: MoreObjects.toStringHelper(this).add("x",..).add("y",..).add("z",..).toString()
+        // → "Vec3i{x=1, y=-2, z=3}"
+        assert_eq!(Vec3i::new(1, -2, 3).to_string(), "Vec3i{x=1, y=-2, z=3}");
+    }
+
+    #[test]
+    fn to_short_string_matches_java() {
+        // Java: getX() + ", " + getY() + ", " + getZ()
+        assert_eq!(Vec3i::new(1, -2, 3).to_short_string(), "1, -2, 3");
+    }
+
+    #[test]
+    fn get_axis_returns_correct_component() {
+        use crate::net::minecraft::core::Direction::Axis;
+        let v = Vec3i::new(10, 20, 30);
+        assert_eq!(v.get(Axis::X), 10);
+        assert_eq!(v.get(Axis::Y), 20);
+        assert_eq!(v.get(Axis::Z), 30);
     }
 }

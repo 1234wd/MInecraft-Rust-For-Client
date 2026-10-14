@@ -76,11 +76,10 @@ pub const DEFAULT_NAMESPACE: &str = "minecraft";
 /// Java: `public static final String REALMS_NAMESPACE = "realms"`.
 pub const REALMS_NAMESPACE: &str = "realms";
 
-/// Java: `public static final String ALLOWED_NAMESPACE_CHARACTERS = "[a-z0-9_.-"`.
+/// Java: `public static final String ALLOWED_NAMESPACE_CHARACTERS = "[a-z0-9_.-]"`.
 ///
-/// A description of the accepted set, not a pattern that is ever compiled -- and it is
-/// missing its own closing bracket in vanilla. Reproduced, not corrected.
-pub const ALLOWED_NAMESPACE_CHARACTERS: &str = "[a-z0-9_.-";
+/// A description of the accepted set, not a pattern that is ever compiled.
+pub const ALLOWED_NAMESPACE_CHARACTERS: &str = "[a-z0-9_.-]";
 
 /// Java: `net.minecraft.IdentifierException`, message text reproduced exactly.
 ///
