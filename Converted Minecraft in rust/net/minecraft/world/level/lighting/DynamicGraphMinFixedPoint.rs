@@ -74,7 +74,7 @@ impl GraphState {
 
     /// `computedLevels.remove(node) & 255`.
     fn take_computed(&mut self, node: i64) -> i32 {
-        self.computed_levels.remove(&node).map(|b| *b as i32).unwrap_or(NO_COMPUTED_LEVEL)
+        self.computed_levels.remove(&node).map(|b| b as i32).unwrap_or(NO_COMPUTED_LEVEL)
     }
 
     /// The priority queue (read-only, for tests and diagnostics).

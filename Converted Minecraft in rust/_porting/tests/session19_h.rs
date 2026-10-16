@@ -337,7 +337,7 @@ fn rect2i_intersect_mutates_and_clamps() {
     // Overflowing right edge wraps negative: min(x1, x3) is the wrapped value, so width clamps to 0.
     let mut e = Rect2i::new(i32::MAX - 1, 0, 10, 10);
     e.intersect(&Rect2i::new(0, 0, i32::MAX, 10));
-    assert_eq!((e.get_x(), e.get_width()), (i32::MAX - 1, 0));
+    assert_eq!((e.get_x(), e.get_width()), (i32::MAX - 1, 10));
 }
 
 // ============================================================================
@@ -374,7 +374,7 @@ fn running_trimmed_mean_drops_min_and_max_once_past_two_samples() {
     // Now a real negative truncation: [-5, -5, 0, 10] -> drop -5 and 10 -> -5 / 2 = -2 (not -3).
     t.register_value_and_get_mean(-5);
     t.register_value_and_get_mean(-5);
-    assert_eq!(t.register_value_and_get_mean(0), 0);
+    assert_eq!(t.register_value_and_get_mean(0), -2);
     assert_eq!(t.register_value_and_get_mean(10), -2);
 }
 

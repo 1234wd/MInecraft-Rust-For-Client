@@ -38,10 +38,13 @@ pub const ROUND_OFF: i32 = 33554432;
 
 /// `Math.pow(2.0, e)` for an integer exponent: exact.
 pub(crate) fn pow2(e: i32) -> f64 {
-    if (-1022..=1023).contains(&e) {
-        f64::from_bits(((e + 1023) as u64) << 52)
-    } else {
-        2f64.powf(e as f64)
+    match e {
+        -1074..=-1023 => f64::from_bits(1u64 << (e + 1074)),
+        -1022..=1023 => {
+            f64::from_bits(((e + 1023) as u64) << 52)
+        }
+        e if e < -1074 => 0.0,
+        _ => f64::INFINITY,
     }
 }
 

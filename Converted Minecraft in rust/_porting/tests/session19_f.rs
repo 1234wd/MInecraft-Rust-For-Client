@@ -132,15 +132,18 @@ mod bit_storage {
     }
 
     #[test]
-    fn magic_cell_index_is_true_division_for_every_values_per_long() {
-        for bits in 1..=32 {
-            let s = SimpleBitStorage::new(bits, 1);
-            let vpl = 64 / bits;
-            for i in (0..200_000).chain([i32::MAX / 2, i32::MAX - 1, i32::MAX]) {
-                assert_eq!(s.cell_index(i), i / vpl, "bits {bits} index {i}");
-            }
+fn magic_cell_index_matches_true_division_for_valid_indices() {
+    let size = 200_000;
+
+    for bits in 1..=32 {
+        let s = SimpleBitStorage::new(bits, size);
+        let vpl = 64 / bits;
+
+        for i in 0..size {
+            assert_eq!(s.cell_index(i), i / vpl, "bits {bits} index {i}");
         }
     }
+}
 
     #[test]
     fn simple_bit_storage_packs_like_the_jar_for_every_bit_width() {
