@@ -81,8 +81,16 @@ pub fn escape_java(input: &str) -> String {
             //
             // Note `>= 0x80` and not `> 0x7E`: DEL (0x7F) passes through unescaped, verified
             // against the jar by p.EscapeProbe.
+            //
+            // Above the BMP, commons-lang3's `JavaUnicodeEscaper` writes the UTF-16 SURROGATE
+            // PAIR as two `\uXXXX` escapes (`U+1F600` -> `😀`), because a Java string
+            // literal cannot hold a 5-digit `\u`. Session 19 fix: this arm previously printed
+            // `ὠ0`, which is not what the jar writes.
             _ if (c as u32) < 0x20 || (c as u32) >= 0x80 => {
-                out.push_str(&format!("\\u{:04X}", c as u32));
+                let mut units = [0u16; 2];
+                for unit in c.encode_utf16(&mut units) {
+                    out.push_str(&format!("\\u{:04X}", unit));
+                }
             }
             _ => out.push(c),
         }
@@ -100,5 +108,29 @@ pub fn escape_java(input: &str) -> String {
 #[cold]
 #[inline(never)]
 pub fn throw(message: &str) -> ! {
-    panic!("net.minecraft.IdentifierException: {}", escape_java(message))
+    panic!("net.minecraft.IdentifierException: {}", get_message(message))
+}
+
+/// `new IdentifierException(message).getMessage()`: the escaped text, without the class name.
+///
+/// Used where Java catches the exception and folds `getMessage()` into another string, e.g.
+/// `Identifier#read(String)`'s `DataResult` error.
+pub fn get_message(message: &str) -> String {
+    escape_java(message)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn supplementary_characters_escape_as_a_surrogate_pair() {
+        assert_eq!(escape_java("\u{1F600}"), "\\uD83D\\uDE00");
+        assert_eq!(escape_java("a\u{10000}b"), "a\\uD800\\uDC00b");
+    }
+
+    #[test]
+    fn bmp_table_is_unchanged() {
+        assert_eq!(escape_java("\n\t\u{b}\u{7f}\u{80}\u{2028}\"\\"), "\\n\\t\\u000B\u{7f}\\u0080\\u2028\\\"\\\\");
+    }
 }

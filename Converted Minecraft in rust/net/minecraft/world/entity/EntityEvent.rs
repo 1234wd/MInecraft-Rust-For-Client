@@ -1,7 +1,136 @@
 //! Port of: net/minecraft/world/entity/EntityEvent.java
 //! Java class(es): net.minecraft.world.entity.EntityEvent
-//! Status: SKELETON
+//! Status: VERIFIED
 //!
-//! Not yet ported. See _porting/MANIFEST.csv and
-//! _porting/OPEN_QUESTIONS.md. Do not invent behaviour here.
+//! Ids for `ClientboundEntityEventPacket` / `Level#broadcastEntityEvent` /
+//! `Entity#handleEntityEvent`. A pure constant holder; all 62 fields are checked against the
+//! jar's constant dump by `_porting/tests/session19_e.rs`.
+//!
+//! The Java fields are `byte`, so they are `i8` here (the packet writes one signed byte). The
+//! numbering has holes -- 29, 30, 33, 36, 37, 43, 44 and 57 are unused in 26.2 -- so do not
+//! assume the ids are dense.
 
+/// Java: `EntityEvent.JUMP` = `1`.
+pub const JUMP: i8 = 1;
+/// Java: `EntityEvent.KINETIC_HIT` = `2`.
+pub const KINETIC_HIT: i8 = 2;
+/// Java: `EntityEvent.DEATH` = `3`.
+pub const DEATH: i8 = 3;
+/// Java: `EntityEvent.START_ATTACKING` = `4`.
+pub const START_ATTACKING: i8 = 4;
+/// Java: `EntityEvent.STOP_ATTACKING` = `5`.
+pub const STOP_ATTACKING: i8 = 5;
+/// Java: `EntityEvent.TAMING_FAILED` = `6`.
+pub const TAMING_FAILED: i8 = 6;
+/// Java: `EntityEvent.TAMING_SUCCEEDED` = `7`.
+pub const TAMING_SUCCEEDED: i8 = 7;
+/// Java: `EntityEvent.SHAKE_WETNESS` = `8`.
+pub const SHAKE_WETNESS: i8 = 8;
+/// Java: `EntityEvent.USE_ITEM_COMPLETE` = `9`.
+pub const USE_ITEM_COMPLETE: i8 = 9;
+/// Java: `EntityEvent.EAT_GRASS` = `10`.
+pub const EAT_GRASS: i8 = 10;
+/// Java: `EntityEvent.OFFER_FLOWER` = `11`.
+pub const OFFER_FLOWER: i8 = 11;
+/// Java: `EntityEvent.LOVE_HEARTS` = `12`.
+pub const LOVE_HEARTS: i8 = 12;
+/// Java: `EntityEvent.VILLAGER_ANGRY` = `13`.
+pub const VILLAGER_ANGRY: i8 = 13;
+/// Java: `EntityEvent.VILLAGER_HAPPY` = `14`.
+pub const VILLAGER_HAPPY: i8 = 14;
+/// Java: `EntityEvent.WITCH_HAT_MAGIC` = `15`.
+pub const WITCH_HAT_MAGIC: i8 = 15;
+/// Java: `EntityEvent.ZOMBIE_CONVERTING` = `16`.
+pub const ZOMBIE_CONVERTING: i8 = 16;
+/// Java: `EntityEvent.FIREWORKS_EXPLODE` = `17`.
+pub const FIREWORKS_EXPLODE: i8 = 17;
+/// Java: `EntityEvent.IN_LOVE_HEARTS` = `18`.
+pub const IN_LOVE_HEARTS: i8 = 18;
+/// Java: `EntityEvent.SQUID_ANIM_SYNCH` = `19`.
+pub const SQUID_ANIM_SYNCH: i8 = 19;
+/// Java: `EntityEvent.SILVERFISH_MERGE_ANIM` = `20`.
+pub const SILVERFISH_MERGE_ANIM: i8 = 20;
+/// Java: `EntityEvent.GUARDIAN_ATTACK_SOUND` = `21`.
+pub const GUARDIAN_ATTACK_SOUND: i8 = 21;
+/// Java: `EntityEvent.REDUCED_DEBUG_INFO` = `22`.
+pub const REDUCED_DEBUG_INFO: i8 = 22;
+/// Java: `EntityEvent.FULL_DEBUG_INFO` = `23`.
+pub const FULL_DEBUG_INFO: i8 = 23;
+/// Java: `EntityEvent.PERMISSION_LEVEL_ALL` = `24`.
+pub const PERMISSION_LEVEL_ALL: i8 = 24;
+/// Java: `EntityEvent.PERMISSION_LEVEL_MODERATORS` = `25`.
+pub const PERMISSION_LEVEL_MODERATORS: i8 = 25;
+/// Java: `EntityEvent.PERMISSION_LEVEL_GAMEMASTERS` = `26`.
+pub const PERMISSION_LEVEL_GAMEMASTERS: i8 = 26;
+/// Java: `EntityEvent.PERMISSION_LEVEL_ADMINS` = `27`.
+pub const PERMISSION_LEVEL_ADMINS: i8 = 27;
+/// Java: `EntityEvent.PERMISSION_LEVEL_OWNERS` = `28`.
+pub const PERMISSION_LEVEL_OWNERS: i8 = 28;
+/// Java: `EntityEvent.FISHING_ROD_REEL_IN` = `31`.
+pub const FISHING_ROD_REEL_IN: i8 = 31;
+/// Java: `EntityEvent.ARMORSTAND_WOBBLE` = `32`.
+pub const ARMORSTAND_WOBBLE: i8 = 32;
+/// Java: `EntityEvent.STOP_OFFER_FLOWER` = `34`.
+pub const STOP_OFFER_FLOWER: i8 = 34;
+/// Java: `EntityEvent.PROTECTED_FROM_DEATH` = `35`.
+pub const PROTECTED_FROM_DEATH: i8 = 35;
+/// Java: `EntityEvent.DOLPHIN_LOOKING_FOR_TREASURE` = `38`.
+pub const DOLPHIN_LOOKING_FOR_TREASURE: i8 = 38;
+/// Java: `EntityEvent.RAVAGER_STUNNED` = `39`.
+pub const RAVAGER_STUNNED: i8 = 39;
+/// Java: `EntityEvent.TRUSTING_FAILED` = `40`.
+pub const TRUSTING_FAILED: i8 = 40;
+/// Java: `EntityEvent.TRUSTING_SUCCEEDED` = `41`.
+pub const TRUSTING_SUCCEEDED: i8 = 41;
+/// Java: `EntityEvent.VILLAGER_SWEAT` = `42`.
+pub const VILLAGER_SWEAT: i8 = 42;
+/// Java: `EntityEvent.FOX_EAT` = `45`.
+pub const FOX_EAT: i8 = 45;
+/// Java: `EntityEvent.TELEPORT` = `46`.
+pub const TELEPORT: i8 = 46;
+/// Java: `EntityEvent.MAINHAND_BREAK` = `47`.
+pub const MAINHAND_BREAK: i8 = 47;
+/// Java: `EntityEvent.OFFHAND_BREAK` = `48`.
+pub const OFFHAND_BREAK: i8 = 48;
+/// Java: `EntityEvent.HEAD_BREAK` = `49`.
+pub const HEAD_BREAK: i8 = 49;
+/// Java: `EntityEvent.CHEST_BREAK` = `50`.
+pub const CHEST_BREAK: i8 = 50;
+/// Java: `EntityEvent.LEGS_BREAK` = `51`.
+pub const LEGS_BREAK: i8 = 51;
+/// Java: `EntityEvent.FEET_BREAK` = `52`.
+pub const FEET_BREAK: i8 = 52;
+/// Java: `EntityEvent.HONEY_SLIDE` = `53`.
+pub const HONEY_SLIDE: i8 = 53;
+/// Java: `EntityEvent.HONEY_JUMP` = `54`.
+pub const HONEY_JUMP: i8 = 54;
+/// Java: `EntityEvent.SWAP_HANDS` = `55`.
+pub const SWAP_HANDS: i8 = 55;
+/// Java: `EntityEvent.CANCEL_SHAKE_WETNESS` = `56`.
+pub const CANCEL_SHAKE_WETNESS: i8 = 56;
+/// Java: `EntityEvent.START_RAM` = `58`.
+pub const START_RAM: i8 = 58;
+/// Java: `EntityEvent.END_RAM` = `59`.
+pub const END_RAM: i8 = 59;
+/// Java: `EntityEvent.POOF` = `60`.
+pub const POOF: i8 = 60;
+/// Java: `EntityEvent.TENDRILS_SHIVER` = `61`.
+pub const TENDRILS_SHIVER: i8 = 61;
+/// Java: `EntityEvent.SONIC_CHARGE` = `62`.
+pub const SONIC_CHARGE: i8 = 62;
+/// Java: `EntityEvent.SNIFFER_DIGGING_SOUND` = `63`.
+pub const SNIFFER_DIGGING_SOUND: i8 = 63;
+/// Java: `EntityEvent.ARMADILLO_PEEK` = `64`.
+pub const ARMADILLO_PEEK: i8 = 64;
+/// Java: `EntityEvent.BODY_BREAK` = `65`.
+pub const BODY_BREAK: i8 = 65;
+/// Java: `EntityEvent.SHAKE` = `66`.
+pub const SHAKE: i8 = 66;
+/// Java: `EntityEvent.DROWN_PARTICLES` = `67`.
+pub const DROWN_PARTICLES: i8 = 67;
+/// Java: `EntityEvent.SADDLE_BREAK` = `68`.
+pub const SADDLE_BREAK: i8 = 68;
+/// Java: `EntityEvent.RAVAGER_ROARED` = `69`.
+pub const RAVAGER_ROARED: i8 = 69;
+/// Java: `EntityEvent.TNT_PRIME` = `70`.
+pub const TNT_PRIME: i8 = 70;

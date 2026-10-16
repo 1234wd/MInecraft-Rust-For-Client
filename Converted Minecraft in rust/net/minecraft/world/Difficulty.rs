@@ -14,8 +14,10 @@
 //!
 //! # `byId` WRAPS OUT-OF-BOUNDS
 //!
-//! `ByIdMap.OutOfBoundsStrategy.WRAP` means an id of `4` returns `PEACEFUL` (`4 % 4 == 0`).
-//! PORT-BLOCKED on `ByIdMap`; the wrapping semantics are documented here for the caller.
+//! `ByIdMap.OutOfBoundsStrategy.WRAP` means an id of `4` returns `PEACEFUL` (`4 % 4 == 0`) and
+//! `-1` returns `HARD` (`floorMod`). Ported in session 19 on top of `ByIdMap`, together with
+//! `byName` (via `StringRepresentable.EnumCodec`). `getDisplayName`/`getInfo` remain
+//! PORT-BLOCKED on `Component`.
 //!
 //! # CODEC AND STREAM_CODEC ARE PORT-BLOCKED
 //!
@@ -84,13 +86,65 @@ pub fn CODEC() {
     todo!("PORT-BLOCKED: com.mojang.serialization.Codec is not ported")
 }
 
-/// Java: `private static final IntFunction<Difficulty> BY_ID`.
+impl std::fmt::Display for Difficulty {
+    /// Java's `Enum#toString()`, i.e. `name()`.
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Difficulty::Peaceful => "PEACEFUL",
+            Difficulty::Easy => "EASY",
+            Difficulty::Normal => "NORMAL",
+            Difficulty::Hard => "HARD",
+        })
+    }
+}
+
+impl crate::net::minecraft::util::StringRepresentable::StringRepresentable for Difficulty {
+    fn get_serialized_name(&self) -> &str {
+        Difficulty::get_serialized_name(self)
+    }
+}
+
+static BY_ID: std::sync::LazyLock<crate::net::minecraft::util::ByIdMap::Continuous<Difficulty>> =
+    std::sync::LazyLock::new(|| {
+        crate::net::minecraft::util::ByIdMap::continuous(
+            Difficulty::get_id,
+            &VALUES,
+            crate::net::minecraft::util::ByIdMap::OutOfBoundsStrategy::Wrap,
+        )
+    });
+
+/// The name-resolution half of `Difficulty.CODEC` (`StringRepresentable.fromEnum(values)`).
+static CODEC_BY_NAME: std::sync::LazyLock<crate::net::minecraft::util::StringRepresentable::EnumCodec<Difficulty>> =
+    std::sync::LazyLock::new(|| crate::net::minecraft::util::StringRepresentable::from_enum(&VALUES));
+
+/// Port of `Difficulty#byId(int)` (deprecated in vanilla, still called).
 ///
-/// `net.minecraft.util.ByIdMap` is not ported. The wrapping semantics are
-/// `OutOfBoundsStrategy.WRAP`: an unknown id wraps by `id % 4`. A caller needing the mapping can
-/// use [`Difficulty::get_id`] plus a local match.
-pub fn by_id(_id: i32) -> Difficulty {
-    todo!("PORT-BLOCKED: net.minecraft.util.ByIdMap is not ported")
+/// Session 19: unblocked by the `ByIdMap` port. `OutOfBoundsStrategy.WRAP` is `Math.floorMod`,
+/// so `4` is `PEACEFUL` and `-1` is `HARD`.
+pub fn by_id(id: i32) -> Difficulty {
+    BY_ID.apply(id)
+}
+
+/// Port of `Difficulty#byName(String)`: `CODEC.byName(name)`, `None` for an unknown name.
+pub fn by_name(name: &str) -> Option<Difficulty> {
+    CODEC_BY_NAME.by_name(name)
+}
+
+/// Java: `public Component getDisplayName()` -- `Component.translatable("options.difficulty." +
+/// key)`.
+///
+/// PORT-BLOCKED on `net.minecraft.network.chat.Component`. The translation key is available as
+/// `format!("options.difficulty.{}", d.get_serialized_name())`.
+pub fn get_display_name(_d: Difficulty) {
+    todo!("PORT-BLOCKED: net.minecraft.network.chat.Component is not ported")
+}
+
+/// Java: `public Component getInfo()` -- `Component.translatable("options.difficulty." + key +
+/// ".info")`.
+///
+/// PORT-BLOCKED on `net.minecraft.network.chat.Component`.
+pub fn get_info(_d: Difficulty) {
+    todo!("PORT-BLOCKED: net.minecraft.network.chat.Component is not ported")
 }
 
 /// Java: `public static final StreamCodec<ByteBuf, Difficulty> STREAM_CODEC`.

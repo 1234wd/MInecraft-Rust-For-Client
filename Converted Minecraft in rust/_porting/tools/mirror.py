@@ -101,6 +101,52 @@ path = "_porting/tests/tier2_smoke.rs"
 name = "consts"
 path = "_porting/tests/consts.rs"
 
+# Session 19. Ports checked against the constant dump plus unit-level behaviour, using the shared
+# helpers in `_porting/tests/support/consts_dump.rs` (a module, not a target).
+[[test]]
+name = "session19_consts"
+path = "_porting/tests/session19_consts.rs"
+
+[[test]]
+name = "session19_a"
+path = "_porting/tests/session19_a.rs"
+
+[[test]]
+name = "session19_b"
+path = "_porting/tests/session19_b.rs"
+
+[[test]]
+name = "session19_c"
+path = "_porting/tests/session19_c.rs"
+
+[[test]]
+name = "session19_d"
+path = "_porting/tests/session19_d.rs"
+
+[[test]]
+name = "session19_e"
+path = "_porting/tests/session19_e.rs"
+
+[[test]]
+name = "session19_f"
+path = "_porting/tests/session19_f.rs"
+
+[[test]]
+name = "session19_g"
+path = "_porting/tests/session19_g.rs"
+
+[[test]]
+name = "session19_h"
+path = "_porting/tests/session19_h.rs"
+
+[[test]]
+name = "session19_i"
+path = "_porting/tests/session19_i.rs"
+
+[[test]]
+name = "session19_j"
+path = "_porting/tests/session19_j.rs"
+
 # Runtime dependencies. Currently EMPTY on purpose, and that is worth keeping that way.
 #
 # Session 08 measured musl's `log` (the `libm` crate) against FdLibm's as a candidate for

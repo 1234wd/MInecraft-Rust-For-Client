@@ -466,14 +466,150 @@ impl Identifier {
 
     /// Port of `Identifier#resolveAgainst(Path)`.
     ///
-    /// `todo!("PORT-BLOCKED: java.nio.file.Path is not ported")`. Needs a real path type with
-    /// `resolve(String,String)`, `normalize()` and `startsWith(Path)`, and this method's whole
-    /// job is the containment check -- returning a `String` and calling it a port would skip
-    /// the check that makes the method safe.
-    pub fn resolve_against(&self, root: &str) -> String {
-        let _ = root;
-        todo!("PORT-BLOCKED: java.nio.file.Path is not ported")
+    /// ```java
+    /// Path resultingPath = root.resolve(this.getNamespace(), this.getPath());
+    /// Path normalizedPath = resultingPath.normalize();
+    /// Path normalizedRoot = root.normalize();
+    /// if (!normalizedPath.startsWith(normalizedRoot)) throw new IllegalStateException(...);
+    /// return resultingPath;
+    /// ```
+    ///
+    /// Session 19 (was PORT-BLOCKED on `java.nio.file.Path`). The whole job of the method is the
+    /// containment check: an identifier path is allowed to contain `..` (`.` and `/` are valid
+    /// path characters), so `minecraft:../../secret` must be rejected here. The Java `Path`
+    /// operations are reproduced on `std::path` by [`java_resolve`], [`java_normalize`] and
+    /// [`java_starts_with`], which document where the JDK's rules differ from Rust's defaults.
+    ///
+    /// Returns the **un-normalized** resolved path, as Java does; only the check normalizes.
+    /// Panics with `java.lang.IllegalStateException` and Java's exact message when the identifier
+    /// escapes `root`.
+    pub fn resolve_against(&self, root: &std::path::Path) -> std::path::PathBuf {
+        let resulting_path = java_resolve(&java_resolve(root, &self.namespace), &self.path);
+        let normalized_path = java_normalize(&resulting_path);
+        let normalized_root = java_normalize(root);
+        if !java_starts_with(&normalized_path, &normalized_root) {
+            panic!(
+                "java.lang.IllegalStateException: Identifier \"{}\" tried to access path \"{}\" from root \"{}\"",
+                self,
+                normalized_path.display(),
+                normalized_root.display()
+            );
+        }
+        resulting_path
     }
+}
+
+/// `Path#resolve(String)`: an empty `other` returns `base` unchanged, an absolute `other`
+/// replaces `base`, otherwise `other` is appended.
+///
+/// Java parses `other` into a `Path` first, which drops redundant and trailing separators
+/// (`"a//b/"` is the path `a/b`). `PathBuf::join` would keep the raw text, so the segments are
+/// re-joined here; that keeps the returned path's `toString()` identical to the JDK's. On Windows
+/// the JDK also accepts `/` as a separator and prints `\`, which the native separator reproduces.
+fn java_resolve(base: &std::path::Path, other: &str) -> std::path::PathBuf {
+    if other.is_empty() {
+        return base.to_path_buf();
+    }
+    let sep = std::path::MAIN_SEPARATOR.to_string();
+    let mut text = String::new();
+    if other.starts_with('/') {
+        text.push_str(&sep);
+    }
+    let segments: Vec<&str> = other.split('/').filter(|s| !s.is_empty()).collect();
+    text.push_str(&segments.join(&sep));
+    if text.is_empty() {
+        // `other` was only slashes: on Unix the JDK parses that as the root "/".
+        text.push_str(&sep);
+    }
+    // `join` already has `resolve`'s absolute-path rule: a rooted `other` replaces `base`.
+    base.join(text)
+}
+
+/// `Path#normalize()`: purely lexical. `.` segments vanish, `name/..` pairs cancel, `..` directly
+/// under a root is dropped (`/..` is `/`), and leading `..` on a relative path is kept.
+fn java_normalize(p: &std::path::Path) -> std::path::PathBuf {
+    use std::path::Component;
+    let mut out: Vec<Component> = Vec::new();
+    for c in p.components() {
+        match c {
+            Component::CurDir => {}
+            Component::ParentDir => match out.last() {
+                Some(Component::Normal(_)) => {
+                    out.pop();
+                }
+                Some(Component::RootDir) | Some(Component::Prefix(_)) => {}
+                _ => out.push(c),
+            },
+            _ => out.push(c),
+        }
+    }
+    out.iter().collect()
+}
+
+/// `Path#startsWith(Path)`: whole name elements, not characters (`/ab` does not start with
+/// `/a`).
+///
+/// Two JDK rules that `std::path::Path::starts_with` does not share:
+///
+/// * The empty path has ONE name element (the empty name), so a non-empty path never starts
+///   with it. Rust treats the empty path as having no components and would say every path
+///   starts with it -- which would make an empty `root` accept everything.
+/// * On Windows, `WindowsPath#startsWith` compares the root and every name with
+///   `equalsIgnoreCase`. Rust compares bytes. The port follows the JDK on each platform.
+fn java_starts_with(path: &std::path::Path, root: &std::path::Path) -> bool {
+    let root_c: Vec<_> = root.components().collect();
+    let path_c: Vec<_> = path.components().collect();
+    if root_c.is_empty() {
+        return path_c.is_empty();
+    }
+    if root_c.len() > path_c.len() {
+        return false;
+    }
+    root_c.iter().zip(path_c.iter()).all(|(a, b)| {
+        if cfg!(windows) {
+            java_equals_ignore_case(&a.as_os_str().to_string_lossy(), &b.as_os_str().to_string_lossy())
+        } else {
+            a == b
+        }
+    })
+}
+
+/// `String#equalsIgnoreCase`, per character: equal, or equal after upper-casing, or equal after
+/// lower-casing.
+fn java_equals_ignore_case(a: &str, b: &str) -> bool {
+    let (ca, cb): (Vec<char>, Vec<char>) = (a.chars().collect(), b.chars().collect());
+    ca.len() == cb.len()
+        && ca.iter().zip(cb.iter()).all(|(x, y)| {
+            x == y
+                || x.to_uppercase().eq(y.to_uppercase())
+                || x.to_lowercase().eq(y.to_lowercase())
+        })
+}
+
+/// Non-panicking mirror of [`by_separator`] with `':'`, returning the `IdentifierException`
+/// message (unescaped) that `parse` would throw.
+///
+/// Kept in lock-step with `by_separator` / `create_untrusted` / `with_default_namespace`: the
+/// namespace is checked before the path, exactly as `createUntrusted` evaluates its two
+/// `assertValid*` arguments left to right.
+fn parse_or_message(identifier: &str) -> Result<Identifier, String> {
+    let (namespace, path) = match identifier.find(NAMESPACE_SEPARATOR) {
+        Some(0) => (DEFAULT_NAMESPACE, &identifier[1..]),
+        Some(i) => (&identifier[..i], &identifier[i + 1..]),
+        None => (DEFAULT_NAMESPACE, identifier),
+    };
+    if !is_valid_namespace(namespace) {
+        return Err(format!(
+            "Non [a-z0-9_.-] character in namespace of identifier: {namespace}:{path}"
+        ));
+    }
+    if !is_valid_path(path) {
+        return Err(format!("Non [a-z0-9/._-] character in path of location: {namespace}:{path}"));
+    }
+    Ok(Identifier {
+        namespace: namespace.to_string(),
+        path: path.to_string(),
+    })
 }
 
 impl std::fmt::Display for Identifier {
@@ -510,14 +646,24 @@ fn java_string_compare(a: &str, b: &str) -> std::cmp::Ordering {
 
 /// Java: `public static DataResult<Identifier> read(String)`.
 ///
-/// `todo!("PORT-BLOCKED: com.mojang.serialization.DataResult is not ported")`. This is a
-/// `Codec` entry point: it converts a `String` into an identifier and, on failure, into a
-/// `DataResult` carrying the message `"Not a valid resource location: " + input + " " +
-/// ex.getMessage()`. That message composition is the part worth preserving when DFU lands,
-/// and it is why this cannot be faked with an `Option`.
+/// Session 19 (was PORT-BLOCKED on `DataResult`). `DataResult.success(v)` is `Ok(v)` and
+/// `DataResult.error(() -> msg)` is `Err(msg)` -- this method never produces a partial result,
+/// so `Result` loses nothing. The message is
+///
+/// ```text
+/// "Not a valid resource location: " + input + " " + e.getMessage()
+/// ```
+///
+/// where `input` is the **raw** argument and only `getMessage()` is `escapeJava`'d (by the
+/// exception's constructor). So `read("a\nb")` reports a real newline in the first half and a
+/// `\n` escape in the second.
 pub fn read_string(input: &str) -> Result<Identifier, String> {
-    let _ = input;
-    todo!("PORT-BLOCKED: com.mojang.serialization.DataResult is not ported")
+    parse_or_message(input).map_err(|raw| {
+        format!(
+            "Not a valid resource location: {input} {}",
+            crate::net::minecraft::IdentifierException::get_message(&raw)
+        )
+    })
 }
 
 /// Java: `private static String readGreedy(StringReader)`.

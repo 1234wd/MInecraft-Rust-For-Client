@@ -4,7 +4,9 @@
 //!
 //! Three constants, each carrying a `String name`, a `ChatFormatting chatColor` and a
 //! `Component displayName`. Ordinals and the `name` field are verified against the jar by
-//! `_porting/tests/consts.rs`.
+//! `_porting/tests/consts.rs`; `getChatColor` (unblocked in session 19 once `ChatFormatting`
+//! was ported) is checked against the jar's `chatColor` in `_porting/tests/session19_b.rs`.
+//! Still PORT-BLOCKED: `getDisplayName`, `createAnnouncement` (`Component`) and `CODEC` (DFU).
 //!
 //! # `TASK` AND `GOAL` SHARE A COLOUR, AND THAT IS NOT A TYPO
 //!
@@ -29,9 +31,7 @@
 //! fabricated string: resolving the key here would bake one locale's English text into the port
 //! and hide the key that actually needs translating.
 
-use crate::net::minecraft::ChatFormatting as _ChatFormattingUnused;
-
-/// Referenced only in doc text until `ChatFormatting` is ported; see `get_chat_color`.
+use crate::net::minecraft::ChatFormatting::ChatFormatting;
 
 /// Port of `net.minecraft.advancements.AdvancementType`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -68,15 +68,13 @@ impl AdvancementType {
     /// Port of `AdvancementType#getChatColor()`.
     ///
     /// `TASK` and `GOAL` are **both** `GREEN`; see the module docs.
-    ///
-    /// The return type is `ChatFormatting`, which is still a SKELETON, so this is a `todo!`
-    /// rather than an invented colour type. The values themselves are not in doubt: the constant
-    /// dump records `chatColor` for all three constants, and `_porting/tests/consts.rs` asserts
-    /// them. Whoever ports `ChatFormatting` only has to delete this `todo!` and give it a
-    /// return type.
-    pub fn get_chat_color(&self) -> () {
-        let _ = self.get_serialized_name();
-        todo!("PORT-BLOCKED: net.minecraft.ChatFormatting is a SKELETON (values verified in consts.txt)")
+    #[inline]
+    pub const fn get_chat_color(&self) -> ChatFormatting {
+        match self {
+            AdvancementType::Task => ChatFormatting::Green,
+            AdvancementType::Challenge => ChatFormatting::DarkPurple,
+            AdvancementType::Goal => ChatFormatting::Green,
+        }
     }
 
     /// Port of the private `displayName` field.

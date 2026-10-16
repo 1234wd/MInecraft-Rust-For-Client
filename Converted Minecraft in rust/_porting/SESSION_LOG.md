@@ -977,3 +977,24 @@ Baseline `cca10452`: 177 tests green in debug and release (180 with the 3 ChunkP
 - 19 chunkpos + 25 sectionpos + 6 mth/plane entries left in BLOCKED_ON_UNPORTED_TYPES (mth/plane still blocked on unported types).
 
 180 tests green in debug and release. `mirror.py --check` clean.
+
+---
+
+# Session 19 - maximum conversion (CHECKPOINT, in progress)
+
+Baseline `65038050` (Session 18). Work is uncommitted in the working tree; nothing was pushed.
+
+Landed and green so far (see the file headers for per-file status):
+- Shared dependencies: `util/ByIdMap` (PORTED, all three OutOfBoundsStrategy rules + exact
+  IllegalArgumentException texts), `util/StringRepresentable` (PARTIAL: name lookup, the
+  16-entry linear/map switch, EnumCodec.byName; codec encode/decode PORT-BLOCKED on DFU).
+- Unblocked with them: `Difficulty.byId/byName`, `DialogAction.BY_ID`, `InteractionHand.byId`
+  and `asEquipmentSlot`.
+- `Identifier.read(String)` (exact DataResult text) and `resolveAgainst(Path)` (Java lexical
+  normalize + component startsWith) ported; `IdentifierException.escapeJava` fixed for
+  supplementary characters (surrogate-pair escapes, as commons-lang3 writes them).
+- Enum batches a (24 block-state properties), b (24 misc + ChatFormatting), c (20 levelgen /
+  entity / world), d (19 item / equipment / player), and 34 client + blaze3d + realms enums.
+- New test targets `session19_consts`, `session19_a` ... `session19_i`, sharing
+  `_porting/tests/support/consts_dump.rs`. All registered in BOTH `Cargo.toml` and the
+  `mirror.py` template.

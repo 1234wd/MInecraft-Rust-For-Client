@@ -5,19 +5,19 @@
 //! Two constants, each carrying a private `int id`. Verified against the jar by
 //! `_porting/tests/consts.rs`: ordinals plus the `id` field for every constant.
 //!
-//! # `asEquipmentSlot` IS PORT-BLOCKED ON `EquipmentSlot`
+//! # `asEquipmentSlot`
 //!
 //! ```java
 //! return this == MAIN_HAND ? EquipmentSlot.MAINHAND : EquipmentSlot.OFFHAND;
 //! ```
 //!
-//! `net.minecraft.world.entity.EquipmentSlot` is still a SKELETON. The method is documented here
-//! for the caller; once `EquipmentSlot` is ported, `as_equipment_slot` can be completed.
+//! Session 19: unblocked by the `EquipmentSlot` port (tested in `_porting/tests/session19_d.rs`).
 //!
-//! # `BY_ID` AND `STREAM_CODEC` ARE PORT-BLOCKED
+//! # `BY_ID` IS PORTED, `STREAM_CODEC` IS PORT-BLOCKED
 //!
-//! `ByIdMap` and `ByteBufCodecs` are not ported. `OutOfBoundsStrategy.ZERO` means an unknown id
-//! yields `MAIN_HAND`.
+//! Session 19: `BY_ID` is built on the ported `ByIdMap` (`OutOfBoundsStrategy.ZERO`, so an unknown
+//! id yields `MAIN_HAND`; tested in `session19_consts.rs`). `STREAM_CODEC` still needs netty's
+//! `ByteBuf` and `ByteBufCodecs`.
 
 /// Port of `net.minecraft.world.InteractionHand`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -45,24 +45,48 @@ impl InteractionHand {
     }
 }
 
+/// Java: `public InteractionHand#asEquipmentSlot()`.
+///
+/// `MAIN_HAND` -> `EquipmentSlot.MAINHAND`; anything else -> `EquipmentSlot.OFFHAND`.
+pub fn as_equipment_slot(hand: InteractionHand) -> crate::net::minecraft::world::entity::EquipmentSlot::EquipmentSlot {
+    use crate::net::minecraft::world::entity::EquipmentSlot::EquipmentSlot;
+    if hand == InteractionHand::MainHand {
+        EquipmentSlot::Mainhand
+    } else {
+        EquipmentSlot::Offhand
+    }
+}
+
+impl std::fmt::Display for InteractionHand {
+    /// Java's `Enum#toString()`, i.e. `name()`.
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            InteractionHand::MainHand => "MAIN_HAND",
+            InteractionHand::OffHand => "OFF_HAND",
+        })
+    }
+}
+
+static BY_ID: std::sync::LazyLock<crate::net::minecraft::util::ByIdMap::Continuous<InteractionHand>> =
+    std::sync::LazyLock::new(|| {
+        crate::net::minecraft::util::ByIdMap::continuous(
+            InteractionHand::id,
+            &VALUES,
+            crate::net::minecraft::util::ByIdMap::OutOfBoundsStrategy::Zero,
+        )
+    });
+
+/// Java: `private static final IntFunction<InteractionHand> BY_ID`, applied.
+///
+/// Session 19: unblocked by the `ByIdMap` port. `OutOfBoundsStrategy.ZERO` means an unknown id
+/// (negative, or `>= 2`) yields `MAIN_HAND`.
+pub fn by_id(id: i32) -> InteractionHand {
+    BY_ID.apply(id)
+}
+
 // ============================================================================
 // PORT-BLOCKED
 // ============================================================================
-
-/// Java: `public InteractionHand#asEquipmentSlot()`.
-///
-/// PORT-BLOCKED on `net.minecraft.world.entity.EquipmentSlot`, which is still a SKELETON.
-pub fn as_equipment_slot(_hand: InteractionHand) {
-    todo!("PORT-BLOCKED: net.minecraft.world.entity.EquipmentSlot is not ported")
-}
-
-/// Java: `private static final IntFunction<InteractionHand> BY_ID`.
-///
-/// PORT-BLOCKED on `net.minecraft.util.ByIdMap`. `OutOfBoundsStrategy.ZERO` means an unknown id
-/// yields `MAIN_HAND`.
-pub fn by_id(_id: i32) -> InteractionHand {
-    todo!("PORT-BLOCKED: net.minecraft.util.ByIdMap is not ported")
-}
 
 /// Java: `public static final StreamCodec<ByteBuf, InteractionHand> STREAM_CODEC`.
 ///

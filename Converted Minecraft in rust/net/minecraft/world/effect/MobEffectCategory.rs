@@ -3,21 +3,18 @@
 //! Status: VERIFIED
 //!
 //! Three constants, each carrying a `ChatFormatting` for tooltip colouring. Verified against the
-//! jar by `_porting/tests/consts.rs`: ordinals plus the `tooltipFormatting` field for every
-//! constant.
+//! jar by `_porting/tests/consts.rs` (ordinals and the dumped `tooltipFormatting` names) and by
+//! `_porting/tests/session19_b.rs`, which checks the ported `getTooltipFormatting()` values
+//! against the same dump. `getTooltipFormatting` was PORT-BLOCKED until `ChatFormatting` was
+//! ported in session 19; there are no blocked members left.
 //!
-//! # `TASK` AND `GOAL` SHARE `GREEN` -- AND SO DO `BENEFICIAL` AND `NEUTRAL`
+//! # `BENEFICIAL` AND `NEUTRAL` SHARE `BLUE`
 //!
 //! The jar records `BENEFICIAL.tooltipFormatting = BLUE` and `NEUTRAL.tooltipFormatting = BLUE`.
-//! They are different constants with the same formatting -- it is not a typo. Similarly,
-//! `HARMFUL` is `RED`. This matches `AdvancementType`'s pattern where two constants share the
-//! same colour value.
-//!
-//! # `getTooltipFormatting` IS PORT-BLOCKED ON `ChatFormatting`
-//!
-//! `net.minecraft.ChatFormatting` is still a SKELETON. The method signature is documented here;
-//! once `ChatFormatting` is ported, `get_tooltip_formatting` can be completed. The dump confirms
-//! the field values: `BENEFICIAL` and `NEUTRAL` → `"BLUE"`, `HARMFUL` → `"RED"`.
+//! They are different constants with the same formatting -- it is not a typo. `HARMFUL` is
+//! `RED`. This matches `AdvancementType`, where `TASK` and `GOAL` are both `GREEN`.
+
+use crate::net::minecraft::ChatFormatting::ChatFormatting;
 
 /// Port of `net.minecraft.world.effect.MobEffectCategory`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -40,16 +37,16 @@ pub const VALUES: [MobEffectCategory; 3] = [
     MobEffectCategory::Neutral,
 ];
 
-// ============================================================================
-// PORT-BLOCKED
-// ============================================================================
-
-/// Java: `public ChatFormatting getTooltipFormatting()`.
-///
-/// PORT-BLOCKED on `net.minecraft.ChatFormatting`, which is still a SKELETON.
-/// When `ChatFormatting` is ported, this should return:
-/// - `Beneficial` and `Neutral` → `ChatFormatting::Blue`
-/// - `Harmful` → `ChatFormatting::Red`
-pub fn get_tooltip_formatting(_cat: MobEffectCategory) {
-    todo!("PORT-BLOCKED: net.minecraft.ChatFormatting is not ported")
+impl MobEffectCategory {
+    /// Port of `MobEffectCategory#getTooltipFormatting()`.
+    ///
+    /// `Beneficial` and `Neutral` are both `Blue`; `Harmful` is `Red`.
+    #[inline]
+    pub const fn get_tooltip_formatting(&self) -> ChatFormatting {
+        match self {
+            MobEffectCategory::Beneficial => ChatFormatting::Blue,
+            MobEffectCategory::Harmful => ChatFormatting::Red,
+            MobEffectCategory::Neutral => ChatFormatting::Blue,
+        }
+    }
 }

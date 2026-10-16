@@ -78,13 +78,38 @@ impl DialogAction {
 // PORT-BLOCKED
 // ============================================================================
 
-/// Java: `public static final IntFunction<DialogAction> BY_ID`.
+impl std::fmt::Display for DialogAction {
+    /// Java's `Enum#toString()`, i.e. `name()`.
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            DialogAction::Close => "CLOSE",
+            DialogAction::None => "NONE",
+            DialogAction::WaitForResponse => "WAIT_FOR_RESPONSE",
+        })
+    }
+}
+
+impl crate::net::minecraft::util::StringRepresentable::StringRepresentable for DialogAction {
+    fn get_serialized_name(&self) -> &str {
+        DialogAction::get_serialized_name(self)
+    }
+}
+
+static BY_ID_MAP: std::sync::LazyLock<crate::net::minecraft::util::ByIdMap::Continuous<DialogAction>> =
+    std::sync::LazyLock::new(|| {
+        crate::net::minecraft::util::ByIdMap::continuous(
+            DialogAction::id,
+            &VALUES,
+            crate::net::minecraft::util::ByIdMap::OutOfBoundsStrategy::Zero,
+        )
+    });
+
+/// Java: `public static final IntFunction<DialogAction> BY_ID`, applied.
 ///
-/// `net.minecraft.util.ByIdMap` is not ported. The mapping itself is a pure function of `id()`,
-/// so a caller needing behaviour can use [`DialogAction::id`] plus a local match; what cannot be
-/// reproduced is `ByIdMap.OutOfBoundsStrategy.ZERO`, i.e. that an unknown id yields `CLOSE`.
-pub fn BY_ID(_id: i32) -> DialogAction {
-    todo!("PORT-BLOCKED: net.minecraft.util.ByIdMap is not ported")
+/// Session 19: unblocked by the `ByIdMap` port. `OutOfBoundsStrategy.ZERO`: an unknown id yields
+/// `CLOSE` (the value whose id is 0).
+pub fn BY_ID(id: i32) -> DialogAction {
+    BY_ID_MAP.apply(id)
 }
 
 /// Java: `public static final Codec<DialogAction> CODEC`.
