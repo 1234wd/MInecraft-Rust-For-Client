@@ -93,26 +93,59 @@ pub fn seed_from_hash_of(input: &str) -> Seed128bit {
 
 /// Port of the deterministic half of `RandomSupport#generateUniqueSeed()`:
 /// `SEED_UNIQUIFIER.updateAndGet(current -> current * 1181783497276652981L)`.
+///
+/// Note `updateAndGet` returns the **new** (post-multiply) value, not the previous value.
 #[inline]
 pub fn next_unique_seed_prefix() -> i64 {
-    SEED_UNIQUIFIER.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |current| {
-        Some(current.wrapping_mul(1181783497276652981i64))
-    })
-    .unwrap_or_else(|e| e)
+    let mut current = SEED_UNIQUIFIER.load(Ordering::Relaxed);
+    loop {
+        let next = current.wrapping_mul(1181783497276652981i64);
+        match SEED_UNIQUIFIER.compare_exchange_weak(
+            current,
+            next,
+            Ordering::SeqCst,
+            Ordering::Relaxed,
+        ) {
+            Ok(_) => return next,
+            Err(actual) => current = actual,
+        }
+    }
 }
 
-/// Port of `RandomSupport#generateUniqueSeed()`.
+/// Port of `RandomSupport#generateUniqueSeed()`:
+/// `SEED_UNIQUIFIER.updateAndGet(current -> current * 1181783497276652981L) ^ System.nanoTime()`.
 ///
-/// `System.nanoTime()` has no portable Rust equivalent (Rust's `Instant` has an
-/// arbitrary, unspecified origin). We use the nanosecond wall clock instead. The
-/// result is only XORed with the uniquifier to make a fresh seed -- nothing
-/// gameplay-relevant depends on its absolute value -- but the two clocks are NOT
-/// bit-identical, so this function is deliberately NOT parity-tested.
-/// See _porting/OPEN_QUESTIONS.md.
+/// Routed through [`crate::javacompat::entropy::nano_time`] (`DESIGN_DECISIONS.md`
+/// `#entropy-injection`) so tests can pin the clock deterministically with
+/// [`crate::javacompat::entropy::with_nano_time_override`].
 pub fn generate_unique_seed() -> i64 {
-    let nanos = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_nanos() as i64)
-        .unwrap_or(0);
-    next_unique_seed_prefix() ^ nanos
+    next_unique_seed_prefix() ^ crate::javacompat::entropy::nano_time()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::javacompat::entropy::with_nano_time_override;
+
+    #[test]
+    fn unique_seed_prefix_returns_updated_value_like_update_and_get() {
+        const INITIAL: i64 = 8682522807148012i64;
+        const MUL: i64 = 1181783497276652981i64;
+
+        SEED_UNIQUIFIER.store(INITIAL, Ordering::SeqCst);
+
+        // Java's `SEED_UNIQUIFIER.updateAndGet(c -> c * MUL)` returns the NEW value on the very
+        // first call (`INITIAL * MUL == -3433408396890502140`), never `INITIAL` itself.
+        let first = next_unique_seed_prefix();
+        assert_ne!(first, INITIAL, "updateAndGet must return the updated value, not the previous value");
+        assert_eq!(first, INITIAL.wrapping_mul(MUL));
+        assert_eq!(first, -3433408396890502140i64);
+
+        let second = next_unique_seed_prefix();
+        assert_eq!(second, first.wrapping_mul(MUL));
+
+        let third_expected = second.wrapping_mul(MUL);
+        let seed = with_nano_time_override(0x0123_4567_89ab_cdef, generate_unique_seed);
+        assert_eq!(seed, third_expected ^ 0x0123_4567_89ab_cdef);
+    }
 }

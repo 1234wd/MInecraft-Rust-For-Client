@@ -629,7 +629,7 @@ fn worldgen_random_seeding() {
         if !keep {
             over = Some((seed, Box::new(XoroshiroRandomSource::new(seed))));
         }
-        let mut source = over.take().unwrap().1;
+        let source = over.take().unwrap().1;
         let mut w = WorldgenRandom::new(source);
         let got = BitRandomSource::next(&mut w, r.arg(1).as_i32());
         over = Some((seed, w.take_random_source_for_test()));

@@ -178,7 +178,7 @@ fn single_method_interfaces_are_callable() {
     );
 }
 
-struct Varint(i32);
+struct Varint;
 // `Vec<u8>` rather than `[u8]`: the trait's `I` is implicitly `Sized`, and `[u8]` is not. Making
 // the port's buffer parameter `?Sized` would be the tidier signature, but that is a change to the
 // ported file driven by a test, which is backwards -- the test should fit the port.
@@ -195,7 +195,7 @@ impl StreamEncoder<Vec<u8>, i32> for Varint {
 
 #[test]
 fn stream_codec_halves_round_trip() {
-    let codec = Varint(0);
+    let codec = Varint;
     assert_eq!(codec.decode(&vec![0x00, 0x00, 0x7F]), 127);
     let mut out = Vec::new();
     codec.encode(&mut out, 42);

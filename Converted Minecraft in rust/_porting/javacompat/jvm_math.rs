@@ -694,7 +694,7 @@ fn ported_code_never_calls_a_host_transcendental() {
     //
     // So the rule is the whole tree, minus this file. A guard that only watches the code you
     // expect to be wrong reports "clean" while the bug is one directory over.
-    let scanned = [root.join("net"), root.join("_porting")];
+    let scanned = [root.join("com"), root.join("net"), root.join("_porting")];
     for d in &scanned {
         assert!(d.is_dir(), "expected a scanned tree at {}", d.display());
     }

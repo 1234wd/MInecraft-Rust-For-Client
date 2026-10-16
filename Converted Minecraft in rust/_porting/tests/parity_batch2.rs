@@ -56,6 +56,7 @@ use minecraft_rust::net::minecraft::core::SectionPos::{
 };
 
 /// Read a 3-component expected value, so the tests read as `assert_vec3`.
+#[allow(dead_code)]
 fn exp3(r: &Row, i: usize) -> [f64; 3] {
     [
         r.exp(i).as_f64(),

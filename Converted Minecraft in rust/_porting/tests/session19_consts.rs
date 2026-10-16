@@ -829,7 +829,7 @@ fn region_bitmap_matches_the_jar() {
     let rows = graph_twin::probe_rows("bitmap|");
     let mut bm = RegionBitmap::new();
     let mut i = 0;
-    let mut check = |bm: &RegionBitmap, result: String, rows: &[Vec<String>], i: &mut usize| {
+    let check = |bm: &RegionBitmap, result: String, rows: &[Vec<String>], i: &mut usize| {
         assert_eq!((result.as_str(), fmt(bm.get_used()).as_str()), (rows[*i][2].as_str(), rows[*i][3].as_str()), "step {}", rows[*i][1]);
         *i += 1;
     };

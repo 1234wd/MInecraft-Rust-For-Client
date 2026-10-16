@@ -280,7 +280,7 @@ fn random_backed_helpers() {
     // source must be recreated whenever the seed changes and advanced otherwise.
     // The oracle re-uses a single `RandomSource r` for the whole seed, which is why
     // a fresh source per row would compare unrelated stream positions.
-    let mut shared: Option<(i64, Box<dyn minecraft_rust::net::minecraft::util::RandomSource::RandomSource>)> = None;
+    let mut shared: Option<(i64, Box<dyn minecraft_rust::net::minecraft::util::RandomSource::RandomSource>)>;
     for (method, which) in [
         ("randomBetweenInclusive", 0usize),
         ("nextFloat_rand", 1),
