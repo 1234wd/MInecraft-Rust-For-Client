@@ -71,7 +71,16 @@ jobs:
     continue-on-error: ${{ matrix.continue_on_error }}
 
     steps:
+      # fetch-depth: 0, not the default 1. `check_mirror.py` compares the
+      # `minecraft-decompiled/` tree against the commit recorded in `_porting/.mc_head`,
+      # which is dozens of commits back -- in a depth-1 clone that commit is simply absent,
+      # `git rev-parse <baseline>:minecraft-decompiled` exits 128, and the step failed on
+      # every single run while the mirror was in fact clean. The script no longer treats
+      # "cannot verify" as a failure, so this is what restores the check rather than what
+      # stops it failing.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       # No toolchain file is committed, so pin one. 1.85 is the MSRV-era stable used to develop
       # against; if the crate ever needs newer, this is the line to change.

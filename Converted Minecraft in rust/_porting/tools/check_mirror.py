@@ -11,6 +11,12 @@ Fails (exit 1) when any of these is true:
   3. `minecraft-decompiled/` changed vs. the git commit recorded at session start
      (stored in _porting/.mc_head).  Detects edits, deletions AND untracked files.
 
+Does NOT fail when the recorded baseline commit is absent from the clone (a shallow
+`actions/checkout` fetches one commit, so the baseline is normally missing in CI). That
+case is reported as UNVERIFIABLE: "cannot check" is not a finding, and treating it as one
+kept this gate red on every CI run while the mirror was clean. Check 3's `git diff`
+against HEAD still runs, and still catches an edited Java source.
+
 Usage
 -----
     python "Converted Minecraft in rust/_porting/tools/check_mirror.py"
@@ -113,22 +119,46 @@ def main() -> int:
     if os.path.isfile(BASELINE):
         with open(BASELINE, "r", encoding="ascii") as fh:
             baseline = fh.read().strip()
+    baseline_state = "not checked"
     if rc3 == 0 and baseline:
+        # Is the baseline COMMIT actually in this clone? `actions/checkout@v4` defaults to
+        # `fetch-depth: 1`, and the baseline is dozens of commits back, so in CI it is
+        # usually absent. "I cannot verify this" is NOT the same finding as "this is
+        # wrong", and conflating them is how the verifier spent 13 consecutive runs red
+        # while the mirror was in fact clean -- which teaches everyone to ignore it.
+        rc_have, _ = git("cat-file", "-e", f"{baseline}^{{commit}}")
         rc4, tree_now = git("rev-parse", f"{base_head}:minecraft-decompiled")
-        rc5, tree_then = git("rev-parse", f"{baseline}:minecraft-decompiled")
-        if rc4 == 0 and rc5 == 0:
-            if tree_now != tree_then:
+        if rc_have != 0:
+            # Unverifiable, not failed. Check 3 above (`git diff` vs HEAD plus untracked
+            # files) still ran and still covers "someone edited the Java source", which is
+            # the thing this guard exists to catch; the baseline only additionally catches
+            # "the source changed in an earlier commit of this branch".
+            baseline_state = f"UNVERIFIABLE (commit {baseline[:12]} not in this clone)"
+            say(f"[check_mirror] NOTE: baseline commit {baseline[:12]} is not present.")
+            say("[check_mirror]       This is a shallow clone; use `fetch-depth: 0` in CI")
+            say("[check_mirror]       to make the baseline comparison meaningful.")
+        elif rc4 != 0:
+            problems.append(
+                f"could not resolve minecraft-decompiled tree at HEAD ({base_head[:12]}) -- "
+                "is the source tree missing from this checkout?")
+        else:
+            rc5, tree_then = git("rev-parse", f"{baseline}:minecraft-decompiled")
+            if rc5 != 0:
+                problems.append(
+                    f"baseline commit {baseline[:12]} exists but has no "
+                    "minecraft-decompiled/ tree")
+            elif tree_now != tree_then:
                 problems.append(
                     f"minecraft-decompiled/ tree changed since session start:\n"
                     f"    baseline {baseline[:12]} -> tree {tree_then[:12]}\n"
                     f"    current  {base_head[:12]} -> tree {tree_now[:12]}")
-        else:
-            problems.append("could not resolve minecraft-decompiled tree object (shallow clone?)")
+            else:
+                baseline_state = f"MATCHES baseline {baseline[:12]}"
     else:
         problems.append("no _porting/.mc_head baseline recorded")
 
-    say(f"[check_mirror] source tree vs git : {'CLEAN' if not (dirty or extra) else 'MODIFIED'}"
-        f"  (baseline {baseline[:12] if baseline else '??'})")
+    say(f"[check_mirror] source tree vs git : {'CLEAN' if not (dirty or extra) else 'MODIFIED'}")
+    say(f"[check_mirror] baseline tree      : {baseline_state}")
 
     if problems:
         print()
