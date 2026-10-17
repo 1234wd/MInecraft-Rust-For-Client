@@ -149,6 +149,14 @@ path = "_porting/tests/session19_i.rs"
 name = "session19_j"
 path = "_porting/tests/session19_j.rs"
 
+# Session 22: the small-file sweep, checked against `_porting/test-data/small_probe.txt`
+# (`java-oracle/src/p/SmallProbe.java`). ONE target with one module per sub-batch under
+# `_porting/tests/session22/`, so the 7,055-module crate is linked once for all of them, and
+# `every_probe_group_is_claimed` sees every module's source.
+[[test]]
+name = "session22"
+path = "_porting/tests/session22.rs"
+
 # Runtime dependencies. Currently EMPTY on purpose, and that is worth keeping that way.
 #
 # Session 08 measured musl's `log` (the `libm` crate) against FdLibm's as a candidate for
