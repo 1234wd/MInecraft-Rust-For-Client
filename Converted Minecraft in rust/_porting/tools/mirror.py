@@ -10,7 +10,8 @@ Guarantees
 * One .java file  ->  one .rs file at the SAME relative path, SAME base name.
 * Existing .rs files are NEVER overwritten (a hand-ported file survives).
 * Idempotent: running twice changes nothing on disk.
-* Writes/updates _porting/MANIFEST.csv.
+* Writes/updates _porting/MANIFEST.csv (and --check reports it as drift when the
+  status headers on disk disagree with the recorded status).
 
 Usage
 -----
@@ -23,6 +24,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import io
 import os
 import re
 import sys
@@ -241,6 +243,17 @@ def count_loc(path: str) -> int:
     """Physical lines, 1-based count (same as `wc -l` for LF-terminated files)."""
     with open(path, "r", encoding="utf-8", errors="replace") as fh:
         return sum(1 for _ in fh)
+
+
+def read_raw(path: str) -> str:
+    """The file's bytes as text, with NO newline translation.
+
+    `read` opens in text mode, so it cannot tell `\r\n` from `\n` -- fine for comparing
+    generated Rust, wrong for deciding whether MANIFEST.csv needs rewriting, since the
+    writer emits `\n` explicitly.
+    """
+    with open(path, "r", encoding="utf-8", newline="") as fh:
+        return fh.read()
 
 
 def read(path: str) -> str:
@@ -485,19 +498,15 @@ def main() -> int:
         if not os.path.exists(extra) or read(extra) != content:
             plan[extra] = content
 
-    if args.check:
-        if plan:
-            print(f"DRIFT: {len(plan)} file(s) would change:")
-            for p in sorted(plan)[:40]:
-                print("  " + os.path.relpath(p, RUST_ROOT).replace("\\", "/"))
-            return 1
-        print(f"OK: mirror up to date ({len(java_files)} java files).")
-        return 0
-
-    for dst, content in sorted(plan.items()):
-        os.makedirs(os.path.dirname(dst), exist_ok=True)
-        with open(dst, "w", encoding="utf-8", newline="\n") as fh:
-            fh.write(content)
+    # NOTE: the manifest is computed BEFORE --check returns, and that ordering is the whole
+    # point. It used to be computed after, so `--check` compared the skeletons, every
+    # `mod.rs`, `Cargo.toml` and `lib.rs` -- and not MANIFEST.csv, the one generated file
+    # that records per-file porting status. Session 21 found the committed manifest calling
+    # 168 files SKELETON that had been VERIFIED or PARTIAL for several sessions, with CI
+    # green over it the whole time, because `--check` had never looked.
+    #
+    # Reading the status headers needs the skeletons to exist, which in --check mode they
+    # do (a genuinely missing .rs is already reported as drift above).
 
     # ---- status + manifest (reads what is actually on disk now) ----
     rows = []
@@ -552,12 +561,38 @@ def main() -> int:
             ("notes", ";".join(notes)),
         ]))
 
+    # Render the manifest to a string so --check can diff it like any other generated file.
+    buf = io.StringIO()
+    w = csv.DictWriter(buf, fieldnames=list(rows[0].keys()), lineterminator="\n")
+    w.writeheader()
+    w.writerows(rows)
+    manifest_text = buf.getvalue()
+
+    manifest_drifted = (
+        not os.path.exists(MANIFEST) or read_raw(MANIFEST) != manifest_text
+    )
+
+    if args.check:
+        if plan or manifest_drifted:
+            print(f"DRIFT: {len(plan) + (1 if manifest_drifted else 0)} file(s) would change:")
+            for q in sorted(plan)[:40]:
+                print("  " + os.path.relpath(q, RUST_ROOT).replace("\\", "/"))
+            if manifest_drifted:
+                print("  " + os.path.relpath(MANIFEST, RUST_ROOT).replace("\\", "/")
+                      + "  (status headers on disk disagree with the recorded status)")
+            return 1
+        print(f"OK: mirror up to date ({len(java_files)} java files).")
+        return 0
+
+    for dst, content in sorted(plan.items()):
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        with open(dst, "w", encoding="utf-8", newline="\n") as fh:
+            fh.write(content)
+
     os.makedirs(PORTING, exist_ok=True)
     tmp = MANIFEST + ".tmp"
     with open(tmp, "w", encoding="utf-8", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=list(rows[0].keys()), lineterminator="\n")
-        w.writeheader()
-        w.writerows(rows)
+        fh.write(manifest_text)
     os.replace(tmp, MANIFEST)
 
     total_loc = sum(r["java_loc"] for r in rows)
