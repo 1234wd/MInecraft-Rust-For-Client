@@ -10,6 +10,7 @@
 //! | module | what it ports | pinned to |
 //! |---|---|---|
 //! | [`java_lang`] | `Math` floor/abs/min/max, narrowing casts, `String.hashCode`, NaN-sign-correct arithmetic | JDK 21/25 semantics |
+//! | [`java_io`] | `DataInput`/`DataOutput`, big-endian primitives, Java's *modified* UTF-8 | JDK 25 |
 //! | [`java_random`] | the 48-bit `java.util.Random` LCG | JDK reference |
 //! | [`md5`] | RFC 1321 MD5 + `Longs.fromBytes` ordering | Guava 33.6.0-jre |
 //! | [`fraction`] | `org.apache.commons.lang3.math.Fraction` (partial) | commons-lang3 3.20.0 |
@@ -24,6 +25,7 @@
 pub mod entropy;
 pub mod fraction;
 pub mod golden;
+pub mod java_io;
 pub mod java_lang;
 
 #[path = "jvm_math.rs"]
