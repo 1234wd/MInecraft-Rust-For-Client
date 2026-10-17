@@ -88,6 +88,7 @@ public class SmallProbe {
 			exceptions();
 			hashes();
 			recordsB();
+			recordsC();
 		}
 		System.err.println("small_probe: " + rows + " rows -> " + target);
 	}
@@ -518,5 +519,207 @@ public class SmallProbe {
 			}
 		}
 		return -1;
+	}
+
+	// ------------------------------------------------------------------ sub-batch C: records with float/double/Identifier/enum/Optional components
+
+	static net.minecraft.resources.Identifier id(String path) {
+		return net.minecraft.resources.Identifier.withDefaultNamespace(path);
+	}
+
+	static final float[] UVS = {0.0f, -0.0f, 1.5f, -2.25f, Float.NaN, Float.intBitsToFloat(0x7f800001), Float.MIN_VALUE, Float.MAX_VALUE,
+		Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY};
+
+	static void recordsC() throws Exception {
+		// GizmoStyle
+		rec("GizmoStyle", true,
+			net.minecraft.gizmos.GizmoStyle.stroke(0xFF00FF00), net.minecraft.gizmos.GizmoStyle.stroke(0xFF00FF00),
+			net.minecraft.gizmos.GizmoStyle.stroke(1, 0.0f), net.minecraft.gizmos.GizmoStyle.stroke(1, -0.0f),
+			net.minecraft.gizmos.GizmoStyle.fill(-1), net.minecraft.gizmos.GizmoStyle.strokeAndFill(5, Float.NaN, 6),
+			net.minecraft.gizmos.GizmoStyle.strokeAndFill(5, Float.intBitsToFloat(0x7fc00001), 6),
+			new net.minecraft.gizmos.GizmoStyle(0, 2.5f, 0));
+		int[] strokes = {0, 1, -1, 0x80FFFFFF, MIN};
+		float[] widths = {2.5f, 0.0f, -0.0f, -1.0f, Float.NaN, Float.MIN_VALUE, Float.POSITIVE_INFINITY};
+		for (int s : strokes) {
+			for (float w : widths) {
+				for (int fl : new int[]{0, 7}) {
+					net.minecraft.gizmos.GizmoStyle g = net.minecraft.gizmos.GizmoStyle.strokeAndFill(s, w, fl);
+					row("GIZMO", i(s), f(w), i(fl), b(g.hasFill()), b(g.hasStroke()));
+				}
+			}
+		}
+		int[] colors = {0, -1, 0x80FFFFFF, 0x12345678, 0xFF000000, 0x7F7F7F7F};
+		float[] alphas = {0.0f, 0.5f, 1.0f, 2.0f, -1.0f, Float.NaN, 0.999f, 0.0039f};
+		for (int c : colors) {
+			for (float a : alphas) {
+				net.minecraft.gizmos.GizmoStyle g = net.minecraft.gizmos.GizmoStyle.strokeAndFill(c, 1.0f, ~c);
+				row("GIZMOMUL", i(c), f(a), i(g.multipliedStroke(a)), i(g.multipliedFill(a)));
+			}
+		}
+		row("GIZMODEF", f(net.minecraft.gizmos.GizmoStyle.stroke(1).strokeWidth()));
+
+		// UVPair
+		Object[] uvs = new Object[UVS.length + 1];
+		for (int k = 0; k < UVS.length; k++) {
+			uvs[k] = new net.minecraft.client.model.geom.builders.UVPair(UVS[k], UVS[(k + 1) % UVS.length]);
+		}
+		uvs[UVS.length] = new net.minecraft.client.model.geom.builders.UVPair(UVS[0], UVS[1]);
+		rec("UVPair", true, uvs);
+		for (float u : UVS) {
+			for (float v : UVS) {
+				long p = net.minecraft.client.model.geom.builders.UVPair.pack(u, v);
+				row("UVPACK", f(u), f(v), l(p), f(net.minecraft.client.model.geom.builders.UVPair.unpackU(p)),
+					f(net.minecraft.client.model.geom.builders.UVPair.unpackV(p)));
+			}
+		}
+		for (long raw : LONGS) {
+			row("UVUNPACK", l(raw), f(net.minecraft.client.model.geom.builders.UVPair.unpackU(raw)),
+				f(net.minecraft.client.model.geom.builders.UVPair.unpackV(raw)));
+		}
+
+		// PartPose
+		net.minecraft.client.model.geom.PartPose[] poses = {
+			net.minecraft.client.model.geom.PartPose.ZERO,
+			net.minecraft.client.model.geom.PartPose.offset(0.0f, 0.0f, 0.0f),
+			net.minecraft.client.model.geom.PartPose.offset(1.0f, 2.0f, 3.0f),
+			net.minecraft.client.model.geom.PartPose.rotation(0.5f, -0.5f, Float.NaN),
+			net.minecraft.client.model.geom.PartPose.offsetAndRotation(-0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f),
+			new net.minecraft.client.model.geom.PartPose(1.1f, -2.2f, 3.3f, 0.1f, 0.2f, 0.3f, 2.0f, 0.5f, -1.0f),
+			new net.minecraft.client.model.geom.PartPose(Float.MAX_VALUE, Float.MIN_VALUE, Float.NEGATIVE_INFINITY, 1e-30f, 1e30f, 7.0f,
+				Float.NaN, 0.0f, -0.0f),
+		};
+		rec("PartPose", true, (Object[]) poses);
+		float[] factors = {1.0f, -1.0f, 0.0f, -0.0f, 2.0f, 0.1f, Float.NaN, Float.POSITIVE_INFINITY};
+		for (int k = 0; k < poses.length; k++) {
+			net.minecraft.client.model.geom.PartPose p = poses[k];
+			row("PPOSE", i(k), "translated", esc(p.translated(0.25f, -1.5f, Float.MAX_VALUE).toString()), "-");
+			for (float fct : factors) {
+				net.minecraft.client.model.geom.PartPose s = p.scaled(fct);
+				row("PPOSE", i(k), "scaled:" + f(fct), esc(s.toString()), b(s == p));
+				row("PPOSE", i(k), "withScale:" + f(fct), esc(p.withScale(fct).toString()), "-");
+				row("PPOSE", i(k), "scaled3:" + f(fct), esc(p.scaled(fct, 0.5f, fct).toString()), "-");
+			}
+		}
+		row("PPOSEMAKE", "offset", esc(net.minecraft.client.model.geom.PartPose.offset(1.5f, -0.0f, Float.NaN).toString()));
+		row("PPOSEMAKE", "rotation", esc(net.minecraft.client.model.geom.PartPose.rotation(1.5f, -0.0f, Float.NaN).toString()));
+		row("PPOSEMAKE", "offsetAndRotation",
+			esc(net.minecraft.client.model.geom.PartPose.offsetAndRotation(1, 2, 3, 4, 5, 6).toString()));
+
+		// HitboxRenderState
+		rec("HitboxRenderState", true,
+			new net.minecraft.client.renderer.entity.state.HitboxRenderState(0, 0, 0, 1, 1, 1, 1.0f, 0.5f, 0.0f),
+			new net.minecraft.client.renderer.entity.state.HitboxRenderState(0, 0, 0, 1, 1, 1, 0, 0, 0, 1.0f, 0.5f, 0.0f),
+			new net.minecraft.client.renderer.entity.state.HitboxRenderState(-0.0, 0, 0, 1, 1, 1, 0, 0, 0, 1.0f, 0.5f, 0.0f),
+			new net.minecraft.client.renderer.entity.state.HitboxRenderState(0.1, -2.5, 1e300, Double.NaN, Double.MIN_VALUE,
+				Double.NEGATIVE_INFINITY, 0.25f, -0.0f, Float.NaN, 0.1f, 1e-40f, Float.MAX_VALUE),
+			new net.minecraft.client.renderer.entity.state.HitboxRenderState(0.1, -2.5, 1e300, Double.longBitsToDouble(0x7ff8000000000001L),
+				Double.MIN_VALUE, Double.NEGATIVE_INFINITY, 0.25f, -0.0f, Float.intBitsToFloat(0xffc00000), 0.1f, 1e-40f, Float.MAX_VALUE));
+
+		// DepthStencilState (CompareOp is an enum: its hashCode is per-run identity, so not written)
+		com.mojang.blaze3d.platform.CompareOp[] ops = com.mojang.blaze3d.platform.CompareOp.values();
+		rec("DepthStencilState", false,
+			com.mojang.blaze3d.pipeline.DepthStencilState.DEFAULT,
+			new com.mojang.blaze3d.pipeline.DepthStencilState(com.mojang.blaze3d.platform.CompareOp.GREATER_THAN_OR_EQUAL, true),
+			new com.mojang.blaze3d.pipeline.DepthStencilState(com.mojang.blaze3d.platform.CompareOp.GREATER_THAN_OR_EQUAL, true, 0.0f, -0.0f),
+			new com.mojang.blaze3d.pipeline.DepthStencilState(ops[0], false, Float.NaN, 1.5f),
+			new com.mojang.blaze3d.pipeline.DepthStencilState(ops[0], false, Float.intBitsToFloat(0x7fc00001), 1.5f),
+			new com.mojang.blaze3d.pipeline.DepthStencilState(ops[7], true, -2.0f, Float.MAX_VALUE));
+		row("DSDEFAULT", com.mojang.blaze3d.pipeline.DepthStencilState.DEFAULT.depthTest().name(),
+			b(com.mojang.blaze3d.pipeline.DepthStencilState.DEFAULT.writeDepth()),
+			f(com.mojang.blaze3d.pipeline.DepthStencilState.DEFAULT.depthBiasScaleFactor()),
+			f(com.mojang.blaze3d.pipeline.DepthStencilState.DEFAULT.depthBiasConstant()));
+
+		// EntitySpawnRequest (enum component: hashCode not written)
+		net.minecraft.world.entity.EntitySpawnReason[] reasons = net.minecraft.world.entity.EntitySpawnReason.values();
+		rec("EntitySpawnRequest", false,
+			new net.minecraft.world.entity.EntitySpawnRequest(reasons[0], false),
+			new net.minecraft.world.entity.EntitySpawnRequest(reasons[0], false),
+			new net.minecraft.world.entity.EntitySpawnRequest(reasons[0], true),
+			new net.minecraft.world.entity.EntitySpawnRequest(reasons[2], false),
+			new net.minecraft.world.entity.EntitySpawnRequest(reasons[reasons.length - 1], true));
+
+		// BlendEquation (enum components: hashCode not written)
+		com.mojang.blaze3d.platform.BlendFactor[] bf = com.mojang.blaze3d.platform.BlendFactor.values();
+		com.mojang.blaze3d.platform.BlendOp[] bo = com.mojang.blaze3d.platform.BlendOp.values();
+		rec("BlendEquation", false,
+			new com.mojang.blaze3d.pipeline.BlendEquation(bf[9], bf[4], bo[0]),
+			new com.mojang.blaze3d.pipeline.BlendEquation(bf[9], bf[4], bo[0]),
+			new com.mojang.blaze3d.pipeline.BlendEquation(bf[4], bf[9], bo[0]),
+			new com.mojang.blaze3d.pipeline.BlendEquation(bf[9], bf[4], bo[4]),
+			new com.mojang.blaze3d.pipeline.BlendEquation(bf[0], bf[14], bo[2]));
+
+		// DecoratedPotPattern
+		rec("DecoratedPotPattern", true,
+			new net.minecraft.world.level.block.entity.DecoratedPotPattern(id("blank")),
+			new net.minecraft.world.level.block.entity.DecoratedPotPattern(net.minecraft.resources.Identifier.parse("minecraft:blank")),
+			new net.minecraft.world.level.block.entity.DecoratedPotPattern(net.minecraft.resources.Identifier.fromNamespaceAndPath("mod", "a/b")),
+			new net.minecraft.world.level.block.entity.DecoratedPotPattern(id("angler")));
+
+		// ModelLayerLocation (toString is overridden: model + "#" + layer)
+		rec("ModelLayerLocation", true,
+			new net.minecraft.client.model.geom.ModelLayerLocation(id("player"), "main"),
+			new net.minecraft.client.model.geom.ModelLayerLocation(id("player"), "main"),
+			new net.minecraft.client.model.geom.ModelLayerLocation(id("player"), "outer"),
+			new net.minecraft.client.model.geom.ModelLayerLocation(id("player"), "MAIN"),
+			new net.minecraft.client.model.geom.ModelLayerLocation(net.minecraft.resources.Identifier.fromNamespaceAndPath("mod", "x"), ""));
+
+		// Atom (toString is overridden: "<" + name + ">")
+		rec("Atom", true,
+			net.minecraft.util.parsing.packrat.Atom.of("a"), new net.minecraft.util.parsing.packrat.Atom<Integer>("a"),
+			net.minecraft.util.parsing.packrat.Atom.of(""), net.minecraft.util.parsing.packrat.Atom.of("é 中"),
+			net.minecraft.util.parsing.packrat.Atom.of("b"));
+
+		// LevelResource (toString is overridden: "/" + id), every constant
+		net.minecraft.world.level.storage.LevelResource[] lrs = {
+			net.minecraft.world.level.storage.LevelResource.PLAYER_ADVANCEMENTS_DIR, net.minecraft.world.level.storage.LevelResource.PLAYER_STATS_DIR,
+			net.minecraft.world.level.storage.LevelResource.PLAYER_DATA_DIR, net.minecraft.world.level.storage.LevelResource.PLAYER_OLD_DATA_DIR,
+			net.minecraft.world.level.storage.LevelResource.LEVEL_DATA_FILE, net.minecraft.world.level.storage.LevelResource.OLD_LEVEL_DATA_FILE,
+			net.minecraft.world.level.storage.LevelResource.ICON_FILE, net.minecraft.world.level.storage.LevelResource.LOCK_FILE,
+			net.minecraft.world.level.storage.LevelResource.GENERATED_DIR, net.minecraft.world.level.storage.LevelResource.DATAPACK_DIR,
+			net.minecraft.world.level.storage.LevelResource.MAP_RESOURCE_FILE, net.minecraft.world.level.storage.LevelResource.DATA,
+			net.minecraft.world.level.storage.LevelResource.ROOT,
+			new net.minecraft.world.level.storage.LevelResource("level.dat"), new net.minecraft.world.level.storage.LevelResource(""),
+		};
+		rec("LevelResource", true, (Object[]) lrs);
+		for (net.minecraft.world.level.storage.LevelResource lr : lrs) {
+			row("LEVELRES", esc(lr.id()));
+		}
+
+		// WidgetSprites: four constructors, and get() for every enabled/focused combination
+		net.minecraft.resources.Identifier wa = id("a"), wb = id("b"), wc = id("c"), wd = id("d");
+		net.minecraft.client.gui.components.WidgetSprites[] ws = {
+			new net.minecraft.client.gui.components.WidgetSprites(wa),
+			new net.minecraft.client.gui.components.WidgetSprites(wa, wb),
+			new net.minecraft.client.gui.components.WidgetSprites(wa, wb, wc),
+			new net.minecraft.client.gui.components.WidgetSprites(wa, wb, wc, wd),
+			new net.minecraft.client.gui.components.WidgetSprites(wa, wa, wa, wa),
+		};
+		rec("WidgetSprites", true, (Object[]) ws);
+		for (int k = 0; k < ws.length; k++) {
+			for (boolean en : new boolean[]{false, true}) {
+				for (boolean fo : new boolean[]{false, true}) {
+					row("WIDGET", i(k), b(en), b(fo), ws[k].get(en, fo).toString());
+				}
+			}
+		}
+
+		// ParticleRenderType: the four constants
+		rec("ParticleRenderType", true,
+			net.minecraft.client.particle.ParticleRenderType.SINGLE_QUADS, net.minecraft.client.particle.ParticleRenderType.ITEM_PICKUP,
+			net.minecraft.client.particle.ParticleRenderType.ELDER_GUARDIANS, net.minecraft.client.particle.ParticleRenderType.NO_RENDER,
+			new net.minecraft.client.particle.ParticleRenderType("SINGLE_QUADS", "SQ"));
+
+		// DisplayData: OptionalInt components
+		com.mojang.blaze3d.platform.DisplayData[] dd = {
+			new com.mojang.blaze3d.platform.DisplayData(800, 600, java.util.OptionalInt.empty(), java.util.OptionalInt.empty(), false),
+			new com.mojang.blaze3d.platform.DisplayData(800, 600, java.util.OptionalInt.empty(), java.util.OptionalInt.empty(), false),
+			new com.mojang.blaze3d.platform.DisplayData(1, 2, java.util.OptionalInt.of(3), java.util.OptionalInt.of(4), true),
+			new com.mojang.blaze3d.platform.DisplayData(1, 2, java.util.OptionalInt.of(0), java.util.OptionalInt.empty(), false),
+			new com.mojang.blaze3d.platform.DisplayData(MIN, MAX, java.util.OptionalInt.of(MIN), java.util.OptionalInt.of(-1), true),
+		};
+		rec("DisplayData", true, (Object[]) dd);
+		for (int k = 0; k < dd.length; k++) {
+			row("DISPLAY", i(k), esc(dd[k].withSize(-5, 7).toString()), esc(dd[k].withFullscreen(!dd[k].isFullscreen()).toString()));
+		}
 	}
 }

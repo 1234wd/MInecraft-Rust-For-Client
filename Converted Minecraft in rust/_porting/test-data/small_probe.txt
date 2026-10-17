@@ -1470,3 +1470,634 @@ UPBUILD	status	UploadResult[statusCode=404, errorMessage=null]
 UPBUILD	both	UploadResult[statusCode=404, errorMessage=gone]
 UPBUILD	reset-message	UploadResult[statusCode=404, errorMessage=null]
 UPBUILD	chain-identity	true	true
+REC	GizmoStyle	0	GizmoStyle[stroke=-16711936, strokeWidth=2.5, fill=0]	110968576
+RECEQ	GizmoStyle	0	11000000
+REC	GizmoStyle	1	GizmoStyle[stroke=-16711936, strokeWidth=2.5, fill=0]	110968576
+RECEQ	GizmoStyle	1	11000000
+REC	GizmoStyle	2	GizmoStyle[stroke=1, strokeWidth=0.0, fill=0]	961
+RECEQ	GizmoStyle	2	00100000
+REC	GizmoStyle	3	GizmoStyle[stroke=1, strokeWidth=-0.0, fill=0]	-2147482687
+RECEQ	GizmoStyle	3	00010000
+REC	GizmoStyle	4	GizmoStyle[stroke=0, strokeWidth=0.0, fill=-1]	-1
+RECEQ	GizmoStyle	4	00001000
+REC	GizmoStyle	5	GizmoStyle[stroke=5, strokeWidth=NaN, fill=6]	2017465035
+RECEQ	GizmoStyle	5	00000110
+REC	GizmoStyle	6	GizmoStyle[stroke=5, strokeWidth=NaN, fill=6]	2017465035
+RECEQ	GizmoStyle	6	00000110
+REC	GizmoStyle	7	GizmoStyle[stroke=0, strokeWidth=2.5, fill=0]	-1008730112
+RECEQ	GizmoStyle	7	00000001
+GIZMO	0	40200000	0	false	false
+GIZMO	0	40200000	7	true	false
+GIZMO	0	0	0	false	false
+GIZMO	0	0	7	true	false
+GIZMO	0	80000000	0	false	false
+GIZMO	0	80000000	7	true	false
+GIZMO	0	bf800000	0	false	false
+GIZMO	0	bf800000	7	true	false
+GIZMO	0	7fc00000	0	false	false
+GIZMO	0	7fc00000	7	true	false
+GIZMO	0	1	0	false	false
+GIZMO	0	1	7	true	false
+GIZMO	0	7f800000	0	false	false
+GIZMO	0	7f800000	7	true	false
+GIZMO	1	40200000	0	false	true
+GIZMO	1	40200000	7	true	true
+GIZMO	1	0	0	false	false
+GIZMO	1	0	7	true	false
+GIZMO	1	80000000	0	false	false
+GIZMO	1	80000000	7	true	false
+GIZMO	1	bf800000	0	false	false
+GIZMO	1	bf800000	7	true	false
+GIZMO	1	7fc00000	0	false	false
+GIZMO	1	7fc00000	7	true	false
+GIZMO	1	1	0	false	true
+GIZMO	1	1	7	true	true
+GIZMO	1	7f800000	0	false	true
+GIZMO	1	7f800000	7	true	true
+GIZMO	-1	40200000	0	false	true
+GIZMO	-1	40200000	7	true	true
+GIZMO	-1	0	0	false	false
+GIZMO	-1	0	7	true	false
+GIZMO	-1	80000000	0	false	false
+GIZMO	-1	80000000	7	true	false
+GIZMO	-1	bf800000	0	false	false
+GIZMO	-1	bf800000	7	true	false
+GIZMO	-1	7fc00000	0	false	false
+GIZMO	-1	7fc00000	7	true	false
+GIZMO	-1	1	0	false	true
+GIZMO	-1	1	7	true	true
+GIZMO	-1	7f800000	0	false	true
+GIZMO	-1	7f800000	7	true	true
+GIZMO	-2130706433	40200000	0	false	true
+GIZMO	-2130706433	40200000	7	true	true
+GIZMO	-2130706433	0	0	false	false
+GIZMO	-2130706433	0	7	true	false
+GIZMO	-2130706433	80000000	0	false	false
+GIZMO	-2130706433	80000000	7	true	false
+GIZMO	-2130706433	bf800000	0	false	false
+GIZMO	-2130706433	bf800000	7	true	false
+GIZMO	-2130706433	7fc00000	0	false	false
+GIZMO	-2130706433	7fc00000	7	true	false
+GIZMO	-2130706433	1	0	false	true
+GIZMO	-2130706433	1	7	true	true
+GIZMO	-2130706433	7f800000	0	false	true
+GIZMO	-2130706433	7f800000	7	true	true
+GIZMO	-2147483648	40200000	0	false	true
+GIZMO	-2147483648	40200000	7	true	true
+GIZMO	-2147483648	0	0	false	false
+GIZMO	-2147483648	0	7	true	false
+GIZMO	-2147483648	80000000	0	false	false
+GIZMO	-2147483648	80000000	7	true	false
+GIZMO	-2147483648	bf800000	0	false	false
+GIZMO	-2147483648	bf800000	7	true	false
+GIZMO	-2147483648	7fc00000	0	false	false
+GIZMO	-2147483648	7fc00000	7	true	false
+GIZMO	-2147483648	1	0	false	true
+GIZMO	-2147483648	1	7	true	true
+GIZMO	-2147483648	7f800000	0	false	true
+GIZMO	-2147483648	7f800000	7	true	true
+GIZMOMUL	0	0	0	0
+GIZMOMUL	0	3f000000	0	2147483647
+GIZMOMUL	0	3f800000	0	-1
+GIZMOMUL	0	40000000	0	-1
+GIZMOMUL	0	bf800000	0	0
+GIZMOMUL	0	7fc00000	0	16777215
+GIZMOMUL	0	3f7fbe77	0	-16777217
+GIZMOMUL	0	3b7f9724	0	16777215
+GIZMOMUL	-1	0	0	0
+GIZMOMUL	-1	3f000000	2147483647	0
+GIZMOMUL	-1	3f800000	-1	0
+GIZMOMUL	-1	40000000	-1	0
+GIZMOMUL	-1	bf800000	0	0
+GIZMOMUL	-1	7fc00000	16777215	0
+GIZMOMUL	-1	3f7fbe77	-16777217	0
+GIZMOMUL	-1	3b7f9724	16777215	0
+GIZMOMUL	-2130706433	0	0	0
+GIZMOMUL	-2130706433	3f000000	1090519039	1056964608
+GIZMOMUL	-2130706433	3f800000	-2130706433	2130706432
+GIZMOMUL	-2130706433	40000000	-2130706433	2130706432
+GIZMOMUL	-2130706433	bf800000	0	0
+GIZMOMUL	-2130706433	7fc00000	16777215	0
+GIZMOMUL	-2130706433	3f7fbe77	2147483647	2113929216
+GIZMOMUL	-2130706433	3b7f9724	16777215	0
+GIZMOMUL	305419896	0	0	0
+GIZMOMUL	305419896	3f000000	154424952	1993058695
+GIZMOMUL	305419896	3f800000	305419896	-305419897
+GIZMOMUL	305419896	40000000	305419896	-305419897
+GIZMOMUL	305419896	bf800000	0	0
+GIZMOMUL	305419896	7fc00000	3430008	13347207
+GIZMOMUL	305419896	3f7fbe77	288642680	-322197113
+GIZMOMUL	305419896	3b7f9724	3430008	13347207
+GIZMOMUL	-16777216	0	0	0
+GIZMOMUL	-16777216	3f000000	2130706432	16777215
+GIZMOMUL	-16777216	3f800000	-16777216	16777215
+GIZMOMUL	-16777216	40000000	-16777216	16777215
+GIZMOMUL	-16777216	bf800000	0	0
+GIZMOMUL	-16777216	7fc00000	0	16777215
+GIZMOMUL	-16777216	3f7fbe77	-33554432	16777215
+GIZMOMUL	-16777216	3b7f9724	0	16777215
+GIZMOMUL	2139062143	0	0	0
+GIZMOMUL	2139062143	3f000000	1065320319	1082163328
+GIZMOMUL	2139062143	3f800000	2139062143	-2139062144
+GIZMOMUL	2139062143	40000000	2139062143	-2139062144
+GIZMOMUL	2139062143	bf800000	0	0
+GIZMOMUL	2139062143	7fc00000	8355711	8421504
+GIZMOMUL	2139062143	3f7fbe77	2122284927	2139127936
+GIZMOMUL	2139062143	3b7f9724	8355711	8421504
+GIZMODEF	40200000
+REC	UVPair	0	(0.0,-0.0)	-2147483648
+RECEQ	UVPair	0	10000000001
+REC	UVPair	1	(-0.0,1.5)	-1077936128
+RECEQ	UVPair	1	01000000000
+REC	UVPair	2	(1.5,-2.25)	2018508800
+RECEQ	UVPair	2	00100000000
+REC	UVPair	3	(-2.25,NaN)	-1045430272
+RECEQ	UVPair	3	00010000000
+REC	UVPair	4	(NaN,NaN)	-134217728
+RECEQ	UVPair	4	00001000000
+REC	UVPair	5	(NaN,1.4E-45)	2017460225
+RECEQ	UVPair	5	00000100000
+REC	UVPair	6	(1.4E-45,3.4028235E38)	2139095070
+RECEQ	UVPair	6	00000010000
+REC	UVPair	7	(3.4028235E38,Infinity)	-268435487
+RECEQ	UVPair	7	00000001000
+REC	UVPair	8	(Infinity,-Infinity)	1879048192
+RECEQ	UVPair	8	00000000100
+REC	UVPair	9	(-Infinity,0.0)	-260046848
+RECEQ	UVPair	9	00000000010
+REC	UVPair	10	(0.0,-0.0)	-2147483648
+RECEQ	UVPair	10	10000000001
+UVPACK	0	0	0	0	0
+UVPACK	0	80000000	2147483648	0	80000000
+UVPACK	0	3fc00000	1069547520	0	3fc00000
+UVPACK	0	c0100000	3222274048	0	c0100000
+UVPACK	0	7fc00000	2143289344	0	7fc00000
+UVPACK	0	7f800001	2143289344	0	7fc00000
+UVPACK	0	1	1	0	1
+UVPACK	0	7f7fffff	2139095039	0	7f7fffff
+UVPACK	0	7f800000	2139095040	0	7f800000
+UVPACK	0	ff800000	4286578688	0	ff800000
+UVPACK	80000000	0	-9223372036854775808	80000000	0
+UVPACK	80000000	80000000	-9223372034707292160	80000000	80000000
+UVPACK	80000000	3fc00000	-9223372035785228288	80000000	3fc00000
+UVPACK	80000000	c0100000	-9223372033632501760	80000000	c0100000
+UVPACK	80000000	7fc00000	-9223372034711486464	80000000	7fc00000
+UVPACK	80000000	7f800001	-9223372034711486464	80000000	7fc00000
+UVPACK	80000000	1	-9223372036854775807	80000000	1
+UVPACK	80000000	7f7fffff	-9223372034715680769	80000000	7f7fffff
+UVPACK	80000000	7f800000	-9223372034715680768	80000000	7f800000
+UVPACK	80000000	ff800000	-9223372032568197120	80000000	ff800000
+UVPACK	3fc00000	0	4593671619917905920	3fc00000	0
+UVPACK	3fc00000	80000000	4593671622065389568	3fc00000	80000000
+UVPACK	3fc00000	3fc00000	4593671620987453440	3fc00000	3fc00000
+UVPACK	3fc00000	c0100000	4593671623140179968	3fc00000	c0100000
+UVPACK	3fc00000	7fc00000	4593671622061195264	3fc00000	7fc00000
+UVPACK	3fc00000	7f800001	4593671622061195264	3fc00000	7fc00000
+UVPACK	3fc00000	1	4593671619917905921	3fc00000	1
+UVPACK	3fc00000	7f7fffff	4593671622057000959	3fc00000	7f7fffff
+UVPACK	3fc00000	7f800000	4593671622057000960	3fc00000	7f800000
+UVPACK	3fc00000	ff800000	4593671624204484608	3fc00000	ff800000
+UVPACK	c0100000	0	-4607182418800017408	c0100000	0
+UVPACK	c0100000	80000000	-4607182416652533760	c0100000	80000000
+UVPACK	c0100000	3fc00000	-4607182417730469888	c0100000	3fc00000
+UVPACK	c0100000	c0100000	-4607182415577743360	c0100000	c0100000
+UVPACK	c0100000	7fc00000	-4607182416656728064	c0100000	7fc00000
+UVPACK	c0100000	7f800001	-4607182416656728064	c0100000	7fc00000
+UVPACK	c0100000	1	-4607182418800017407	c0100000	1
+UVPACK	c0100000	7f7fffff	-4607182416660922369	c0100000	7f7fffff
+UVPACK	c0100000	7f800000	-4607182416660922368	c0100000	7f800000
+UVPACK	c0100000	ff800000	-4607182414513438720	c0100000	ff800000
+UVPACK	7fc00000	0	9205357638345293824	7fc00000	0
+UVPACK	7fc00000	80000000	9205357640492777472	7fc00000	80000000
+UVPACK	7fc00000	3fc00000	9205357639414841344	7fc00000	3fc00000
+UVPACK	7fc00000	c0100000	9205357641567567872	7fc00000	c0100000
+UVPACK	7fc00000	7fc00000	9205357640488583168	7fc00000	7fc00000
+UVPACK	7fc00000	7f800001	9205357640488583168	7fc00000	7fc00000
+UVPACK	7fc00000	1	9205357638345293825	7fc00000	1
+UVPACK	7fc00000	7f7fffff	9205357640484388863	7fc00000	7f7fffff
+UVPACK	7fc00000	7f800000	9205357640484388864	7fc00000	7f800000
+UVPACK	7fc00000	ff800000	9205357642631872512	7fc00000	ff800000
+UVPACK	7f800001	0	9205357638345293824	7fc00000	0
+UVPACK	7f800001	80000000	9205357640492777472	7fc00000	80000000
+UVPACK	7f800001	3fc00000	9205357639414841344	7fc00000	3fc00000
+UVPACK	7f800001	c0100000	9205357641567567872	7fc00000	c0100000
+UVPACK	7f800001	7fc00000	9205357640488583168	7fc00000	7fc00000
+UVPACK	7f800001	7f800001	9205357640488583168	7fc00000	7fc00000
+UVPACK	7f800001	1	9205357638345293825	7fc00000	1
+UVPACK	7f800001	7f7fffff	9205357640484388863	7fc00000	7f7fffff
+UVPACK	7f800001	7f800000	9205357640484388864	7fc00000	7f800000
+UVPACK	7f800001	ff800000	9205357642631872512	7fc00000	ff800000
+UVPACK	1	0	4294967296	1	0
+UVPACK	1	80000000	6442450944	1	80000000
+UVPACK	1	3fc00000	5364514816	1	3fc00000
+UVPACK	1	c0100000	7517241344	1	c0100000
+UVPACK	1	7fc00000	6438256640	1	7fc00000
+UVPACK	1	7f800001	6438256640	1	7fc00000
+UVPACK	1	1	4294967297	1	1
+UVPACK	1	7f7fffff	6434062335	1	7f7fffff
+UVPACK	1	7f800000	6434062336	1	7f800000
+UVPACK	1	ff800000	8581545984	1	ff800000
+UVPACK	7f7fffff	0	9187343235540844544	7f7fffff	0
+UVPACK	7f7fffff	80000000	9187343237688328192	7f7fffff	80000000
+UVPACK	7f7fffff	3fc00000	9187343236610392064	7f7fffff	3fc00000
+UVPACK	7f7fffff	c0100000	9187343238763118592	7f7fffff	c0100000
+UVPACK	7f7fffff	7fc00000	9187343237684133888	7f7fffff	7fc00000
+UVPACK	7f7fffff	7f800001	9187343237684133888	7f7fffff	7fc00000
+UVPACK	7f7fffff	1	9187343235540844545	7f7fffff	1
+UVPACK	7f7fffff	7f7fffff	9187343237679939583	7f7fffff	7f7fffff
+UVPACK	7f7fffff	7f800000	9187343237679939584	7f7fffff	7f800000
+UVPACK	7f7fffff	ff800000	9187343239827423232	7f7fffff	ff800000
+UVPACK	7f800000	0	9187343239835811840	7f800000	0
+UVPACK	7f800000	80000000	9187343241983295488	7f800000	80000000
+UVPACK	7f800000	3fc00000	9187343240905359360	7f800000	3fc00000
+UVPACK	7f800000	c0100000	9187343243058085888	7f800000	c0100000
+UVPACK	7f800000	7fc00000	9187343241979101184	7f800000	7fc00000
+UVPACK	7f800000	7f800001	9187343241979101184	7f800000	7fc00000
+UVPACK	7f800000	1	9187343239835811841	7f800000	1
+UVPACK	7f800000	7f7fffff	9187343241974906879	7f800000	7f7fffff
+UVPACK	7f800000	7f800000	9187343241974906880	7f800000	7f800000
+UVPACK	7f800000	ff800000	9187343244122390528	7f800000	ff800000
+UVPACK	ff800000	0	-36028797018963968	ff800000	0
+UVPACK	ff800000	80000000	-36028794871480320	ff800000	80000000
+UVPACK	ff800000	3fc00000	-36028795949416448	ff800000	3fc00000
+UVPACK	ff800000	c0100000	-36028793796689920	ff800000	c0100000
+UVPACK	ff800000	7fc00000	-36028794875674624	ff800000	7fc00000
+UVPACK	ff800000	7f800001	-36028794875674624	ff800000	7fc00000
+UVPACK	ff800000	1	-36028797018963967	ff800000	1
+UVPACK	ff800000	7f7fffff	-36028794879868929	ff800000	7f7fffff
+UVPACK	ff800000	7f800000	-36028794879868928	ff800000	7f800000
+UVPACK	ff800000	ff800000	-36028792732385280	ff800000	ff800000
+UVUNPACK	0	0	0
+UVUNPACK	1	0	1
+UVUNPACK	-1	ffffffff	ffffffff
+UVUNPACK	42	0	2a
+UVUNPACK	4294967295	0	ffffffff
+UVUNPACK	4294967296	1	0
+UVUNPACK	-4294967296	ffffffff	0
+UVUNPACK	-9223372036854775808	80000000	0
+UVUNPACK	9223372036854775807	7fffffff	ffffffff
+UVUNPACK	81985529216486895	1234567	89abcdef
+UVUNPACK	-81985529216486895	fedcba98	76543211
+REC	PartPose	0	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=1.0, yScale=1.0, zScale=1.0]	1333788672
+RECEQ	PartPose	0	1100000
+REC	PartPose	1	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=1.0, yScale=1.0, zScale=1.0]	1333788672
+RECEQ	PartPose	1	1100000
+REC	PartPose	2	PartPose[x=1.0, y=2.0, z=3.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=1.0, yScale=1.0, zScale=1.0]	-549453824
+RECEQ	PartPose	2	0010000
+REC	PartPose	3	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.5, yRot=-0.5, zRot=NaN, xScale=1.0, yScale=1.0, zScale=1.0]	398458880
+RECEQ	PartPose	3	0001000
+REC	PartPose	4	PartPose[x=-0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=1.0, yScale=1.0, zScale=1.0]	-813694976
+RECEQ	PartPose	4	0000100
+REC	PartPose	5	PartPose[x=1.1, y=-2.2, z=3.3, xRot=0.1, yRot=0.2, zRot=0.3, xScale=2.0, yScale=0.5, zScale=-1.0]	-39803623
+RECEQ	PartPose	5	0000010
+REC	PartPose	6	PartPose[x=3.4028235E38, y=1.4E-45, z=-Infinity, xRot=1.0E-30, yRot=1.0E30, zRot=7.0, xScale=NaN, yScale=0.0, zScale=-0.0]	1122268488
+RECEQ	PartPose	6	0000001
+PPOSE	0	translated	PartPose[x=0.25, y=-1.5, z=3.4028235E38, xRot=0.0, yRot=0.0, zRot=0.0, xScale=1.0, yScale=1.0, zScale=1.0]	-
+PPOSE	0	scaled:3f800000	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=1.0, yScale=1.0, zScale=1.0]	true
+PPOSE	0	withScale:3f800000	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=1.0, yScale=1.0, zScale=1.0]	-
+PPOSE	0	scaled3:3f800000	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=1.0, yScale=0.5, zScale=1.0]	-
+PPOSE	0	scaled:bf800000	PartPose[x=-0.0, y=-0.0, z=-0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=-1.0, yScale=-1.0, zScale=-1.0]	false
+PPOSE	0	withScale:bf800000	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=-1.0, yScale=-1.0, zScale=-1.0]	-
+PPOSE	0	scaled3:bf800000	PartPose[x=-0.0, y=0.0, z=-0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=-1.0, yScale=0.5, zScale=-1.0]	-
+PPOSE	0	scaled:0	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=0.0, yScale=0.0, zScale=0.0]	false
+PPOSE	0	withScale:0	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=0.0, yScale=0.0, zScale=0.0]	-
+PPOSE	0	scaled3:0	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=0.0, yScale=0.5, zScale=0.0]	-
+PPOSE	0	scaled:80000000	PartPose[x=-0.0, y=-0.0, z=-0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=-0.0, yScale=-0.0, zScale=-0.0]	false
+PPOSE	0	withScale:80000000	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=-0.0, yScale=-0.0, zScale=-0.0]	-
+PPOSE	0	scaled3:80000000	PartPose[x=-0.0, y=0.0, z=-0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=-0.0, yScale=0.5, zScale=-0.0]	-
+PPOSE	0	scaled:40000000	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=2.0, yScale=2.0, zScale=2.0]	false
+PPOSE	0	withScale:40000000	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=2.0, yScale=2.0, zScale=2.0]	-
+PPOSE	0	scaled3:40000000	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=2.0, yScale=0.5, zScale=2.0]	-
+PPOSE	0	scaled:3dcccccd	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=0.1, yScale=0.1, zScale=0.1]	false
+PPOSE	0	withScale:3dcccccd	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=0.1, yScale=0.1, zScale=0.1]	-
+PPOSE	0	scaled3:3dcccccd	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=0.1, yScale=0.5, zScale=0.1]	-
+PPOSE	0	scaled:7fc00000	PartPose[x=NaN, y=NaN, z=NaN, xRot=0.0, yRot=0.0, zRot=0.0, xScale=NaN, yScale=NaN, zScale=NaN]	false
+PPOSE	0	withScale:7fc00000	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=NaN, yScale=NaN, zScale=NaN]	-
+PPOSE	0	scaled3:7fc00000	PartPose[x=NaN, y=0.0, z=NaN, xRot=0.0, yRot=0.0, zRot=0.0, xScale=NaN, yScale=0.5, zScale=NaN]	-
+PPOSE	0	scaled:7f800000	PartPose[x=NaN, y=NaN, z=NaN, xRot=0.0, yRot=0.0, zRot=0.0, xScale=Infinity, yScale=Infinity, zScale=Infinity]	false
+PPOSE	0	withScale:7f800000	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=Infinity, yScale=Infinity, zScale=Infinity]	-
+PPOSE	0	scaled3:7f800000	PartPose[x=NaN, y=0.0, z=NaN, xRot=0.0, yRot=0.0, zRot=0.0, xScale=Infinity, yScale=0.5, zScale=Infinity]	-
+PPOSE	1	translated	PartPose[x=0.25, y=-1.5, z=3.4028235E38, xRot=0.0, yRot=0.0, zRot=0.0, xScale=1.0, yScale=1.0, zScale=1.0]	-
+PPOSE	1	scaled:3f800000	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=1.0, yScale=1.0, zScale=1.0]	true
+PPOSE	1	withScale:3f800000	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=1.0, yScale=1.0, zScale=1.0]	-
+PPOSE	1	scaled3:3f800000	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=1.0, yScale=0.5, zScale=1.0]	-
+PPOSE	1	scaled:bf800000	PartPose[x=-0.0, y=-0.0, z=-0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=-1.0, yScale=-1.0, zScale=-1.0]	false
+PPOSE	1	withScale:bf800000	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=-1.0, yScale=-1.0, zScale=-1.0]	-
+PPOSE	1	scaled3:bf800000	PartPose[x=-0.0, y=0.0, z=-0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=-1.0, yScale=0.5, zScale=-1.0]	-
+PPOSE	1	scaled:0	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=0.0, yScale=0.0, zScale=0.0]	false
+PPOSE	1	withScale:0	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=0.0, yScale=0.0, zScale=0.0]	-
+PPOSE	1	scaled3:0	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=0.0, yScale=0.5, zScale=0.0]	-
+PPOSE	1	scaled:80000000	PartPose[x=-0.0, y=-0.0, z=-0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=-0.0, yScale=-0.0, zScale=-0.0]	false
+PPOSE	1	withScale:80000000	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=-0.0, yScale=-0.0, zScale=-0.0]	-
+PPOSE	1	scaled3:80000000	PartPose[x=-0.0, y=0.0, z=-0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=-0.0, yScale=0.5, zScale=-0.0]	-
+PPOSE	1	scaled:40000000	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=2.0, yScale=2.0, zScale=2.0]	false
+PPOSE	1	withScale:40000000	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=2.0, yScale=2.0, zScale=2.0]	-
+PPOSE	1	scaled3:40000000	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=2.0, yScale=0.5, zScale=2.0]	-
+PPOSE	1	scaled:3dcccccd	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=0.1, yScale=0.1, zScale=0.1]	false
+PPOSE	1	withScale:3dcccccd	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=0.1, yScale=0.1, zScale=0.1]	-
+PPOSE	1	scaled3:3dcccccd	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=0.1, yScale=0.5, zScale=0.1]	-
+PPOSE	1	scaled:7fc00000	PartPose[x=NaN, y=NaN, z=NaN, xRot=0.0, yRot=0.0, zRot=0.0, xScale=NaN, yScale=NaN, zScale=NaN]	false
+PPOSE	1	withScale:7fc00000	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=NaN, yScale=NaN, zScale=NaN]	-
+PPOSE	1	scaled3:7fc00000	PartPose[x=NaN, y=0.0, z=NaN, xRot=0.0, yRot=0.0, zRot=0.0, xScale=NaN, yScale=0.5, zScale=NaN]	-
+PPOSE	1	scaled:7f800000	PartPose[x=NaN, y=NaN, z=NaN, xRot=0.0, yRot=0.0, zRot=0.0, xScale=Infinity, yScale=Infinity, zScale=Infinity]	false
+PPOSE	1	withScale:7f800000	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=Infinity, yScale=Infinity, zScale=Infinity]	-
+PPOSE	1	scaled3:7f800000	PartPose[x=NaN, y=0.0, z=NaN, xRot=0.0, yRot=0.0, zRot=0.0, xScale=Infinity, yScale=0.5, zScale=Infinity]	-
+PPOSE	2	translated	PartPose[x=1.25, y=0.5, z=3.4028235E38, xRot=0.0, yRot=0.0, zRot=0.0, xScale=1.0, yScale=1.0, zScale=1.0]	-
+PPOSE	2	scaled:3f800000	PartPose[x=1.0, y=2.0, z=3.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=1.0, yScale=1.0, zScale=1.0]	true
+PPOSE	2	withScale:3f800000	PartPose[x=1.0, y=2.0, z=3.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=1.0, yScale=1.0, zScale=1.0]	-
+PPOSE	2	scaled3:3f800000	PartPose[x=1.0, y=1.0, z=3.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=1.0, yScale=0.5, zScale=1.0]	-
+PPOSE	2	scaled:bf800000	PartPose[x=-1.0, y=-2.0, z=-3.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=-1.0, yScale=-1.0, zScale=-1.0]	false
+PPOSE	2	withScale:bf800000	PartPose[x=1.0, y=2.0, z=3.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=-1.0, yScale=-1.0, zScale=-1.0]	-
+PPOSE	2	scaled3:bf800000	PartPose[x=-1.0, y=1.0, z=-3.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=-1.0, yScale=0.5, zScale=-1.0]	-
+PPOSE	2	scaled:0	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=0.0, yScale=0.0, zScale=0.0]	false
+PPOSE	2	withScale:0	PartPose[x=1.0, y=2.0, z=3.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=0.0, yScale=0.0, zScale=0.0]	-
+PPOSE	2	scaled3:0	PartPose[x=0.0, y=1.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=0.0, yScale=0.5, zScale=0.0]	-
+PPOSE	2	scaled:80000000	PartPose[x=-0.0, y=-0.0, z=-0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=-0.0, yScale=-0.0, zScale=-0.0]	false
+PPOSE	2	withScale:80000000	PartPose[x=1.0, y=2.0, z=3.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=-0.0, yScale=-0.0, zScale=-0.0]	-
+PPOSE	2	scaled3:80000000	PartPose[x=-0.0, y=1.0, z=-0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=-0.0, yScale=0.5, zScale=-0.0]	-
+PPOSE	2	scaled:40000000	PartPose[x=2.0, y=4.0, z=6.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=2.0, yScale=2.0, zScale=2.0]	false
+PPOSE	2	withScale:40000000	PartPose[x=1.0, y=2.0, z=3.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=2.0, yScale=2.0, zScale=2.0]	-
+PPOSE	2	scaled3:40000000	PartPose[x=2.0, y=1.0, z=6.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=2.0, yScale=0.5, zScale=2.0]	-
+PPOSE	2	scaled:3dcccccd	PartPose[x=0.1, y=0.2, z=0.3, xRot=0.0, yRot=0.0, zRot=0.0, xScale=0.1, yScale=0.1, zScale=0.1]	false
+PPOSE	2	withScale:3dcccccd	PartPose[x=1.0, y=2.0, z=3.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=0.1, yScale=0.1, zScale=0.1]	-
+PPOSE	2	scaled3:3dcccccd	PartPose[x=0.1, y=1.0, z=0.3, xRot=0.0, yRot=0.0, zRot=0.0, xScale=0.1, yScale=0.5, zScale=0.1]	-
+PPOSE	2	scaled:7fc00000	PartPose[x=NaN, y=NaN, z=NaN, xRot=0.0, yRot=0.0, zRot=0.0, xScale=NaN, yScale=NaN, zScale=NaN]	false
+PPOSE	2	withScale:7fc00000	PartPose[x=1.0, y=2.0, z=3.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=NaN, yScale=NaN, zScale=NaN]	-
+PPOSE	2	scaled3:7fc00000	PartPose[x=NaN, y=1.0, z=NaN, xRot=0.0, yRot=0.0, zRot=0.0, xScale=NaN, yScale=0.5, zScale=NaN]	-
+PPOSE	2	scaled:7f800000	PartPose[x=Infinity, y=Infinity, z=Infinity, xRot=0.0, yRot=0.0, zRot=0.0, xScale=Infinity, yScale=Infinity, zScale=Infinity]	false
+PPOSE	2	withScale:7f800000	PartPose[x=1.0, y=2.0, z=3.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=Infinity, yScale=Infinity, zScale=Infinity]	-
+PPOSE	2	scaled3:7f800000	PartPose[x=Infinity, y=1.0, z=Infinity, xRot=0.0, yRot=0.0, zRot=0.0, xScale=Infinity, yScale=0.5, zScale=Infinity]	-
+PPOSE	3	translated	PartPose[x=0.25, y=-1.5, z=3.4028235E38, xRot=0.5, yRot=-0.5, zRot=NaN, xScale=1.0, yScale=1.0, zScale=1.0]	-
+PPOSE	3	scaled:3f800000	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.5, yRot=-0.5, zRot=NaN, xScale=1.0, yScale=1.0, zScale=1.0]	true
+PPOSE	3	withScale:3f800000	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.5, yRot=-0.5, zRot=NaN, xScale=1.0, yScale=1.0, zScale=1.0]	-
+PPOSE	3	scaled3:3f800000	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.5, yRot=-0.5, zRot=NaN, xScale=1.0, yScale=0.5, zScale=1.0]	-
+PPOSE	3	scaled:bf800000	PartPose[x=-0.0, y=-0.0, z=-0.0, xRot=0.5, yRot=-0.5, zRot=NaN, xScale=-1.0, yScale=-1.0, zScale=-1.0]	false
+PPOSE	3	withScale:bf800000	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.5, yRot=-0.5, zRot=NaN, xScale=-1.0, yScale=-1.0, zScale=-1.0]	-
+PPOSE	3	scaled3:bf800000	PartPose[x=-0.0, y=0.0, z=-0.0, xRot=0.5, yRot=-0.5, zRot=NaN, xScale=-1.0, yScale=0.5, zScale=-1.0]	-
+PPOSE	3	scaled:0	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.5, yRot=-0.5, zRot=NaN, xScale=0.0, yScale=0.0, zScale=0.0]	false
+PPOSE	3	withScale:0	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.5, yRot=-0.5, zRot=NaN, xScale=0.0, yScale=0.0, zScale=0.0]	-
+PPOSE	3	scaled3:0	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.5, yRot=-0.5, zRot=NaN, xScale=0.0, yScale=0.5, zScale=0.0]	-
+PPOSE	3	scaled:80000000	PartPose[x=-0.0, y=-0.0, z=-0.0, xRot=0.5, yRot=-0.5, zRot=NaN, xScale=-0.0, yScale=-0.0, zScale=-0.0]	false
+PPOSE	3	withScale:80000000	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.5, yRot=-0.5, zRot=NaN, xScale=-0.0, yScale=-0.0, zScale=-0.0]	-
+PPOSE	3	scaled3:80000000	PartPose[x=-0.0, y=0.0, z=-0.0, xRot=0.5, yRot=-0.5, zRot=NaN, xScale=-0.0, yScale=0.5, zScale=-0.0]	-
+PPOSE	3	scaled:40000000	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.5, yRot=-0.5, zRot=NaN, xScale=2.0, yScale=2.0, zScale=2.0]	false
+PPOSE	3	withScale:40000000	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.5, yRot=-0.5, zRot=NaN, xScale=2.0, yScale=2.0, zScale=2.0]	-
+PPOSE	3	scaled3:40000000	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.5, yRot=-0.5, zRot=NaN, xScale=2.0, yScale=0.5, zScale=2.0]	-
+PPOSE	3	scaled:3dcccccd	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.5, yRot=-0.5, zRot=NaN, xScale=0.1, yScale=0.1, zScale=0.1]	false
+PPOSE	3	withScale:3dcccccd	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.5, yRot=-0.5, zRot=NaN, xScale=0.1, yScale=0.1, zScale=0.1]	-
+PPOSE	3	scaled3:3dcccccd	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.5, yRot=-0.5, zRot=NaN, xScale=0.1, yScale=0.5, zScale=0.1]	-
+PPOSE	3	scaled:7fc00000	PartPose[x=NaN, y=NaN, z=NaN, xRot=0.5, yRot=-0.5, zRot=NaN, xScale=NaN, yScale=NaN, zScale=NaN]	false
+PPOSE	3	withScale:7fc00000	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.5, yRot=-0.5, zRot=NaN, xScale=NaN, yScale=NaN, zScale=NaN]	-
+PPOSE	3	scaled3:7fc00000	PartPose[x=NaN, y=0.0, z=NaN, xRot=0.5, yRot=-0.5, zRot=NaN, xScale=NaN, yScale=0.5, zScale=NaN]	-
+PPOSE	3	scaled:7f800000	PartPose[x=NaN, y=NaN, z=NaN, xRot=0.5, yRot=-0.5, zRot=NaN, xScale=Infinity, yScale=Infinity, zScale=Infinity]	false
+PPOSE	3	withScale:7f800000	PartPose[x=0.0, y=0.0, z=0.0, xRot=0.5, yRot=-0.5, zRot=NaN, xScale=Infinity, yScale=Infinity, zScale=Infinity]	-
+PPOSE	3	scaled3:7f800000	PartPose[x=NaN, y=0.0, z=NaN, xRot=0.5, yRot=-0.5, zRot=NaN, xScale=Infinity, yScale=0.5, zScale=Infinity]	-
+PPOSE	4	translated	PartPose[x=0.25, y=-1.5, z=3.4028235E38, xRot=0.0, yRot=0.0, zRot=0.0, xScale=1.0, yScale=1.0, zScale=1.0]	-
+PPOSE	4	scaled:3f800000	PartPose[x=-0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=1.0, yScale=1.0, zScale=1.0]	true
+PPOSE	4	withScale:3f800000	PartPose[x=-0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=1.0, yScale=1.0, zScale=1.0]	-
+PPOSE	4	scaled3:3f800000	PartPose[x=-0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=1.0, yScale=0.5, zScale=1.0]	-
+PPOSE	4	scaled:bf800000	PartPose[x=0.0, y=-0.0, z=-0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=-1.0, yScale=-1.0, zScale=-1.0]	false
+PPOSE	4	withScale:bf800000	PartPose[x=-0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=-1.0, yScale=-1.0, zScale=-1.0]	-
+PPOSE	4	scaled3:bf800000	PartPose[x=0.0, y=0.0, z=-0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=-1.0, yScale=0.5, zScale=-1.0]	-
+PPOSE	4	scaled:0	PartPose[x=-0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=0.0, yScale=0.0, zScale=0.0]	false
+PPOSE	4	withScale:0	PartPose[x=-0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=0.0, yScale=0.0, zScale=0.0]	-
+PPOSE	4	scaled3:0	PartPose[x=-0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=0.0, yScale=0.5, zScale=0.0]	-
+PPOSE	4	scaled:80000000	PartPose[x=0.0, y=-0.0, z=-0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=-0.0, yScale=-0.0, zScale=-0.0]	false
+PPOSE	4	withScale:80000000	PartPose[x=-0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=-0.0, yScale=-0.0, zScale=-0.0]	-
+PPOSE	4	scaled3:80000000	PartPose[x=0.0, y=0.0, z=-0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=-0.0, yScale=0.5, zScale=-0.0]	-
+PPOSE	4	scaled:40000000	PartPose[x=-0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=2.0, yScale=2.0, zScale=2.0]	false
+PPOSE	4	withScale:40000000	PartPose[x=-0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=2.0, yScale=2.0, zScale=2.0]	-
+PPOSE	4	scaled3:40000000	PartPose[x=-0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=2.0, yScale=0.5, zScale=2.0]	-
+PPOSE	4	scaled:3dcccccd	PartPose[x=-0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=0.1, yScale=0.1, zScale=0.1]	false
+PPOSE	4	withScale:3dcccccd	PartPose[x=-0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=0.1, yScale=0.1, zScale=0.1]	-
+PPOSE	4	scaled3:3dcccccd	PartPose[x=-0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=0.1, yScale=0.5, zScale=0.1]	-
+PPOSE	4	scaled:7fc00000	PartPose[x=NaN, y=NaN, z=NaN, xRot=0.0, yRot=0.0, zRot=0.0, xScale=NaN, yScale=NaN, zScale=NaN]	false
+PPOSE	4	withScale:7fc00000	PartPose[x=-0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=NaN, yScale=NaN, zScale=NaN]	-
+PPOSE	4	scaled3:7fc00000	PartPose[x=NaN, y=0.0, z=NaN, xRot=0.0, yRot=0.0, zRot=0.0, xScale=NaN, yScale=0.5, zScale=NaN]	-
+PPOSE	4	scaled:7f800000	PartPose[x=NaN, y=NaN, z=NaN, xRot=0.0, yRot=0.0, zRot=0.0, xScale=Infinity, yScale=Infinity, zScale=Infinity]	false
+PPOSE	4	withScale:7f800000	PartPose[x=-0.0, y=0.0, z=0.0, xRot=0.0, yRot=0.0, zRot=0.0, xScale=Infinity, yScale=Infinity, zScale=Infinity]	-
+PPOSE	4	scaled3:7f800000	PartPose[x=NaN, y=0.0, z=NaN, xRot=0.0, yRot=0.0, zRot=0.0, xScale=Infinity, yScale=0.5, zScale=Infinity]	-
+PPOSE	5	translated	PartPose[x=1.35, y=-3.7, z=3.4028235E38, xRot=0.1, yRot=0.2, zRot=0.3, xScale=2.0, yScale=0.5, zScale=-1.0]	-
+PPOSE	5	scaled:3f800000	PartPose[x=1.1, y=-2.2, z=3.3, xRot=0.1, yRot=0.2, zRot=0.3, xScale=2.0, yScale=0.5, zScale=-1.0]	true
+PPOSE	5	withScale:3f800000	PartPose[x=1.1, y=-2.2, z=3.3, xRot=0.1, yRot=0.2, zRot=0.3, xScale=1.0, yScale=1.0, zScale=1.0]	-
+PPOSE	5	scaled3:3f800000	PartPose[x=1.1, y=-1.1, z=3.3, xRot=0.1, yRot=0.2, zRot=0.3, xScale=2.0, yScale=0.25, zScale=-1.0]	-
+PPOSE	5	scaled:bf800000	PartPose[x=-1.1, y=2.2, z=-3.3, xRot=0.1, yRot=0.2, zRot=0.3, xScale=-2.0, yScale=-0.5, zScale=1.0]	false
+PPOSE	5	withScale:bf800000	PartPose[x=1.1, y=-2.2, z=3.3, xRot=0.1, yRot=0.2, zRot=0.3, xScale=-1.0, yScale=-1.0, zScale=-1.0]	-
+PPOSE	5	scaled3:bf800000	PartPose[x=-1.1, y=-1.1, z=-3.3, xRot=0.1, yRot=0.2, zRot=0.3, xScale=-2.0, yScale=0.25, zScale=1.0]	-
+PPOSE	5	scaled:0	PartPose[x=0.0, y=-0.0, z=0.0, xRot=0.1, yRot=0.2, zRot=0.3, xScale=0.0, yScale=0.0, zScale=-0.0]	false
+PPOSE	5	withScale:0	PartPose[x=1.1, y=-2.2, z=3.3, xRot=0.1, yRot=0.2, zRot=0.3, xScale=0.0, yScale=0.0, zScale=0.0]	-
+PPOSE	5	scaled3:0	PartPose[x=0.0, y=-1.1, z=0.0, xRot=0.1, yRot=0.2, zRot=0.3, xScale=0.0, yScale=0.25, zScale=-0.0]	-
+PPOSE	5	scaled:80000000	PartPose[x=-0.0, y=0.0, z=-0.0, xRot=0.1, yRot=0.2, zRot=0.3, xScale=-0.0, yScale=-0.0, zScale=0.0]	false
+PPOSE	5	withScale:80000000	PartPose[x=1.1, y=-2.2, z=3.3, xRot=0.1, yRot=0.2, zRot=0.3, xScale=-0.0, yScale=-0.0, zScale=-0.0]	-
+PPOSE	5	scaled3:80000000	PartPose[x=-0.0, y=-1.1, z=-0.0, xRot=0.1, yRot=0.2, zRot=0.3, xScale=-0.0, yScale=0.25, zScale=0.0]	-
+PPOSE	5	scaled:40000000	PartPose[x=2.2, y=-4.4, z=6.6, xRot=0.1, yRot=0.2, zRot=0.3, xScale=4.0, yScale=1.0, zScale=-2.0]	false
+PPOSE	5	withScale:40000000	PartPose[x=1.1, y=-2.2, z=3.3, xRot=0.1, yRot=0.2, zRot=0.3, xScale=2.0, yScale=2.0, zScale=2.0]	-
+PPOSE	5	scaled3:40000000	PartPose[x=2.2, y=-1.1, z=6.6, xRot=0.1, yRot=0.2, zRot=0.3, xScale=4.0, yScale=0.25, zScale=-2.0]	-
+PPOSE	5	scaled:3dcccccd	PartPose[x=0.11000001, y=-0.22000001, z=0.33, xRot=0.1, yRot=0.2, zRot=0.3, xScale=0.2, yScale=0.05, zScale=-0.1]	false
+PPOSE	5	withScale:3dcccccd	PartPose[x=1.1, y=-2.2, z=3.3, xRot=0.1, yRot=0.2, zRot=0.3, xScale=0.1, yScale=0.1, zScale=0.1]	-
+PPOSE	5	scaled3:3dcccccd	PartPose[x=0.11000001, y=-1.1, z=0.33, xRot=0.1, yRot=0.2, zRot=0.3, xScale=0.2, yScale=0.25, zScale=-0.1]	-
+PPOSE	5	scaled:7fc00000	PartPose[x=NaN, y=NaN, z=NaN, xRot=0.1, yRot=0.2, zRot=0.3, xScale=NaN, yScale=NaN, zScale=NaN]	false
+PPOSE	5	withScale:7fc00000	PartPose[x=1.1, y=-2.2, z=3.3, xRot=0.1, yRot=0.2, zRot=0.3, xScale=NaN, yScale=NaN, zScale=NaN]	-
+PPOSE	5	scaled3:7fc00000	PartPose[x=NaN, y=-1.1, z=NaN, xRot=0.1, yRot=0.2, zRot=0.3, xScale=NaN, yScale=0.25, zScale=NaN]	-
+PPOSE	5	scaled:7f800000	PartPose[x=Infinity, y=-Infinity, z=Infinity, xRot=0.1, yRot=0.2, zRot=0.3, xScale=Infinity, yScale=Infinity, zScale=-Infinity]	false
+PPOSE	5	withScale:7f800000	PartPose[x=1.1, y=-2.2, z=3.3, xRot=0.1, yRot=0.2, zRot=0.3, xScale=Infinity, yScale=Infinity, zScale=Infinity]	-
+PPOSE	5	scaled3:7f800000	PartPose[x=Infinity, y=-1.1, z=Infinity, xRot=0.1, yRot=0.2, zRot=0.3, xScale=Infinity, yScale=0.25, zScale=-Infinity]	-
+PPOSE	6	translated	PartPose[x=3.4028235E38, y=-1.5, z=-Infinity, xRot=1.0E-30, yRot=1.0E30, zRot=7.0, xScale=NaN, yScale=0.0, zScale=-0.0]	-
+PPOSE	6	scaled:3f800000	PartPose[x=3.4028235E38, y=1.4E-45, z=-Infinity, xRot=1.0E-30, yRot=1.0E30, zRot=7.0, xScale=NaN, yScale=0.0, zScale=-0.0]	true
+PPOSE	6	withScale:3f800000	PartPose[x=3.4028235E38, y=1.4E-45, z=-Infinity, xRot=1.0E-30, yRot=1.0E30, zRot=7.0, xScale=1.0, yScale=1.0, zScale=1.0]	-
+PPOSE	6	scaled3:3f800000	PartPose[x=3.4028235E38, y=0.0, z=-Infinity, xRot=1.0E-30, yRot=1.0E30, zRot=7.0, xScale=NaN, yScale=0.0, zScale=-0.0]	-
+PPOSE	6	scaled:bf800000	PartPose[x=-3.4028235E38, y=-1.4E-45, z=Infinity, xRot=1.0E-30, yRot=1.0E30, zRot=7.0, xScale=NaN, yScale=-0.0, zScale=0.0]	false
+PPOSE	6	withScale:bf800000	PartPose[x=3.4028235E38, y=1.4E-45, z=-Infinity, xRot=1.0E-30, yRot=1.0E30, zRot=7.0, xScale=-1.0, yScale=-1.0, zScale=-1.0]	-
+PPOSE	6	scaled3:bf800000	PartPose[x=-3.4028235E38, y=0.0, z=Infinity, xRot=1.0E-30, yRot=1.0E30, zRot=7.0, xScale=NaN, yScale=0.0, zScale=0.0]	-
+PPOSE	6	scaled:0	PartPose[x=0.0, y=0.0, z=NaN, xRot=1.0E-30, yRot=1.0E30, zRot=7.0, xScale=NaN, yScale=0.0, zScale=-0.0]	false
+PPOSE	6	withScale:0	PartPose[x=3.4028235E38, y=1.4E-45, z=-Infinity, xRot=1.0E-30, yRot=1.0E30, zRot=7.0, xScale=0.0, yScale=0.0, zScale=0.0]	-
+PPOSE	6	scaled3:0	PartPose[x=0.0, y=0.0, z=NaN, xRot=1.0E-30, yRot=1.0E30, zRot=7.0, xScale=NaN, yScale=0.0, zScale=-0.0]	-
+PPOSE	6	scaled:80000000	PartPose[x=-0.0, y=-0.0, z=NaN, xRot=1.0E-30, yRot=1.0E30, zRot=7.0, xScale=NaN, yScale=-0.0, zScale=0.0]	false
+PPOSE	6	withScale:80000000	PartPose[x=3.4028235E38, y=1.4E-45, z=-Infinity, xRot=1.0E-30, yRot=1.0E30, zRot=7.0, xScale=-0.0, yScale=-0.0, zScale=-0.0]	-
+PPOSE	6	scaled3:80000000	PartPose[x=-0.0, y=0.0, z=NaN, xRot=1.0E-30, yRot=1.0E30, zRot=7.0, xScale=NaN, yScale=0.0, zScale=0.0]	-
+PPOSE	6	scaled:40000000	PartPose[x=Infinity, y=2.8E-45, z=-Infinity, xRot=1.0E-30, yRot=1.0E30, zRot=7.0, xScale=NaN, yScale=0.0, zScale=-0.0]	false
+PPOSE	6	withScale:40000000	PartPose[x=3.4028235E38, y=1.4E-45, z=-Infinity, xRot=1.0E-30, yRot=1.0E30, zRot=7.0, xScale=2.0, yScale=2.0, zScale=2.0]	-
+PPOSE	6	scaled3:40000000	PartPose[x=Infinity, y=0.0, z=-Infinity, xRot=1.0E-30, yRot=1.0E30, zRot=7.0, xScale=NaN, yScale=0.0, zScale=-0.0]	-
+PPOSE	6	scaled:3dcccccd	PartPose[x=3.4028235E37, y=0.0, z=-Infinity, xRot=1.0E-30, yRot=1.0E30, zRot=7.0, xScale=NaN, yScale=0.0, zScale=-0.0]	false
+PPOSE	6	withScale:3dcccccd	PartPose[x=3.4028235E38, y=1.4E-45, z=-Infinity, xRot=1.0E-30, yRot=1.0E30, zRot=7.0, xScale=0.1, yScale=0.1, zScale=0.1]	-
+PPOSE	6	scaled3:3dcccccd	PartPose[x=3.4028235E37, y=0.0, z=-Infinity, xRot=1.0E-30, yRot=1.0E30, zRot=7.0, xScale=NaN, yScale=0.0, zScale=-0.0]	-
+PPOSE	6	scaled:7fc00000	PartPose[x=NaN, y=NaN, z=NaN, xRot=1.0E-30, yRot=1.0E30, zRot=7.0, xScale=NaN, yScale=NaN, zScale=NaN]	false
+PPOSE	6	withScale:7fc00000	PartPose[x=3.4028235E38, y=1.4E-45, z=-Infinity, xRot=1.0E-30, yRot=1.0E30, zRot=7.0, xScale=NaN, yScale=NaN, zScale=NaN]	-
+PPOSE	6	scaled3:7fc00000	PartPose[x=NaN, y=0.0, z=NaN, xRot=1.0E-30, yRot=1.0E30, zRot=7.0, xScale=NaN, yScale=0.0, zScale=NaN]	-
+PPOSE	6	scaled:7f800000	PartPose[x=Infinity, y=Infinity, z=-Infinity, xRot=1.0E-30, yRot=1.0E30, zRot=7.0, xScale=NaN, yScale=NaN, zScale=NaN]	false
+PPOSE	6	withScale:7f800000	PartPose[x=3.4028235E38, y=1.4E-45, z=-Infinity, xRot=1.0E-30, yRot=1.0E30, zRot=7.0, xScale=Infinity, yScale=Infinity, zScale=Infinity]	-
+PPOSE	6	scaled3:7f800000	PartPose[x=Infinity, y=0.0, z=-Infinity, xRot=1.0E-30, yRot=1.0E30, zRot=7.0, xScale=NaN, yScale=0.0, zScale=NaN]	-
+PPOSEMAKE	offset	PartPose[x=1.5, y=-0.0, z=NaN, xRot=0.0, yRot=0.0, zRot=0.0, xScale=1.0, yScale=1.0, zScale=1.0]
+PPOSEMAKE	rotation	PartPose[x=0.0, y=0.0, z=0.0, xRot=1.5, yRot=-0.0, zRot=NaN, xScale=1.0, yScale=1.0, zScale=1.0]
+PPOSEMAKE	offsetAndRotation	PartPose[x=1.0, y=2.0, z=3.0, xRot=4.0, yRot=5.0, zRot=6.0, xScale=1.0, yScale=1.0, zScale=1.0]
+REC	HitboxRenderState	0	HitboxRenderState[x0=0.0, y0=0.0, z0=0.0, x1=1.0, y1=1.0, z1=1.0, offsetX=0.0, offsetY=0.0, offsetZ=0.0, red=1.0, green=0.5, blue=0.0]	-831520768
+RECEQ	HitboxRenderState	0	11000
+REC	HitboxRenderState	1	HitboxRenderState[x0=0.0, y0=0.0, z0=0.0, x1=1.0, y1=1.0, z1=1.0, offsetX=0.0, offsetY=0.0, offsetZ=0.0, red=1.0, green=0.5, blue=0.0]	-831520768
+RECEQ	HitboxRenderState	1	11000
+REC	HitboxRenderState	2	HitboxRenderState[x0=-0.0, y0=0.0, z0=0.0, x1=1.0, y1=1.0, z1=1.0, offsetX=0.0, offsetY=0.0, offsetZ=0.0, red=1.0, green=0.5, blue=0.0]	1315962880
+RECEQ	HitboxRenderState	2	00100
+REC	HitboxRenderState	3	HitboxRenderState[x0=0.1, y0=-2.5, z0=1.0E300, x1=NaN, y1=4.9E-324, z1=-Infinity, offsetX=0.25, offsetY=-0.0, offsetZ=NaN, red=0.1, green=1.0E-40, blue=3.4028235E38]	965930598
+RECEQ	HitboxRenderState	3	00011
+REC	HitboxRenderState	4	HitboxRenderState[x0=0.1, y0=-2.5, z0=1.0E300, x1=NaN, y1=4.9E-324, z1=-Infinity, offsetX=0.25, offsetY=-0.0, offsetZ=NaN, red=0.1, green=1.0E-40, blue=3.4028235E38]	965930598
+RECEQ	HitboxRenderState	4	00011
+REC	DepthStencilState	0	DepthStencilState[depthTest=GREATER_THAN_OR_EQUAL, writeDepth=true, depthBiasScaleFactor=0.0, depthBiasConstant=0.0]	-
+RECEQ	DepthStencilState	0	110000
+REC	DepthStencilState	1	DepthStencilState[depthTest=GREATER_THAN_OR_EQUAL, writeDepth=true, depthBiasScaleFactor=0.0, depthBiasConstant=0.0]	-
+RECEQ	DepthStencilState	1	110000
+REC	DepthStencilState	2	DepthStencilState[depthTest=GREATER_THAN_OR_EQUAL, writeDepth=true, depthBiasScaleFactor=0.0, depthBiasConstant=-0.0]	-
+RECEQ	DepthStencilState	2	001000
+REC	DepthStencilState	3	DepthStencilState[depthTest=ALWAYS_PASS, writeDepth=false, depthBiasScaleFactor=NaN, depthBiasConstant=1.5]	-
+RECEQ	DepthStencilState	3	000110
+REC	DepthStencilState	4	DepthStencilState[depthTest=ALWAYS_PASS, writeDepth=false, depthBiasScaleFactor=NaN, depthBiasConstant=1.5]	-
+RECEQ	DepthStencilState	4	000110
+REC	DepthStencilState	5	DepthStencilState[depthTest=NEVER_PASS, writeDepth=true, depthBiasScaleFactor=-2.0, depthBiasConstant=3.4028235E38]	-
+RECEQ	DepthStencilState	5	000001
+DSDEFAULT	GREATER_THAN_OR_EQUAL	true	0	0
+REC	EntitySpawnRequest	0	EntitySpawnRequest[reason=NATURAL, ignoreChecks=false]	-
+RECEQ	EntitySpawnRequest	0	11000
+REC	EntitySpawnRequest	1	EntitySpawnRequest[reason=NATURAL, ignoreChecks=false]	-
+RECEQ	EntitySpawnRequest	1	11000
+REC	EntitySpawnRequest	2	EntitySpawnRequest[reason=NATURAL, ignoreChecks=true]	-
+RECEQ	EntitySpawnRequest	2	00100
+REC	EntitySpawnRequest	3	EntitySpawnRequest[reason=SPAWNER, ignoreChecks=false]	-
+RECEQ	EntitySpawnRequest	3	00010
+REC	EntitySpawnRequest	4	EntitySpawnRequest[reason=DIMENSION_TRAVEL, ignoreChecks=true]	-
+RECEQ	EntitySpawnRequest	4	00001
+REC	BlendEquation	0	BlendEquation[sourceFactor=ONE_MINUS_SRC_ALPHA, destFactor=ONE, op=ADD]	-
+RECEQ	BlendEquation	0	11000
+REC	BlendEquation	1	BlendEquation[sourceFactor=ONE_MINUS_SRC_ALPHA, destFactor=ONE, op=ADD]	-
+RECEQ	BlendEquation	1	11000
+REC	BlendEquation	2	BlendEquation[sourceFactor=ONE, destFactor=ONE_MINUS_SRC_ALPHA, op=ADD]	-
+RECEQ	BlendEquation	2	00100
+REC	BlendEquation	3	BlendEquation[sourceFactor=ONE_MINUS_SRC_ALPHA, destFactor=ONE, op=MAX]	-
+RECEQ	BlendEquation	3	00010
+REC	BlendEquation	4	BlendEquation[sourceFactor=CONSTANT_ALPHA, destFactor=ZERO, op=REVERSE_SUBTRACT]	-
+RECEQ	BlendEquation	4	00001
+REC	DecoratedPotPattern	0	DecoratedPotPattern[assetId=minecraft:blank]	166251847
+RECEQ	DecoratedPotPattern	0	1100
+REC	DecoratedPotPattern	1	DecoratedPotPattern[assetId=minecraft:blank]	166251847
+RECEQ	DecoratedPotPattern	1	1100
+REC	DecoratedPotPattern	2	DecoratedPotPattern[assetId=mod:a/b]	3451762
+RECEQ	DecoratedPotPattern	2	0010
+REC	DecoratedPotPattern	3	DecoratedPotPattern[assetId=minecraft:angler]	-1340744206
+RECEQ	DecoratedPotPattern	3	0001
+REC	ModelLayerLocation	0	minecraft:player#main	1755187557
+RECEQ	ModelLayerLocation	0	11000
+REC	ModelLayerLocation	1	minecraft:player#main	1755187557
+RECEQ	ModelLayerLocation	1	11000
+REC	ModelLayerLocation	2	minecraft:player#outer	1857954855
+RECEQ	ModelLayerLocation	2	00100
+REC	ModelLayerLocation	3	minecraft:player#MAIN	1754202469
+RECEQ	ModelLayerLocation	3	00010
+REC	ModelLayerLocation	4	mod:x#	104070410
+RECEQ	ModelLayerLocation	4	00001
+REC	Atom	0	<a>	97
+RECEQ	Atom	0	11000
+REC	Atom	1	<a>	97
+RECEQ	Atom	1	11000
+REC	Atom	2	<>	0
+RECEQ	Atom	2	00100
+REC	Atom	3	<\u00e9 \u4e2d>	244918
+RECEQ	Atom	3	00010
+REC	Atom	4	<b>	98
+RECEQ	Atom	4	00001
+REC	LevelResource	0	/players/advancements	-1628294960
+RECEQ	LevelResource	0	100000000000000
+REC	LevelResource	1	/players/stats	1427357186
+RECEQ	LevelResource	1	010000000000000
+REC	LevelResource	2	/players/data	599768551
+RECEQ	LevelResource	2	001000000000000
+REC	LevelResource	3	/players	-493567566
+RECEQ	LevelResource	3	000100000000000
+REC	LevelResource	4	/level.dat	-1657362899
+RECEQ	LevelResource	4	000010000000010
+REC	LevelResource	5	/level.dat_old	941270293
+RECEQ	LevelResource	5	000001000000000
+REC	LevelResource	6	/icon.png	-739052748
+RECEQ	LevelResource	6	000000100000000
+REC	LevelResource	7	/session.lock	-731731581
+RECEQ	LevelResource	7	000000010000000
+REC	LevelResource	8	/generated	286955919
+RECEQ	LevelResource	8	000000001000000
+REC	LevelResource	9	/datapacks	-348247024
+RECEQ	LevelResource	9	000000000100000
+REC	LevelResource	10	/resourcepacks/resources.zip	-107994827
+RECEQ	LevelResource	10	000000000010000
+REC	LevelResource	11	/data	3076010
+RECEQ	LevelResource	11	000000000001000
+REC	LevelResource	12	/.	46
+RECEQ	LevelResource	12	000000000000100
+REC	LevelResource	13	/level.dat	-1657362899
+RECEQ	LevelResource	13	000010000000010
+REC	LevelResource	14	/	0
+RECEQ	LevelResource	14	000000000000001
+LEVELRES	players/advancements
+LEVELRES	players/stats
+LEVELRES	players/data
+LEVELRES	players
+LEVELRES	level.dat
+LEVELRES	level.dat_old
+LEVELRES	icon.png
+LEVELRES	session.lock
+LEVELRES	generated
+LEVELRES	datapacks
+LEVELRES	resourcepacks/resources.zip
+LEVELRES	data
+LEVELRES	.
+LEVELRES	level.dat
+LEVELRES	
+REC	WidgetSprites	0	WidgetSprites[enabled=minecraft:a, disabled=minecraft:a, enabledFocused=minecraft:a, disabledFocused=minecraft:a]	680948992
+RECEQ	WidgetSprites	0	10001
+REC	WidgetSprites	1	WidgetSprites[enabled=minecraft:a, disabled=minecraft:a, enabledFocused=minecraft:b, disabledFocused=minecraft:b]	680949024
+RECEQ	WidgetSprites	1	01000
+REC	WidgetSprites	2	WidgetSprites[enabled=minecraft:a, disabled=minecraft:b, enabledFocused=minecraft:c, disabledFocused=minecraft:b]	680950016
+RECEQ	WidgetSprites	2	00100
+REC	WidgetSprites	3	WidgetSprites[enabled=minecraft:a, disabled=minecraft:b, enabledFocused=minecraft:c, disabledFocused=minecraft:d]	680950018
+RECEQ	WidgetSprites	3	00010
+REC	WidgetSprites	4	WidgetSprites[enabled=minecraft:a, disabled=minecraft:a, enabledFocused=minecraft:a, disabledFocused=minecraft:a]	680948992
+RECEQ	WidgetSprites	4	10001
+WIDGET	0	false	false	minecraft:a
+WIDGET	0	false	true	minecraft:a
+WIDGET	0	true	false	minecraft:a
+WIDGET	0	true	true	minecraft:a
+WIDGET	1	false	false	minecraft:a
+WIDGET	1	false	true	minecraft:b
+WIDGET	1	true	false	minecraft:a
+WIDGET	1	true	true	minecraft:b
+WIDGET	2	false	false	minecraft:b
+WIDGET	2	false	true	minecraft:b
+WIDGET	2	true	false	minecraft:a
+WIDGET	2	true	true	minecraft:c
+WIDGET	3	false	false	minecraft:b
+WIDGET	3	false	true	minecraft:d
+WIDGET	3	true	false	minecraft:a
+WIDGET	3	true	true	minecraft:c
+WIDGET	4	false	false	minecraft:a
+WIDGET	4	false	true	minecraft:a
+WIDGET	4	true	false	minecraft:a
+WIDGET	4	true	true	minecraft:a
+REC	ParticleRenderType	0	ParticleRenderType[name=SINGLE_QUADS, shorthand=SQ]	-660137015
+RECEQ	ParticleRenderType	0	10001
+REC	ParticleRenderType	1	ParticleRenderType[name=ITEM_PICKUP, shorthand=IP]	301674751
+RECEQ	ParticleRenderType	1	01000
+REC	ParticleRenderType	2	ParticleRenderType[name=ELDER_GUARDIANS, shorthand=EG]	1050906997
+RECEQ	ParticleRenderType	2	00100
+REC	ParticleRenderType	3	ParticleRenderType[name=NO_RENDER, shorthand=NR]	670492272
+RECEQ	ParticleRenderType	3	00010
+REC	ParticleRenderType	4	ParticleRenderType[name=SINGLE_QUADS, shorthand=SQ]	-660137015
+RECEQ	ParticleRenderType	4	10001
+REC	DisplayData	0	DisplayData[width=800, height=600, fullscreenWidth=OptionalInt.empty, fullscreenHeight=OptionalInt.empty, isFullscreen=false]	756692637
+RECEQ	DisplayData	0	11000
+REC	DisplayData	1	DisplayData[width=800, height=600, fullscreenWidth=OptionalInt.empty, fullscreenHeight=OptionalInt.empty, isFullscreen=false]	756692637
+RECEQ	DisplayData	1	11000
+REC	DisplayData	2	DisplayData[width=1, height=2, fullscreenWidth=OptionalInt[3], fullscreenHeight=OptionalInt[4], isFullscreen=true]	987341
+RECEQ	DisplayData	2	00100
+REC	DisplayData	3	DisplayData[width=1, height=2, fullscreenWidth=OptionalInt[0], fullscreenHeight=OptionalInt.empty, isFullscreen=false]	984340
+RECEQ	DisplayData	3	00010
+REC	DisplayData	4	DisplayData[width=-2147483648, height=2147483647, fullscreenWidth=OptionalInt[-2147483648], fullscreenHeight=OptionalInt[-1], isFullscreen=true]	2147455057
+RECEQ	DisplayData	4	00001
+DISPLAY	0	DisplayData[width=-5, height=7, fullscreenWidth=OptionalInt.empty, fullscreenHeight=OptionalInt.empty, isFullscreen=false]	DisplayData[width=800, height=600, fullscreenWidth=OptionalInt.empty, fullscreenHeight=OptionalInt.empty, isFullscreen=true]
+DISPLAY	1	DisplayData[width=-5, height=7, fullscreenWidth=OptionalInt.empty, fullscreenHeight=OptionalInt.empty, isFullscreen=false]	DisplayData[width=800, height=600, fullscreenWidth=OptionalInt.empty, fullscreenHeight=OptionalInt.empty, isFullscreen=true]
+DISPLAY	2	DisplayData[width=-5, height=7, fullscreenWidth=OptionalInt[3], fullscreenHeight=OptionalInt[4], isFullscreen=true]	DisplayData[width=1, height=2, fullscreenWidth=OptionalInt[3], fullscreenHeight=OptionalInt[4], isFullscreen=false]
+DISPLAY	3	DisplayData[width=-5, height=7, fullscreenWidth=OptionalInt[0], fullscreenHeight=OptionalInt.empty, isFullscreen=false]	DisplayData[width=1, height=2, fullscreenWidth=OptionalInt[0], fullscreenHeight=OptionalInt.empty, isFullscreen=true]
+DISPLAY	4	DisplayData[width=-5, height=7, fullscreenWidth=OptionalInt[-2147483648], fullscreenHeight=OptionalInt[-1], isFullscreen=true]	DisplayData[width=-2147483648, height=2147483647, fullscreenWidth=OptionalInt[-2147483648], fullscreenHeight=OptionalInt[-1], isFullscreen=false]

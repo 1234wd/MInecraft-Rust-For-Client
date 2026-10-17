@@ -20,12 +20,15 @@ use small_probe::*;
 mod a_exceptions;
 #[path = "session22/b_records.rs"]
 mod b_records;
+#[path = "session22/c_records.rs"]
+mod c_records;
 
 /// The source of every module in this target, for the guard's `rows("...")` scan.
 const SOURCES: &[&str] = &[
     include_str!("session22.rs"),
     include_str!("session22/a_exceptions.rs"),
     include_str!("session22/b_records.rs"),
+    include_str!("session22/c_records.rs"),
 ];
 
 #[test]
