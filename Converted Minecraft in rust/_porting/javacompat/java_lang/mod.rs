@@ -649,6 +649,101 @@ pub fn min_i64(a: i64, b: i64) -> i64 {
         b
     }
 }
+
+// ---------------------------------------------------------------------------
+// Session 22: signum, String#compareTo, Math.round(float)
+//
+// Each is checked against JDK 25 by the `JLANG` group of `_porting/test-data/small_probe.txt`
+// (`_porting/tests/session22.rs`).
+// ---------------------------------------------------------------------------
+
+/// Port of `Math.signum(double)`: `±1.0`, except that both zeros and NaN come back UNCHANGED.
+///
+/// Rust's `f64::signum` returns `1.0` for `+0.0` and `-1.0` for `-0.0`, which is the trap: Java
+/// returns the zero itself (sign included), and `SmoothDouble` multiplies by the result.
+#[inline]
+pub fn signum_f64(d: f64) -> f64 {
+    if d == 0.0 || d.is_nan() {
+        d
+    } else {
+        1.0f64.copysign(d)
+    }
+}
+
+/// Port of `Math.signum(float)`; the same rule as [`signum_f64`].
+#[inline]
+pub fn signum_f32(f: f32) -> f32 {
+    if f == 0.0 || f.is_nan() {
+        f
+    } else {
+        1.0f32.copysign(f)
+    }
+}
+
+/// Port of `String#compareTo(String)`, returning Java's exact `int`.
+///
+/// The JDK specifies the value, not just its sign: at the first differing index it is
+/// `this.charAt(k) - other.charAt(k)` over UTF-16 code units, and if one string is a prefix of
+/// the other it is `this.length() - other.length()`. Callers such as `ResultField#compareTo`
+/// return it unchanged, so the magnitude is observable.
+pub fn string_compare_to(a: &str, b: &str) -> i32 {
+    let mut ua = a.encode_utf16();
+    let mut ub = b.encode_utf16();
+    loop {
+        match (ua.next(), ub.next()) {
+            (Some(x), Some(y)) => {
+                if x != y {
+                    return x as i32 - y as i32;
+                }
+            }
+            _ => break,
+        }
+    }
+    a.encode_utf16().count() as i32 - b.encode_utf16().count() as i32
+}
+
+/// Port of `Math.round(float)`: the nearest `int`, ties toward positive infinity, NaN to 0,
+/// saturating at the `int` range.
+///
+/// Transcribed from the JDK's bit-level implementation rather than written as
+/// `(a + 0.5).floor()`, because the naive form is WRONG for the float just below `0.5`:
+/// `0.49999997f + 0.5f` rounds UP to `1.0f`, so it would return 1 where Java returns 0.
+///
+/// ```java
+/// int intBits = Float.floatToRawIntBits(a);
+/// int biasedExp = (intBits & FloatConsts.EXP_BIT_MASK) >> (FloatConsts.SIGNIFICAND_WIDTH - 1);
+/// int shift = (FloatConsts.SIGNIFICAND_WIDTH - 2 + FloatConsts.EXP_BIAS) - biasedExp;
+/// if ((shift & -32) == 0) {
+///     int r = ((intBits & FloatConsts.SIGNIF_BIT_MASK) | (FloatConsts.SIGNIF_BIT_MASK + 1));
+///     if (intBits < 0) r = -r;
+///     return ((r >> shift) + 1) >> 1;
+/// } else {
+///     return (int) a;
+/// }
+/// ```
+///
+/// with `SIGNIFICAND_WIDTH = 24`, `EXP_BIAS = 127`, `EXP_BIT_MASK = 0x7F800000` and
+/// `SIGNIF_BIT_MASK = 0x007FFFFF`. The `else` branch is Java's `(int)` narrowing, which Rust's
+/// `as` matches (saturating, NaN to 0).
+pub fn round_f32(a: f32) -> i32 {
+    const SIGNIFICAND_WIDTH: i32 = 24;
+    const EXP_BIAS: i32 = 127;
+    const EXP_BIT_MASK: i32 = 0x7F80_0000;
+    const SIGNIF_BIT_MASK: i32 = 0x007F_FFFF;
+    let int_bits = a.to_bits() as i32;
+    let biased_exp = (int_bits & EXP_BIT_MASK) >> (SIGNIFICAND_WIDTH - 1);
+    let shift = (SIGNIFICAND_WIDTH - 2 + EXP_BIAS) - biased_exp;
+    if (shift & -32) == 0 {
+        let mut r = (int_bits & SIGNIF_BIT_MASK) | (SIGNIF_BIT_MASK + 1);
+        if int_bits < 0 {
+            r = -r;
+        }
+        ((r >> shift) + 1) >> 1
+    } else {
+        a as i32
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

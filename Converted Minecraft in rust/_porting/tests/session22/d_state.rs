@@ -41,7 +41,7 @@ pub fn panic_text<R>(f: impl FnOnce() -> R + std::panic::UnwindSafe) -> String {
 }
 
 /// `field: <int>` out of a derived `Debug` string.
-fn debug_int(debug: &str, field: &str) -> i32 {
+pub fn debug_int(debug: &str, field: &str) -> i32 {
     let key = format!("{field}: ");
     let at = debug.find(&key).unwrap_or_else(|| panic!("no `{field}` in {debug}")) + key.len();
     let end = debug[at..].find(|c: char| c != '-' && !c.is_ascii_digit()).map_or(debug.len(), |e| at + e);
@@ -50,7 +50,7 @@ fn debug_int(debug: &str, field: &str) -> i32 {
 
 /// Java's `Float.parseFloat` for the spellings the scripts use (`NaN`, `Infinity`, `1.0E9` ...),
 /// all of which Rust's correctly-rounded `parse` reads to the same value.
-fn jfloat(s: &str) -> f32 {
+pub fn jfloat(s: &str) -> f32 {
     s.parse().unwrap_or_else(|_| panic!("not a float: {s:?}"))
 }
 

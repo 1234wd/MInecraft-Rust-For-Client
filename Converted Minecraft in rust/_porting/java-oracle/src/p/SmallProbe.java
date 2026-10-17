@@ -90,6 +90,7 @@ public class SmallProbe {
 			recordsB();
 			recordsC();
 			stateD1();
+			stateD2();
 		}
 		System.err.println("small_probe: " + rows + " rows -> " + target);
 	}
@@ -990,5 +991,349 @@ public class SmallProbe {
 
 	static String scissor(com.mojang.blaze3d.systems.ScissorState s) {
 		return b(s.enabled()) + "," + s.x() + "," + s.y() + "," + s.width() + "," + s.height();
+	}
+
+	// ------------------------------------------------------------------ sub-batch D2: javacompat additions + classes on them
+
+	static final String[] CMP_STRINGS = {"", "a", "b", "ab", "abc", "A", "\u00e9", "\u00ff", "\uffff", "\ud83d\ude00", "zz", "aa", "a\u0000",
+		"\u4e2d\u6587", "Aa", "BB"};
+
+	static void stateD2() throws Exception {
+		// JSIGNUM / JCMP / JROUND: the java_lang additions
+		for (double v : DOUBLES) {
+			row("JSIGNUM", "d", d(v), d(Math.signum(v)));
+		}
+		for (float v : FLOATS) {
+			row("JSIGNUM", "f", f(v), f(Math.signum(v)));
+		}
+		for (int a = 0; a < CMP_STRINGS.length; a++) {
+			for (int c = 0; c < CMP_STRINGS.length; c++) {
+				row("JCMP", i(a), i(c), i(CMP_STRINGS[a].compareTo(CMP_STRINGS[c])));
+			}
+		}
+		float[] rounds = {0.0f, -0.0f, 0.5f, -0.5f, 1.5f, -1.5f, 2.5f, -2.5f, 0.49999997f, -0.49999997f, 0.50000006f, -0.50000006f,
+			Float.MAX_VALUE, -Float.MAX_VALUE, Float.MIN_VALUE, -Float.MIN_VALUE, Float.NaN, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY,
+			8388607.5f, 8388608.0f, 16777215.0f, 16777217.0f, 2.14748365E9f, -2.14748365E9f, 2.1474836E9f, -2.1474836E9f, 1e10f, -1e10f,
+			0.1f, -0.1f, 0.9999999f, 1.0000001f, 4.5f, -4.5f, 1e-30f};
+		for (float v : rounds) {
+			row("JROUND", f(v), i(Math.round(v)));
+		}
+		for (int k = -200; k <= 200; k++) {
+			float half = k / 2.0f;
+			row("JROUND", f(half), i(Math.round(half)));
+			row("JROUND", f(Math.nextUp(half)), i(Math.round(Math.nextUp(half))));
+			row("JROUND", f(Math.nextDown(half)), i(Math.round(Math.nextDown(half))));
+		}
+		for (int k = 0; k < 4096; k++) {
+			float v = Float.intBitsToFloat(k * 1048573);
+			row("JROUND", f(v), i(Math.round(v)));
+		}
+
+		// SmoothDouble: a script of (targetDelta, time) pairs; every return value and the reset
+		String[] smoothScripts = {
+			"1.0:1.0 1.0:1.0 0.0:1.0 -3.0:0.5 0.0:0.5 0.0:0.5 R 2.0:0.25",
+			"0.0:1.0 -0.0:1.0 0.0:-0.0 5.0:0.0 NaN:1.0 1.0:1.0 R 1.0:1.0",
+			"1.0E300:2.0 1.0E300:2.0 -Infinity:1.0 R 1.0E-320:1.0 1.0E-320:3.0",
+		};
+		for (String scr : smoothScripts) {
+			net.minecraft.util.SmoothDouble sm = new net.minecraft.util.SmoothDouble();
+			StringBuilder out = new StringBuilder();
+			for (String op : scr.split(" ")) {
+				if (op.equals("R")) {
+					sm.reset();
+					out.append(out.length() == 0 ? "" : ",").append("R");
+				} else {
+					String[] p = op.split(":");
+					out.append(out.length() == 0 ? "" : ",").append(d(sm.getNewDeltaValue(Double.parseDouble(p[0]), Double.parseDouble(p[1]))));
+				}
+			}
+			row("SMOOTH", scr, out.toString());
+		}
+
+		// ResultField: compareTo (percentage, then the OTHER name's compareTo with this name) and getColor
+		Object[][] rf = {
+			{"tick", 50.0, 10.0, 3L}, {"tick", 50.0, 10.0, 3L}, {"render", 50.0, 1.0, 9L}, {"a", 10.0, 0.0, 0L},
+			{"b", 90.0, 0.0, 0L}, {"nan", Double.NaN, 0.0, 0L}, {"", -0.0, 0.0, -1L}, {"zero", 0.0, 0.0, 0L}, {"\u00e9", 50.0, 2.0, 1L},
+		};
+		net.minecraft.util.profiling.ResultField[] fields = new net.minecraft.util.profiling.ResultField[rf.length];
+		for (int k = 0; k < rf.length; k++) {
+			fields[k] = new net.minecraft.util.profiling.ResultField((String) rf[k][0], (Double) rf[k][1], (Double) rf[k][2], (Long) rf[k][3]);
+		}
+		for (int a = 0; a < fields.length; a++) {
+			StringBuilder cmp = new StringBuilder();
+			for (int c = 0; c < fields.length; c++) {
+				cmp.append(c == 0 ? "" : ",").append(fields[a].compareTo(fields[c]));
+			}
+			row("RESULTFIELD", i(a), esc(fields[a].name), d(fields[a].percentage), d(fields[a].globalPercentage), l(fields[a].count),
+				i(fields[a].getColor()), cmp.toString());
+		}
+
+		// SegmentedAnglePrecision: the constructor's two IAEs, then every method for a range of precisions
+		for (int bits = -1; bits <= 32; bits++) {
+			String ctor;
+			try {
+				new net.minecraft.util.SegmentedAnglePrecision(bits);
+				ctor = "ok";
+			} catch (IllegalArgumentException e) {
+				ctor = "EX:" + esc(exText(e));
+			}
+			row("SEGCTOR", i(bits), ctor);
+		}
+		float[] degs = {0.0f, -0.0f, 1.0f, 45.0f, 90.0f, 179.9f, 180.0f, 270.0f, 359.9f, 360.0f, 720.5f, -1.0f, -180.0f, -181.0f, 22.5f,
+			11.25f, 0.3515625f, 1e9f, -1e9f, Float.NaN, Float.POSITIVE_INFINITY};
+		int[] angles = {0, 1, -1, 2, 3, 4, 7, 8, 15, 16, 31, 64, 128, 255, 256, 1023, 1024, 65535, 65536, MAX, MIN};
+		for (int bits : new int[]{2, 3, 4, 8, 10, 16, 30}) {
+			net.minecraft.util.SegmentedAnglePrecision sp = new net.minecraft.util.SegmentedAnglePrecision(bits);
+			StringBuilder dir = new StringBuilder();
+			for (net.minecraft.core.Direction dd : net.minecraft.core.Direction.values()) {
+				dir.append(dir.length() == 0 ? "" : ",").append(sp.fromDirection(dd));
+			}
+			row("SEGDIR", i(bits), i(sp.getMask()), dir.toString());
+			for (float dg : degs) {
+				row("SEGDEG", i(bits), f(dg), i(sp.fromDegreesWithTurns(dg)), i(sp.fromDegrees(dg)));
+			}
+			for (int an : angles) {
+				StringBuilder axis = new StringBuilder();
+				for (int other : angles) {
+					axis.append(sp.isSameAxis(an, other) ? '1' : '0');
+				}
+				row("SEGANG", i(bits), i(an), i(sp.normalize(an)), f(sp.toDegreesWithTurns(an)), f(sp.toDegrees(an)), axis.toString());
+			}
+		}
+
+		// PistonMath.getMovementArea over boxes x directions x amounts
+		net.minecraft.world.phys.AABB[] boxes = {
+			new net.minecraft.world.phys.AABB(0, 0, 0, 1, 1, 1), new net.minecraft.world.phys.AABB(-2.5, 64, 7, 3.25, 65.5, -0.0),
+			new net.minecraft.world.phys.AABB(-0.0, -0.0, -0.0, 0.0, 0.0, 0.0),
+		};
+		double[] amounts = {0.0, -0.0, 0.5, 1.0, -1.0, 1e-300, Double.NaN};
+		for (int k = 0; k < boxes.length; k++) {
+			for (net.minecraft.core.Direction dd : net.minecraft.core.Direction.values()) {
+				for (double am : amounts) {
+					net.minecraft.world.phys.AABB r = net.minecraft.world.level.block.piston.PistonMath.getMovementArea(boxes[k], dd, am);
+					row("PISTON", i(k), dd.getName(), d(am), d(r.minX), d(r.minY), d(r.minZ), d(r.maxX), d(r.maxY), d(r.maxZ));
+				}
+			}
+		}
+
+		// TranslucencyPointOfView
+		double[] cams = {0.0, -0.0, 15.9, 16.0, -0.1, -16.0, -17.0, 1e9, -1e9, 31.99, 48.0};
+		long[] nodes = {0L, net.minecraft.core.SectionPos.asLong(1, 2, 3), net.minecraft.core.SectionPos.asLong(-1, 0, -2),
+			net.minecraft.core.SectionPos.asLong(2000000, -1000, 7)};
+		java.util.List<net.minecraft.client.renderer.chunk.TranslucencyPointOfView> povs = new java.util.ArrayList<>();
+		for (long node : nodes) {
+			for (int k = 0; k < cams.length; k++) {
+				net.minecraft.world.phys.Vec3 cam = new net.minecraft.world.phys.Vec3(cams[k], cams[(k + 3) % cams.length], cams[(k + 7) % cams.length]);
+				net.minecraft.client.renderer.chunk.TranslucencyPointOfView p = net.minecraft.client.renderer.chunk.TranslucencyPointOfView.of(cam, node);
+				povs.add(p);
+				row("TRANSPOV", l(node), d(cam.x), d(cam.y), d(cam.z), i((Integer) field(p, "x")), i((Integer) field(p, "y")),
+					i((Integer) field(p, "z")), b(p.isAxisAligned()), i(p.hashCode()));
+			}
+		}
+		net.minecraft.client.renderer.chunk.TranslucencyPointOfView fresh = new net.minecraft.client.renderer.chunk.TranslucencyPointOfView();
+		row("TRANSPOVNEW", i((Integer) field(fresh, "x")), i((Integer) field(fresh, "y")), i((Integer) field(fresh, "z")),
+			b(fresh.isAxisAligned()), i(fresh.hashCode()), b(fresh.equals(povs.get(0))), b(fresh.set(new net.minecraft.world.phys.Vec3(20, 20, 20), 0L) == fresh));
+		for (int a = 0; a < 8; a++) {
+			StringBuilder eq = new StringBuilder();
+			for (int c = 0; c < 8; c++) {
+				eq.append(povs.get(a).equals(povs.get(c)) ? '1' : '0');
+			}
+			row("TRANSPOVEQ", i(a), eq.toString());
+		}
+
+		// ClientAvatarState: T:x:y:z = tick at that position (delta = (0.25, 0, 0)), W:d = addWalkDistance, B:t = updateBob, R = resetBob
+		String avatarScript = "T:0.0:64.0:0.0 W:0.5 B:1.0 T:1.0:64.0:0.5 W:0.6 B:1.0 T:30.0:64.0:0.5 R T:30.0:-20.0:NaN W:-1.5 B:0.25 T:1.0E9:64.0:0.0";
+		net.minecraft.client.entity.ClientAvatarState av = new net.minecraft.client.entity.ClientAvatarState();
+		StringBuilder avOut = new StringBuilder();
+		for (String op : avatarScript.split(" ")) {
+			String[] p = op.split(":");
+			switch (p[0]) {
+				case "T" -> av.tick(new net.minecraft.world.phys.Vec3(Double.parseDouble(p[1]), Double.parseDouble(p[2]), Double.parseDouble(p[3])),
+					new net.minecraft.world.phys.Vec3(0.25, 0.0, 0.0));
+				case "W" -> av.addWalkDistance(Float.parseFloat(p[1]));
+				case "B" -> av.updateBob(Float.parseFloat(p[1]));
+				default -> av.resetBob();
+			}
+			avOut.append(avOut.length() == 0 ? "" : ";").append(av.deltaMovementOnPreviousTick().toString());
+			for (float pt : new float[]{0.0f, 0.5f, 1.0f}) {
+				avOut.append(',').append(d(av.getInterpolatedCloakX(pt))).append(',').append(d(av.getInterpolatedCloakY(pt))).append(',')
+					.append(d(av.getInterpolatedCloakZ(pt))).append(',').append(f(av.getInterpolatedBob(pt))).append(',')
+					.append(f(av.getBackwardsInterpolatedWalkDistance(pt))).append(',').append(f(av.getInterpolatedWalkDistance(pt)));
+			}
+		}
+		row("AVATAR", avatarScript, avOut.toString());
+
+		// VisibilitySet: A:dirs = add(set), S:d1:d2:b = set, V:b = setAll; after each op the 6x6 matrix and toString
+		String[] visScripts = {"A:down,up S:north:east:1 S:down:up:0", "V:1 S:west:west:0 A:", "A:north,south,east,west V:0 S:up:down:1"};
+		for (String scr : visScripts) {
+			net.minecraft.client.renderer.chunk.VisibilitySet vs = new net.minecraft.client.renderer.chunk.VisibilitySet();
+			StringBuilder out = new StringBuilder();
+			for (String op : scr.split(" ")) {
+				String[] p = op.split(":", -1);
+				switch (p[0]) {
+					case "A" -> {
+						java.util.Set<net.minecraft.core.Direction> set = java.util.EnumSet.noneOf(net.minecraft.core.Direction.class);
+						for (String nm : p[1].split(",")) {
+							if (!nm.isEmpty()) {
+								set.add(net.minecraft.core.Direction.byName(nm));
+							}
+						}
+						vs.add(set);
+					}
+					case "S" -> vs.set(net.minecraft.core.Direction.byName(p[1]), net.minecraft.core.Direction.byName(p[2]), p[3].equals("1"));
+					default -> vs.setAll(p[1].equals("1"));
+				}
+				StringBuilder m = new StringBuilder();
+				for (net.minecraft.core.Direction a : net.minecraft.core.Direction.values()) {
+					for (net.minecraft.core.Direction c : net.minecraft.core.Direction.values()) {
+						m.append(vs.visibilityBetween(a, c) ? '1' : '0');
+					}
+				}
+				out.append(out.length() == 0 ? "" : ";").append(m).append('|').append(esc(vs.toString()));
+			}
+			row("VISSET", scr, out.toString());
+		}
+
+		// InvertableSetOptionState: p = positive element, n = negative element, t:x = tag x, e:b = element(inverted=b)
+		String[] invScripts = {"p", "n", "t:a", "t:a t:b n", "e:0 e:1", "e:1 p", "t:x"};
+		for (String scr : invScripts) {
+			net.minecraft.commands.arguments.selector.options.InvertableSetOptionState st =
+				new net.minecraft.commands.arguments.selector.options.InvertableSetOptionState();
+			StringBuilder out = new StringBuilder(invState(st));
+			for (String op : scr.split(" ")) {
+				String[] p = op.split(":");
+				switch (p[0]) {
+					case "p" -> st.markParsedPositiveElement();
+					case "n" -> st.markParsedNegativeElement();
+					case "t" -> st.markParsedTag(id(p[1]));
+					default -> st.markParsedElement(p[1].equals("1"));
+				}
+				out.append(';').append(invState(st));
+			}
+			row("INVSET", scr, out.toString());
+		}
+
+		// ContextKey: toString, name, and identity equality
+		for (String nm : new String[]{"this_entity", "origin", "a/b"}) {
+			net.minecraft.util.context.ContextKey<Object> k = net.minecraft.util.context.ContextKey.vanilla(nm);
+			row("CTXKEY", nm, esc(k.toString()), k.name().toString(), b(k.equals(net.minecraft.util.context.ContextKey.vanilla(nm))));
+		}
+
+		// AtlasIds and TemperatureVariants: every Identifier constant, by reflection over the public static fields
+		for (Class<?> c : new Class<?>[]{net.minecraft.data.AtlasIds.class, net.minecraft.world.entity.animal.TemperatureVariants.class}) {
+			for (java.lang.reflect.Field fl : c.getDeclaredFields()) {
+				if (java.lang.reflect.Modifier.isStatic(fl.getModifiers()) && fl.getType() == net.minecraft.resources.Identifier.class) {
+					row("IDCONST", c.getSimpleName(), fl.getName(), fl.get(null).toString());
+				}
+			}
+		}
+
+		// TickTask: getTick, and run() calls the runnable once per call
+		for (int t : new int[]{0, 1, -1, MAX, MIN}) {
+			int[] calls = {0};
+			net.minecraft.server.TickTask task = new net.minecraft.server.TickTask(t, () -> calls[0]++);
+			task.run();
+			task.run();
+			row("TICKTASK", i(t), i(task.getTick()), i(calls[0]));
+		}
+
+		// GameTestEvent: the three factories
+		Runnable noop = () -> {};
+		net.minecraft.gametest.framework.GameTestEvent g1 = net.minecraft.gametest.framework.GameTestEvent.create(noop);
+		net.minecraft.gametest.framework.GameTestEvent g2 = net.minecraft.gametest.framework.GameTestEvent.create(-5L, noop);
+		net.minecraft.gametest.framework.GameTestEvent g3 = net.minecraft.gametest.framework.GameTestEvent.createWithMinimumDelay(Long.MAX_VALUE, noop);
+		for (Object[] g : new Object[][]{{"create", g1}, {"create-long", g2}, {"createWithMinimumDelay", g3}}) {
+			net.minecraft.gametest.framework.GameTestEvent ev = (net.minecraft.gametest.framework.GameTestEvent) g[1];
+			row("GAMETEST", (String) g[0], ev.expectedDelay == null ? "\\N" : l(ev.expectedDelay), ev.minimumDelay == null ? "\\N" : l(ev.minimumDelay),
+				b(ev.assertion == noop));
+		}
+
+		// NetworkDataOutputStream: little-endian writes into a growing buffer, toByteArray after each op
+		net.minecraft.server.rcon.NetworkDataOutputStream nd = new net.minecraft.server.rcon.NetworkDataOutputStream(4);
+		String ndScript = "b:01ff i:-2 s:-2 f:1.5 f:NaN F:7f800001 F:ffc00000 f:-0.0 w:300 w:-1 S:hi S: S:\u00e9\ud83d\ude00 i:2147483647 R w:7 b:";
+		StringBuilder ndOut = new StringBuilder();
+		for (String op : ndScript.split(" ")) {
+			String[] p = op.split(":", 2);
+			switch (p[0]) {
+				case "b" -> {
+					byte[] bytes = new byte[p[1].length() / 2];
+					for (int k = 0; k < bytes.length; k++) {
+						bytes[k] = (byte) Integer.parseInt(p[1].substring(2 * k, 2 * k + 2), 16);
+					}
+					nd.writeBytes(bytes);
+				}
+				case "i" -> nd.writeInt(Integer.parseInt(p[1]));
+				case "s" -> nd.writeShort(Short.parseShort(p[1]));
+				case "f" -> nd.writeFloat(Float.parseFloat(p[1]));
+				case "F" -> nd.writeFloat(Float.intBitsToFloat((int) Long.parseLong(p[1], 16)));
+				case "w" -> nd.write(Integer.parseInt(p[1]));
+				case "S" -> nd.writeString(p[1]);
+				default -> nd.reset();
+			}
+			StringBuilder hex = new StringBuilder();
+			for (byte x : nd.toByteArray()) {
+				hex.append(String.format("%02x", x & 0xff));
+			}
+			ndOut.append(ndOut.length() == 0 ? "" : ",").append(hex.length() == 0 ? "-" : hex.toString());
+		}
+		row("NETOUT", esc(ndScript), ndOut.toString());
+
+		// TextureSlot: every constant (id, parent id), by reflection
+		for (java.lang.reflect.Field fl : net.minecraft.client.data.models.model.TextureSlot.class.getDeclaredFields()) {
+			if (java.lang.reflect.Modifier.isStatic(fl.getModifiers()) && fl.getType() == net.minecraft.client.data.models.model.TextureSlot.class) {
+				net.minecraft.client.data.models.model.TextureSlot ts = (net.minecraft.client.data.models.model.TextureSlot) fl.get(null);
+				row("TEXSLOT", fl.getName(), ts.getId(), ts.getParent() == null ? "\\N" : ts.getParent().getId(), ts.toString());
+			}
+		}
+		// `create` is PRIVATE in the jar (the decompiled source shows it public because Fabric's data-generation
+		// API access-widens it), so it is reached by reflection, and its modifiers are recorded.
+		java.lang.reflect.Method create1 = net.minecraft.client.data.models.model.TextureSlot.class.getDeclaredMethod("create", String.class);
+		java.lang.reflect.Method create2 = net.minecraft.client.data.models.model.TextureSlot.class.getDeclaredMethod("create", String.class,
+			net.minecraft.client.data.models.model.TextureSlot.class);
+		create1.setAccessible(true);
+		create2.setAccessible(true);
+		net.minecraft.client.data.models.model.TextureSlot made = (net.minecraft.client.data.models.model.TextureSlot) create1.invoke(null, "all");
+		net.minecraft.client.data.models.model.TextureSlot child = (net.minecraft.client.data.models.model.TextureSlot) create2.invoke(null, "x",
+			net.minecraft.client.data.models.model.TextureSlot.SIDE);
+		row("TEXSLOTNEW", made.toString(), b(made == net.minecraft.client.data.models.model.TextureSlot.ALL),
+			b(made.equals(net.minecraft.client.data.models.model.TextureSlot.ALL)), child.getParent().getId(),
+			java.lang.reflect.Modifier.toString(create1.getModifiers()), java.lang.reflect.Modifier.toString(create2.getModifiers()));
+
+		// Optionull over a non-empty and an empty list and a null
+		java.util.List<String> some = java.util.List.of("first", "second");
+		java.util.List<String> none = java.util.List.of();
+		row("OPTIONULL", "orElse", net.minecraft.Optionull.orElse(null, "d"), net.minecraft.Optionull.orElse("v", "d"));
+		row("OPTIONULL", "map", String.valueOf(net.minecraft.Optionull.map((String) null, String::length)), String.valueOf(net.minecraft.Optionull.map("abc", String::length)));
+		row("OPTIONULL", "mapOrDefault", String.valueOf(net.minecraft.Optionull.mapOrDefault((String) null, String::length, -1)),
+			String.valueOf(net.minecraft.Optionull.mapOrDefault("abcd", String::length, -1)));
+		row("OPTIONULL", "mapOrElse", String.valueOf(net.minecraft.Optionull.mapOrElse((String) null, String::length, () -> -2)),
+			String.valueOf(net.minecraft.Optionull.mapOrElse("ab", String::length, () -> -2)));
+		row("OPTIONULL", "first", String.valueOf(net.minecraft.Optionull.first(none)), String.valueOf(net.minecraft.Optionull.first(some)));
+		row("OPTIONULL", "firstOrDefault", net.minecraft.Optionull.firstOrDefault(none, "d"), net.minecraft.Optionull.firstOrDefault(some, "d"));
+		row("OPTIONULL", "firstOrElse", net.minecraft.Optionull.firstOrElse(none, () -> "e"), net.minecraft.Optionull.firstOrElse(some, () -> "e"));
+		row("OPTIONULL", "isNullOrEmpty", b(net.minecraft.Optionull.isNullOrEmpty((int[]) null)), b(net.minecraft.Optionull.isNullOrEmpty(new int[0])),
+			b(net.minecraft.Optionull.isNullOrEmpty(new int[]{1})), b(net.minecraft.Optionull.isNullOrEmpty(new String[0])),
+			b(net.minecraft.Optionull.isNullOrEmpty(new double[]{0.0})));
+		String npe;
+		try {
+			net.minecraft.Optionull.orElse(null, null);
+			npe = "none";
+		} catch (NullPointerException e) {
+			npe = exText(e);
+		}
+		row("OPTIONULLNPE", esc(npe));
+
+		// ChunkEntities
+		net.minecraft.world.level.entity.ChunkEntities<String> ce =
+			new net.minecraft.world.level.entity.ChunkEntities<>(new net.minecraft.world.level.ChunkPos(3, -4), java.util.List.of("a", "b"));
+		net.minecraft.world.level.entity.ChunkEntities<String> empty =
+			new net.minecraft.world.level.entity.ChunkEntities<>(new net.minecraft.world.level.ChunkPos(0, 0), java.util.List.of());
+		row("CHUNKENT", ce.getPos().toString(), String.join(",", ce.getEntities().toList()), b(ce.isEmpty()), b(empty.isEmpty()));
+	}
+
+	static String invState(net.minecraft.commands.arguments.selector.options.InvertableSetOptionState st) {
+		return "" + (st.canParsePositiveElement() ? 1 : 0) + (st.canParseNegativeElement() ? 1 : 0) + (st.canParseAnyTag() ? 1 : 0)
+			+ (st.canParseAny() ? 1 : 0) + (st.canParseElement(false) ? 1 : 0) + (st.canParseElement(true) ? 1 : 0)
+			+ (st.canParseTag(id("a")) ? 1 : 0) + (st.canParseTag(id("b")) ? 1 : 0);
 	}
 }
