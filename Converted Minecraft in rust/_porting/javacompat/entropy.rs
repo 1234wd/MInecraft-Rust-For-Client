@@ -138,23 +138,50 @@ pub const NANOS_OVERRIDE_NONE: i64 = i64::MIN;
 ///
 /// Scoped so a failing assertion cannot leave the override installed and silently
 /// change the meaning of a later test that shares the process.
+///
+/// The restore runs from a `Drop` guard rather than from a trailing store, because a
+/// panicking `f` unwinds PAST a trailing store -- which is precisely the case the
+/// scoping exists for. With the store at the end, the first failing assertion inside
+/// `f` pinned the clock for every test that ran after it in the same process, turning
+/// one real failure into a cascade of unrelated ones.
 #[doc(hidden)]
 pub fn with_override<R>(nanos: i64, f: impl FnOnce() -> R) -> R {
-    let previous = NANOS_OVERRIDE.swap(nanos, Ordering::SeqCst);
-    let result = f();
-    NANOS_OVERRIDE.store(previous, Ordering::SeqCst);
-    result
+    // Restores the previous override on the way out, panic or not.
+    struct Restore(i64);
+    impl Drop for Restore {
+        fn drop(&mut self) {
+            NANOS_OVERRIDE.store(self.0, Ordering::SeqCst);
+        }
+    }
+
+    let _restore = Restore(NANOS_OVERRIDE.swap(nanos, Ordering::SeqCst));
+    f()
 }
+
+/// Serialises every test that pins the clock or reads the real one.
+///
+/// [`with_override`] installs a **process-global** value, and `cargo test` runs tests in
+/// parallel threads, so a test that pins the clock is observable by any other test that
+/// reads it. Serialising only the WRITER is not enough -- the reader has to take the same
+/// lock. That was a real flake in this module: it failed roughly one run in three before
+/// the lock was hoisted to module scope.
+///
+/// It lives here, and is `pub`, because the override is global to the whole CRATE, so the
+/// lock has to be too. A lock private to this module cannot serialise `RandomSupport`'s
+/// unit test, which pins the clock to check `generateUniqueSeed` -- and that is exactly
+/// how the flake came back once a second module started pinning the clock.
+///
+/// Deliberately NOT taken inside [`with_override`]: that function nests (see the tests
+/// below), and `std::sync::Mutex` is not reentrant, so locking there would deadlock.
+///
+/// Always lock it with `.unwrap_or_else(|e| e.into_inner())`. A test that panics while
+/// holding it poisons the mutex, and every later test would then fail on the poison
+/// rather than on its own assertion.
+#[doc(hidden)]
+pub static TEST_CLOCK_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
 #[cfg(test)]
 mod tests {
-    /// Serialises every test in this module.
-    ///
-    /// with_override installs a PROCESS-GLOBAL override, so any test that reads the
-    /// clock can observe another test's override. Serialising only the WRITER is not
-    /// enough: the reader has to take the lock too. That was a real flake here -- it
-    /// failed roughly one run in three before the lock was hoisted to module scope.
-    static LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
     use super::*;
 
     /// The override is a process global, and `cargo test` runs tests in parallel
@@ -163,7 +190,7 @@ mod tests {
     /// separate `#[test]`s.
     #[test]
     fn override_makes_the_clock_deterministic() {
-        let _guard = LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let _guard = TEST_CLOCK_LOCK.lock().unwrap_or_else(|e| e.into_inner());
 
         with_override(1_234_567_890_123_456_789, || {
             assert_eq!(nano_time(), 1_234_567_890_123_456_789);
@@ -190,11 +217,43 @@ mod tests {
     }
     #[test]
     fn thread_local_random_is_stable_under_override() {
-        let _guard = LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let _guard = TEST_CLOCK_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         with_override(42, || {
             assert_eq!(thread_local_random_next_long(), thread_local_random_next_long());
             // Still differs from `nano_time` itself, so it is not a pass-through.
             assert_ne!(thread_local_random_next_long(), 42);
         });
+    }
+
+    /// A panic inside the body must still restore the clock.
+    ///
+    /// `with_override` restored with a trailing store for several sessions, and unwinding
+    /// skips it -- so the FIRST test to fail an assertion under a pinned clock left the
+    /// clock pinned for every test that ran after it in the same process. One real failure
+    /// then arrived as a pile of unrelated ones, which is the most expensive kind of test
+    /// output to read.
+    #[test]
+    fn override_is_restored_even_when_the_body_panics() {
+        let _guard = TEST_CLOCK_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+
+        const PROBE: &str = "deliberate panic: regression probe, not a failure";
+
+        set_override(NANOS_OVERRIDE_NONE);
+        let result = std::panic::catch_unwind(|| with_override(777, || panic!("{PROBE}")));
+        assert!(result.is_err(), "the body was supposed to panic");
+        assert_eq!(
+            NANOS_OVERRIDE.load(Ordering::SeqCst),
+            NANOS_OVERRIDE_NONE,
+            "a panicking body left the clock pinned"
+        );
+
+        // And the nested case: the inner panic restores the OUTER override, not the real
+        // clock, because each frame restores exactly what it swapped out.
+        with_override(100, || {
+            let result = std::panic::catch_unwind(|| with_override(200, || panic!("{PROBE}")));
+            assert!(result.is_err(), "the inner body was supposed to panic");
+            assert_eq!(nano_time(), 100, "inner panic lost the outer override");
+        });
+        assert_eq!(NANOS_OVERRIDE.load(Ordering::SeqCst), NANOS_OVERRIDE_NONE);
     }
 }
