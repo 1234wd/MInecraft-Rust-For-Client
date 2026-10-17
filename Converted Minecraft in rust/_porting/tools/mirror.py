@@ -245,15 +245,23 @@ def count_loc(path: str) -> int:
         return sum(1 for _ in fh)
 
 
-def read_raw(path: str) -> str:
-    """The file's bytes as text, with NO newline translation.
+def read_normalised(path: str) -> str:
+    """The file's text with every line ending collapsed to `\n`.
 
-    `read` opens in text mode, so it cannot tell `\r\n` from `\n` -- fine for comparing
-    generated Rust, wrong for deciding whether MANIFEST.csv needs rewriting, since the
-    writer emits `\n` explicitly.
+    Used to decide whether MANIFEST.csv needs rewriting, and it MUST normalise.
+    `core.autocrlf` is on for this repo, so a Windows checkout materialises the committed
+    LF file as CRLF, while the writer below emits `\n`. A byte-exact comparison therefore
+    reported permanent DRIFT on Windows and none on Linux -- which is exactly what
+    happened when the manifest check was first added: the Linux job went green and the
+    Windows job failed on a file whose CONTENT was identical.
+
+    Normalising is the right answer rather than a workaround: what the manifest records is
+    its rows, and which newline the working tree happens to hold is git's business. The
+    non-check path still writes `\n`, and because git stores LF either way, rewriting a
+    CRLF checkout as LF produces no diff.
     """
     with open(path, "r", encoding="utf-8", newline="") as fh:
-        return fh.read()
+        return fh.read().replace("\r\n", "\n").replace("\r", "\n")
 
 
 def read(path: str) -> str:
@@ -569,7 +577,7 @@ def main() -> int:
     manifest_text = buf.getvalue()
 
     manifest_drifted = (
-        not os.path.exists(MANIFEST) or read_raw(MANIFEST) != manifest_text
+        not os.path.exists(MANIFEST) or read_normalised(MANIFEST) != manifest_text
     )
 
     if args.check:
