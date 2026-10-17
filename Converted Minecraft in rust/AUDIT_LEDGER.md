@@ -346,8 +346,172 @@ Ignored: `blockpos_clamp_location_within` (pre-existing) + the two unstarted-bat
 
 | File | Gap | Reason |
 |---|---|---|
-| `net/minecraft/nbt` | 36/37 SKELETON | **The bottleneck.** Registries and worldgen wait on it; SNBT waits on `FloatingDecimal`. |
+| `net/minecraft/nbt` | 18/43 SKELETON after session 21 | Registries and worldgen still wait on it. `CompoundTag`/`ListTag` wait on a JDK-order `HashMap`, **not** on `FloatingDecimal` -- see session 21. |
 | `net/minecraft/world/phys/shapes` | 21/22 SKELETON | Not started |
 | whole crate | `cargo fmt --check` fails on 6941/7607 files | Pre-existing; the repo is not rustfmt-formatted and `parity.yml` does not run fmt. Not touched: it would be a ~130k-line diff unrelated to any behaviour. |
 | `net/minecraft/world/phys/Vec2.rs` | 3 NUL bytes | OPEN_QUESTIONS #24, still allowlisted in `parity.yml`. Not repaired this session. |
 | `AUDIT_LEDGER.md` | two files, one name | Root = Session 17 (+ `.docx`/`.pdf`), crate = Session 18 onward. Flagged, not reorganised. |
+
+
+---
+
+# Audit Ledger — Session 21
+
+**Baseline:** `dddf514f` (session 20) · **Branch:** `main`, level with `origin/main`
+**Scope:** first real NBT batch, plus the defects that batch exposed in its dependencies.
+**Audit method:** Java source read in full per class, then every expectation taken from
+`_porting/test-data/nbt_probe.txt` (the committed JDK 25.0.4.1 / 26.2-jar oracle). Where a
+rule was in doubt, a JDK 21 probe was written and run rather than reasoned about; the
+`float_to_string` rule was then checked exhaustively over 11.2M values.
+
+---
+
+## Summary
+
+| Category | Reviewed | Defects found | Defects fixed | Tests added |
+|---|---|---|---|---|
+| NBT ports (new) | 25 | n/a (new code) | n/a | +25 |
+| `javacompat` dependencies | 2 | 3 | 3 | +2 |
+| Tooling | 1 | 1 | 1 | 0 |
+| Previously blocked groups | 3 | 0 (unblocked) | 3 | +1 |
+| **Total** | **31** | **4** | **4** | **+28** |
+
+**Test count:** 596 → **623 passed**, 3 → 2 ignored, 0 failed, debug and release.
+**Groups unblocked:** `aabb.toString`, `rotations.toString` (subnormal row),
+`vec3.toString` (subnormal rows).
+**Open questions closed:** #18.
+
+---
+
+## Files ported
+
+| Status | Files |
+|---|---|
+| VERIFIED (13) | `ByteTag` `ShortTag` `IntTag` `LongTag` `FloatTag` `DoubleTag` `StringTag` `ByteArrayTag` `IntArrayTag` `LongArrayTag` `EndTag` `NbtAccounter` `TagTypes` |
+| PORTED (6) | `NbtException` `NbtAccounterException` `NbtFormatException` `NumericTag` `PrimitiveTag` `StreamTagVisitor` |
+| PARTIAL (6) | `Tag` `TagType` `TagVisitor` `StringTagVisitor` `CollectionTag` `SnbtGrammar` |
+
+Each PARTIAL names what it is missing in its header. `Tag`, `TagType`, `TagVisitor` and
+`StringTagVisitor` are missing exactly the `ListTag`/`CompoundTag` arms; `CollectionTag` is
+missing `stream()` (a `java.util.stream.Stream`, which nothing consumes); `SnbtGrammar` has
+one method of 909 lines, by choice, because `StringTag.quoteAndEscape` calls it and the rest
+is PORT-BLOCKED on Brigadier.
+
+No file was marked PORTED or VERIFIED without a test behind it, and nothing was stubbed to
+make a count move: the two PORT-BLOCKED arms in `TagType` are labelled `todo!` with their
+missing dependency, per the existing convention.
+
+---
+
+## Defects found and fixed
+
+### 1. `_porting/javacompat/java_io.rs` -- 526 lines of never-compiled code · BUG-FIXED
+
+`Status: PORTED`, with a header claiming "Checked against JDK 25 by `nbt_probe.txt`
+(`UTFW`/`UTFR`/`F32`/`F64`/`SKIP`/`PRIMIO`/`OUT` rows, `tests/session19_g.rs`)". It was
+absent from `javacompat/mod.rs`, so **rustc had never seen the file**, and the test named in
+its header contained no tests at all.
+
+Declared in `mod.rs` (with its row added to that module's doc table). It compiled clean, and
+the 99 oracle rows it claimed now actually check it. The lesson is the uncomfortable one: a
+status header, a verification claim and a doc-table entry are all just text, and three of
+them agreed with each other about a file nothing had built.
+
+### 2. `float_to_string` missed Java's two-digit floor · BUG-FIXED (OPEN_QUESTIONS #18)
+
+Java returns the closest decimal of length **at most two** when the shortest round-tripping
+decimal has one significant digit. `Float.MIN_VALUE` is `1.4E-45`; the port produced
+`1.0E-45`, which also round-trips -- so no round-trip test could catch it.
+
+The spec clause that stops this being "always print two digits" is that a decimal's
+significand is not a multiple of 10, which is why `0.5f` stays `0.5`. The first attempt at
+the fix omitted that and printed `0.50` and `0.0010`; the module's own unit tests caught it
+on the first run.
+
+Diagnosed in this entry since session 05 as needing `java.lang.FloatingDecimal` ported digit
+for digit. It did not.
+
+### 3. `float_to_string` broke ties the wrong way · BUG-FIXED
+
+Found by the verification run for defect 2, not by reading the spec. Java breaks a tie to
+the **even** last digit; Rust's shortest formatting rounds **up**. `f32` bits `1087348736`
+is exactly between `6.4882812` and `6.4882813`; Java prints the former.
+
+**4,282 of 11,223,706** corpus values are affected -- 0.04%. Sixteen sessions of golden
+tests never hit one, which is the argument for a sweep rather than a corpus.
+
+Both defects share a cure, because Rust's explicit-precision formatting is correctly rounded
+and ties to even: render at `max(p, 2)` significant digits with `{:.*e}`, then drop a
+trailing mantissa zero. **Verified against JDK 21.0.12 over 11,223,706 values, 0
+mismatches** -- all 8,388,607 positive float subnormals, a stride-1021 walk of the normal
+float range, sampled negative floats, the 200,001 smallest doubles, a strided walk of the
+double range, sampled negative doubles, and the human-readable values. The harness points
+`#[path]` at the real source file, so no copy can drift.
+
+### 4. `MANIFEST.csv` stale by 168 rows, invisible to `mirror.py --check` · BUG-FIXED
+
+`--check` returned before the manifest was computed, so it compared the skeletons, every
+`mod.rs`, `Cargo.toml` and `lib.rs` -- and not the one generated file recording per-file
+porting status. The committed manifest called 168 already-ported files `SKELETON`, and CI
+was green over it for several sessions.
+
+`mirror.py` now renders the manifest to a string before the `--check` return and diffs it
+like any other generated file. Verified in both directions: restoring the stale manifest
+makes `--check` exit 1 naming `MANIFEST.csv`; the regenerated one exits 0.
+
+This is the same shape as session 20's `check_mirror.py` finding -- a verifier that was not
+checking the thing it was trusted for -- and it is worth noting that the two are independent
+scripts with independent blind spots.
+
+---
+
+## Groups unblocked by defect 2/3
+
+| Group | Was | Now |
+|---|---|---|
+| `aabb.toString` | `BLOCKED_ON_UNPORTED_TYPES` since session 11 | COVERED, 100/100 rows |
+| `rotations.toString` | 22 asserted, 1 subnormal row skipped since session 04 | 23 asserted |
+| `vec3.toString` | subnormal rows silently skipped since session 06 | all rows asserted |
+
+The session-11 guard `aabb_to_string_is_blocked_on_floating_decimal` was written to **fail
+once every row agreed**, and it did, on the first full run after the fix. That pattern --
+a blocked group whose guard breaks when the block lifts -- is why this was unblocked in the
+same session as the fix instead of waiting for someone to re-read a note. It is worth
+copying for every remaining BLOCKED entry.
+
+---
+
+## Reviewed and correct -- PASS, no change
+
+| Item | Finding |
+|---|---|
+| `java_io.rs` modified UTF-8 | 42 `UTFW`/`UTFR` rows pass unchanged, including `C0 80` for NUL, per-code-unit surrogate encoding, the two lone-surrogate cases, overlong forms the JDK accepts, and every malformed form it rejects with the JDK's byte offsets. 526 lines, first compile, no corrections. |
+| `java_io.rs` NaN on the wire | `writeFloat` canonicalises, `readFloat` keeps raw bits. Both directions pinned by `F32`/`F64`. |
+| `Mth::floor_f32` / `floor_f64` | Saturating as Java's, so `FloatTag(-inf).intValue()` is `Integer.MIN_VALUE`. Used unchanged. |
+| `StringTag.quoteAndEscape` delimiter choice | The first `"` or `'` picks the *other* as delimiter; 18 `QUOTE` rows pass. |
+
+---
+
+## Test Results
+
+| Mode | Passed | Failed | Ignored |
+|---|---|---|---|
+| Debug | 623 | 0 | 2 |
+| Release | 623 | 0 | 2 |
+
+Ignored: `blockpos_clamp_location_within` (pre-existing) and `session19_j`'s unstarted-batch
+marker. `session19_g`'s marker was deleted -- that batch is no longer unstarted.
+
+---
+
+## Known Remaining Gaps
+
+| File | Gap | Reason |
+|---|---|---|
+| `nbt/CompoundTag`, `nbt/ListTag` | not started | Need a JDK-iteration-order `HashMap`: `CompoundTag.write` serialises in map order. `nbt_probe.txt` already carries `HMOP`/`HMRES`/`HMCOPY`/`HMINT`/`HMINTRES` (1,790 rows) for it. |
+| `nbt/NbtIo`, `nbt/NbtOps`, `nbt/NbtUtils`, `nbt/visitors/*` | SKELETON | Downstream of `CompoundTag`. |
+| `nbt/SnbtGrammar`, `nbt/TagParser`, `nbt/SnbtPrinterTagVisitor` | SKELETON / 1 method | PORT-BLOCKED on `com.mojang.brigadier`. |
+| `net/minecraft/world/phys/Vec2.rs` | 3 NUL bytes | OPEN_QUESTIONS #24, still allowlisted in `parity.yml`. Untouched. |
+| `AABB.rs` module docs | the `todo!` counts disagree | The header says eight, the PORT-BLOCKED section says three, and the file has two. Noticed in session 21 and flagged in the file rather than re-counted. |
+| whole crate | `cargo fmt --check` fails repo-wide | Pre-existing; not a CI step. Untouched by policy. |
+| macOS ARM64 CI | `cargo test (debug)` fails | Pre-existing, non-gating, explicitly out of scope this session. Job logs need an authenticated `gh`. |
