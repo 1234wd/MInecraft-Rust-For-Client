@@ -982,7 +982,9 @@ Baseline `cca10452`: 177 tests green in debug and release (180 with the 3 ChunkP
 
 # Session 19 - maximum conversion (CHECKPOINT, in progress)
 
-Baseline `65038050` (Session 18). Work is uncommitted in the working tree; nothing was pushed.
+Baseline `65038050` (Session 18). Committed as `066c2592` and pushed to `origin/main`
+(the "uncommitted, nothing pushed" note here was true when written and is kept corrected
+rather than deleted).
 
 Landed and green so far (see the file headers for per-file status):
 - Shared dependencies: `util/ByIdMap` (PORTED, all three OutOfBoundsStrategy rules + exact
@@ -998,3 +1000,154 @@ Landed and green so far (see the file headers for per-file status):
 - New test targets `session19_consts`, `session19_a` ... `session19_i`, sharing
   `_porting/tests/support/consts_dump.rs`. All registered in BOTH `Cargo.toml` and the
   `mirror.py` template.
+
+
+---
+
+# Session 20 - audit of the Antigravity checkpoint, CI repair
+
+Baseline `8f5f30fd` ("WIP: save Antigravity audit progress"), which equalled `origin/main`
+with a clean tree. Parent `066c2592`.
+
+## The CI question, answered
+
+The handoff said no Actions run was visible for `8f5f30fd`. There is one: **run #13**,
+created 2026-10-16T16:59:28Z, concluded **failure** on all three platforms at the
+`cargo test (debug)` step. It simply had not appeared yet when the handoff was written.
+
+Runs #1-#13 have all failed. Two independent causes, both now fixed:
+
+1. **#13 only** - the lib tests did not compile. `RandomSupport.rs` imported
+   `javacompat::entropy::with_nano_time_override`, which does not exist (the function is
+   `with_override`). `E0432`. Reproduced locally: `cargo check --all-targets --locked`
+   exited 101.
+2. **#1-#12** - `check_mirror.py` fails in any shallow clone. `actions/checkout@v4`
+   defaults to `fetch-depth: 1`, the `_porting/.mc_head` baseline is 52 commits back, so
+   `git rev-parse <baseline>:minecraft-decompiled` exits 128 and the script counted "I
+   cannot verify this" as a finding. Proven with a real `git clone --depth 1`: the
+   HEAD tree resolves (rc 0), the baseline tree does not (rc 128).
+
+## Verdict on the Antigravity changes
+
+Two of the seven files fixed REAL bugs and are kept:
+
+* `RandomSupport.rs` - replacing `fetch_update` with a CAS loop is **correct and was
+  necessary**. Rust's `fetch_update` returns `Result<previous, previous>`, so the old code
+  returned the value Java had *before* the multiply. Java's `updateAndGet` returns the new
+  value (confirmed on JDK 21: `updateAndGet` -> 3447679086515839964,
+  `getAndUpdate` -> 8682522807148012). Every `RandomSource::create()` was a step behind
+  vanilla. Orderings, the multiplier and the 64-bit wrapping are all right.
+* `RandomSupport.rs` - routing through `entropy::nano_time()` is **correct**: the old code
+  called `SystemTime::now` directly, which `DESIGN_DECISIONS.md#entropy-injection`
+  explicitly forbids.
+* `jvm_math.rs` - widening the scan to `com/` is **correct**. `com/` exists (382 `.rs`),
+  the walk is complete, and the tree is at 0 violations.
+* `parity_mth.rs`, `parity_random.rs`, `session19_consts.rs`, `tier2_smoke.rs` - the four
+  warning cleanups are **correct** and preserve every assertion. `shared = None` is the
+  first statement of each method iteration, so the initialiser really was a dead store;
+  neither `Varint` impl reads the tuple field.
+
+The new test in `RandomSupport.rs`, however, could not have passed:
+
+* it did not compile (cause 1 above);
+* it asserted `first == -3433408396890502140`, a **fabricated** constant - the JVM gives
+  `3447679086515839964`;
+* it wrote to the crate-global `SEED_UNIQUIFIER` and pinned the global clock **without
+  taking the lock** that `entropy`'s own tests use, and that lock was private to
+  `entropy::tests` so it could not have taken it. Its pinned value
+  (`0x0123456789abcdef` ns) sits below `entropy`'s own "nano_time looks like seconds"
+  assertion, so the two tests racing would have failed the other one;
+* the file lost its trailing newline.
+
+`parity_batch2.rs`'s `#[allow(dead_code)]` on `exp3` is the one change not kept: `exp3` has
+no callers anywhere, and it reads expectations through `as_f64()` where `assert_vec3` uses
+`assert_f64_bits_at`. Reviving it would *weaken* NaN-payload and signed-zero parity, so it
+is deleted rather than silenced.
+
+## Fixed
+
+| # | Defect | Fix |
+|---|---|---|
+| 1 | `with_nano_time_override` does not exist - lib tests did not compile (CI blocker) | use `entropy::with_override` |
+| 2 | Fabricated oracle constant in the new seed test | all four steps pinned from a JDK 21 `AtomicLong.updateAndGet` oracle |
+| 3 | `RandomSupport.rs` had no trailing newline | added |
+| 4 | New test raced the global clock and `SEED_UNIQUIFIER` | `next_seed_prefix_of`/`generate_unique_seed_of` take the atomic by reference, so the CAS loop is tested on a LOCAL `AtomicI64`; the clock lock is now `entropy::TEST_CLOCK_LOCK`, shared crate-wide |
+| 5 | `entropy::with_override` was not panic-safe, contradicting its own doc comment | restore moved into a `Drop` guard; regression test covers the nested case |
+| 6 | `check_mirror.py` treated "baseline commit absent" as a failure - red on every CI run | distinguishes UNVERIFIABLE from FAIL; `fetch-depth: 0` added to `parity.yml` so the check actually runs |
+| 7 | Transcendental guard listed `.log1p()`, which is not a Rust method, and missed `.ln_1p()`, `.log(`, `.asinh()`, `.acosh()`, `.atanh()` | list corrected; verified by planting each and watching the guard fire |
+| 8 | Dead `exp3` suppressed with `#[allow(dead_code)]` | deleted |
+| 9 | `session19_f` never pinned the extreme-index behaviour, and did not say why its bound is 200,000 | added `magic_cell_index_diverges_from_true_division_exactly_where_java_does` (34 JVM-verified probes) |
+| 10 | `session19_g` / `session19_j` were registered targets with zero tests, reporting `ok. 0 passed` | `#[ignore = "..."]` marker in each naming the blocker |
+| 11 | Session 19 note claimed the work was uncommitted and unpushed | corrected |
+
+## `SimpleBitStorage` - the magic table does NOT equal true division
+
+The session-19 report had an extreme-index test where the magic formula gave `102261125`
+against an expected `102261126`. **The expectation was wrong.** Real Java returns
+`102261125` for `bits = 3, index = 2147483646`; the port is a faithful transcription
+(unsigned widening of mul/add, signed `long` product, `>> 32 >> shift`, `int` narrowing)
+and the `MAGIC` fold hash matches the jar.
+
+An exhaustive scan settles the shape of it. Both sides are monotone in the index, so
+checking the two endpoints of each quotient block is sufficient; 5,089,195,384 endpoint
+checks later:
+
+| vpl (bits) | first divergent index | divergent indices |
+|---|---|---|
+| 21 (3) | 1,073,741,844 | 51,130,563 |
+| 12 (5) | 1,073,741,832 | 89,478,485 |
+| 10 (6) | **715,827,890** (earliest of any width) | 143,165,576 |
+| 9 (7) | 1,073,741,832 | 119,304,647 |
+| 7 (9) | 1,073,741,830 | 153,391,689 |
+| 6 (10) | 1,073,741,826 | 178,956,971 |
+| 5 (11,12), 3 (17..21) | never | 0 |
+| every power-of-two vpl | never (exact by construction) | 0 |
+
+**735,427,931** divergent indices in total, and the drift is always exactly one unit low.
+`i32::MAX` itself agrees for every width, which is why a probe that tested only `i32::MAX`
+reported everything clean - the divergence is periodic, not a ceiling.
+
+So `size = 200_000` in the existing test is the right bound and not a weakened assertion:
+a storage reaching the first divergence would need ~71.6M longs (573 MB) for one
+`BitStorage`, and the largest in the game is a 4096-entry chunk section. The new test pins
+the far side, because "fixing" `cell_index` to use `i / vpl` would look like a cleanup,
+pass the old test, and silently diverge from vanilla.
+
+## Audited and found correct - no change made
+
+* `PerlinNoise::pow2` - exact against `Math.pow(2.0, e)` for every integer exponent in
+  `[-1200, 1100]` (2301 of them), covering normals, the full subnormal ladder,
+  underflow to `0.0` and overflow to `INFINITY`.
+* `Rect2i` - line-for-line, `wrapping_*` throughout, statement order preserved, doc
+  comments accurate.
+* `RunningTrimmedMean` - faithful, including vanilla's inverted `count / total` branch for
+  one or two samples and the `length == 0` panic ordering (the bounds check must fire
+  before the `% length`).
+* The four historical session-19 failures are all resolved in the current tree:
+  `session19_f` is 9/9 and `session19_h` 16/16, and the host-transcendental guard passes
+  with 0 violations across `com/`, `net/` and `_porting/`.
+
+## Gates
+
+| Gate | Result |
+|---|---|
+| `cargo check --all-targets --locked` | baseline **exit 101** (`E0432`) -> **clean** |
+| `cargo test --locked --no-fail-fast` | **596 passed, 0 failed, 3 ignored** |
+| `cargo test --locked --release --no-fail-fast` | **596 passed, 0 failed, 3 ignored** |
+| `cargo test --locked --lib ported_code_never_calls_a_host_transcendental` | pass (and verified to FAIL on a planted violation) |
+| `python _porting/tools/mirror.py --check` | OK, 7055 java files |
+| `python _porting/tools/check_mirror.py` | OK, 1:1, baseline MATCHES |
+| `cargo clippy --all-targets --locked` | exit 0; 0 errors, 20 warnings, all pre-existing and in test files. Reviewed: `k - 1 >= len` is safe (`k` starts at 1), `200 - 0 + 1` mirrors Java's `nextInt(max - min + 1)`. None is a bug. |
+| `cargo fmt --check` | **exit 1, 6941 of 7607 files.** Pre-existing: this repo is not rustfmt-formatted and `parity.yml` does not run fmt. Not reformatted - that would be a 130k-line diff unrelated to this session. The three files touched here are at or below their baseline hunk counts (entropy 2/2, RandomSupport 4/5). |
+
+The 3 ignored are `blockpos_clamp_location_within` (pre-existing) and the two new
+unstarted-batch markers.
+
+## Next conversion batch
+
+Unchanged and still the bottleneck: **`net/minecraft/nbt` is 36/37 SKELETON**, and it is
+what registries and worldgen wait on. `net/minecraft/world/phys/shapes` is 21/22 SKELETON.
+Within NBT, `FloatingDecimal` is still the prerequisite for SNBT (OPEN_QUESTIONS), so the
+order is `FloatingDecimal` -> `TagType`/`Tag` -> the primitive tags -> `CompoundTag`/
+`ListTag` -> SNBT. Nothing in this session changed that ordering; no new ports landed here,
+by choice - the audit and the two CI blockers were the whole budget.
