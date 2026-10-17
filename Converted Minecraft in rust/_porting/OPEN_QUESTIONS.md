@@ -305,6 +305,54 @@ Options:
 float text to be exact, and this is much cheaper to port than a transcendental because it
 is pure integer arithmetic.
 
+### Session 20: measured. The scope is 9 float values, not "subnormals".
+
+The text above says Java "for subnormals emits more digits than strictly necessary", which
+reads as a property of the whole subnormal range. It is not. Measured on JDK 21.0.12 by
+walking **every** float subnormal (bits `1 ..= 0x007FFFFF`, 8,388,607 values) and asking,
+for each, whether any decimal with fewer significant digits round-trips to the same bits:
+
+```text
+bits=1    java="1.4E-45"   1 digit would do (1E-45   parses back to bits 1)
+bits=2    java="2.8E-45"   1 digit would do (3E-45)
+bits=3    java="4.2E-45"   1 digit would do (4E-45)
+bits=4    java="5.6E-45"   1 digit would do (6E-45)
+bits=6    java="8.4E-45"   1 digit would do (8E-45)
+bits=7    java="9.8E-45"   1 digit would do (1E-44)
+bits=21   java="2.9E-44"   1 digit would do (3E-44)
+bits=29   java="4.1E-44"   1 digit would do (4E-44)
+bits=71   java="9.9E-44"   1 digit would do (1E-43)
+
+TOTAL: 9 of 8,388,607.
+```
+
+Everything else in the subnormal range already **is** the shortest round-tripping decimal,
+so Rust's `{:e}` agrees with Java there. Note `bits=5` gives `"7.0E-45"` -- one significant
+digit -- so this is **not** a "Java always emits at least two digits" rule, which was the
+obvious hypothesis.
+
+Doubles show the same sparse shape rather than a range. Among the first 12 bit patterns
+only `1`, `2`, `10` and `12` are non-shortest (`4.9E-324`, `9.9E-324`, `4.9E-323`,
+`5.9E-323`); `3 ..= 9` and `11` are already shortest. 2^52 subnormals cannot be enumerated,
+so for `double` a **rule** is needed, not a table.
+
+**What this changes.** Porting `FloatingDecimal` (the ~300-line estimate above is for
+`dtoa` alone; exactness also drags in `FDBigInteger`) to correct 9 float values is poor
+value, and option (b) "leave it" undersells how cheap a correct fix could be. The open
+question is now narrower and more answerable:
+
+> Which rule does the JDK's Schubfach implementation apply at the bottom of the subnormal
+> range that makes it skip the 1-digit candidate, and is that rule small enough to encode
+> in `float_to_string` / `double_to_string` directly?
+
+Still open, deliberately. It is recorded here with the measurement rather than acted on,
+because a half-ported `FloatingDecimal` is worse than the current documented skip --
+`parity_batch2.rs` skips subnormal rows, prints the count, and asserts every other row,
+which is honest and visible.
+
+**Blast radius, confirmed unchanged:** 1 of 23 rows in `rotations.toString`,
+`AABB#toString` (PORT-BLOCKED), and SNBT when it lands.
+
 ---
 
 ## 19. NEW (session 05) - `Mth.getSeedVec3i` and `Mth.lerpVec3` DO NOT EXIST in 26.2

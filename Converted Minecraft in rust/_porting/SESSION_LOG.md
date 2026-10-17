@@ -1149,5 +1149,7 @@ Unchanged and still the bottleneck: **`net/minecraft/nbt` is 36/37 SKELETON**, a
 what registries and worldgen wait on. `net/minecraft/world/phys/shapes` is 21/22 SKELETON.
 Within NBT, `FloatingDecimal` is still the prerequisite for SNBT (OPEN_QUESTIONS), so the
 order is `FloatingDecimal` -> `TagType`/`Tag` -> the primitive tags -> `CompoundTag`/
-`ListTag` -> SNBT. Nothing in this session changed that ordering; no new ports landed here,
+`ListTag` -> SNBT -- but see the Session 20 measurement added to OPEN_QUESTIONS #18
+first: the `FloatingDecimal` gap is **9 float values**, not the whole subnormal range, so
+the full port may not be the right way to pay for it. Nothing in this session changed that ordering; no new ports landed here,
 by choice - the audit and the two CI blockers were the whole budget.
