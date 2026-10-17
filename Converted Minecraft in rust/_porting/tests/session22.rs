@@ -18,9 +18,15 @@ use small_probe::*;
 
 #[path = "session22/a_exceptions.rs"]
 mod a_exceptions;
+#[path = "session22/b_records.rs"]
+mod b_records;
 
 /// The source of every module in this target, for the guard's `rows("...")` scan.
-const SOURCES: &[&str] = &[include_str!("session22.rs"), include_str!("session22/a_exceptions.rs")];
+const SOURCES: &[&str] = &[
+    include_str!("session22.rs"),
+    include_str!("session22/a_exceptions.rs"),
+    include_str!("session22/b_records.rs"),
+];
 
 #[test]
 fn every_probe_group_is_claimed() {

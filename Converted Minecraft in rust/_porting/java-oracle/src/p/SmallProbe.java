@@ -86,6 +86,8 @@ public class SmallProbe {
 				+ "minecraft-merged-deobf-26.2.jar on JDK " + System.getProperty("java.version")
 				+ ". TAB-separated; see SmallProbe's javadoc for the format.\n");
 			exceptions();
+			hashes();
+			recordsB();
 		}
 		System.err.println("small_probe: " + rows + " rows -> " + target);
 	}
@@ -201,5 +203,320 @@ public class SmallProbe {
 			npe = e.getClass().getName();
 		}
 		row("BCE", "null-element", npe, "", "");
+	}
+
+	// ------------------------------------------------------------------ HASH / FEQ / DEQ / RHASH / OHASH
+
+	static final long[] LONGS = {0L, 1L, -1L, 42L, 4294967295L, 4294967296L, -4294967296L, Long.MIN_VALUE, Long.MAX_VALUE,
+		0x123456789abcdefL, -0x123456789abcdefL};
+	static final float[] FLOATS = {0.0f, -0.0f, 1.0f, -1.5f, Float.NaN, Float.intBitsToFloat(0x7f800001), Float.intBitsToFloat(0xffc00000),
+		Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY, Float.MIN_VALUE, Float.MAX_VALUE, 0.1f};
+	static final double[] DOUBLES = {0.0, -0.0, 1.0, -1.5, Double.NaN, Double.longBitsToDouble(0x7ff0000000000001L),
+		Double.longBitsToDouble(0xfff8000000000000L), Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.MIN_VALUE,
+		Double.MAX_VALUE, 0.1};
+
+	record R0() {}
+	record R1(int a) {}
+	record R2(int a, int b) {}
+	record R3(int a, int b, int c) {}
+	record RMix(boolean z, long j, float f, double dd, String s, byte by) {}
+
+	/**
+	 * {@code HASH  kind  value  hashCode} for the boxed hashes; {@code FEQ}/{@code DEQ  a  b  Float.compare(a,b)==0};
+	 * {@code RHASH  arity  values  hashCode} for synthetic records; {@code OHASH  values  Objects.hash(values)}.
+	 */
+	static void hashes() {
+		row("HASH", "bool", "true", i(Boolean.hashCode(true)));
+		row("HASH", "bool", "false", i(Boolean.hashCode(false)));
+		for (long v : LONGS) {
+			row("HASH", "long", l(v), i(Long.hashCode(v)));
+		}
+		for (float v : FLOATS) {
+			row("HASH", "float", f(v), i(Float.hashCode(v)));
+		}
+		for (double v : DOUBLES) {
+			row("HASH", "double", d(v), i(Double.hashCode(v)));
+		}
+		for (float a : FLOATS) {
+			for (float c : FLOATS) {
+				row("FEQ", f(a), f(c), b(Float.compare(a, c) == 0));
+			}
+		}
+		for (double a : DOUBLES) {
+			for (double c : DOUBLES) {
+				row("DEQ", d(a), d(c), b(Double.compare(a, c) == 0));
+			}
+		}
+		int[][] vals = {{}, {7}, {-7}, {1, 2}, {2, 1}, {Integer.MAX_VALUE, 1}, {1, 2, 3}, {Integer.MIN_VALUE, -1, Integer.MAX_VALUE}};
+		for (int[] v : vals) {
+			Object r = switch (v.length) {
+				case 0 -> new R0();
+				case 1 -> new R1(v[0]);
+				case 2 -> new R2(v[0], v[1]);
+				default -> new R3(v[0], v[1], v[2]);
+			};
+			row("RHASH", i(v.length), ints(v), i(r.hashCode()));
+			Object[] boxed = new Object[v.length];
+			for (int k = 0; k < v.length; k++) {
+				boxed[k] = v[k];
+			}
+			row("OHASH", ints(v), i(java.util.Objects.hash(boxed)));
+		}
+		// One record mixing every component kind, so the per-kind hashers are checked INSIDE a record too.
+		RMix[] mixes = {
+			new RMix(true, 5L, 1.5f, -0.0, "s", (byte) -3),
+			new RMix(false, Long.MIN_VALUE, Float.NaN, Double.NaN, null, (byte) 127),
+		};
+		for (int k = 0; k < mixes.length; k++) {
+			row("RMIX", i(k), esc(mixes[k].toString()), i(mixes[k].hashCode()));
+		}
+	}
+
+	static String ints(int[] v) {
+		StringBuilder s = new StringBuilder();
+		for (int k = 0; k < v.length; k++) {
+			if (k > 0) {
+				s.append(',');
+			}
+			s.append(v[k]);
+		}
+		return s.toString();
+	}
+
+	// ------------------------------------------------------------------ REC / RECEQ: record toString, hashCode, equals
+
+	/**
+	 * {@code REC  id  index  toString  hashCode} per instance, and {@code RECEQ  id  index  bits} where bit {@code k}
+	 * is {@code xs[index].equals(xs[k])}. {@code hashStable} is false for a record with an enum (identity-hashed)
+	 * component, whose hashCode differs between JVM runs and is written as {@code -}.
+	 */
+	static void rec(String id, boolean hashStable, Object... xs) {
+		for (int a = 0; a < xs.length; a++) {
+			row("REC", id, i(a), esc(String.valueOf(xs[a])), hashStable ? i(xs[a].hashCode()) : "-");
+			StringBuilder bits = new StringBuilder();
+			for (Object y : xs) {
+				bits.append(xs[a].equals(y) ? '1' : '0');
+			}
+			row("RECEQ", id, i(a), bits.toString());
+		}
+	}
+
+	/** A package-private record, through its (only) canonical constructor. */
+	static Object pkgRecord(String cls, Object... args) throws Exception {
+		Constructor<?> k = Class.forName(cls).getDeclaredConstructors()[0];
+		k.setAccessible(true);
+		return k.newInstance(args);
+	}
+
+	static final int MIN = Integer.MIN_VALUE;
+	static final int MAX = Integer.MAX_VALUE;
+
+	static void recordsB() throws Exception {
+		rec("GpuDebugOptions", true,
+			new com.mojang.blaze3d.shaders.GpuDebugOptions(0, false, false, false),
+			new com.mojang.blaze3d.shaders.GpuDebugOptions(0, false, false, false),
+			new com.mojang.blaze3d.shaders.GpuDebugOptions(1, true, false, true),
+			new com.mojang.blaze3d.shaders.GpuDebugOptions(-1, false, true, false),
+			new com.mojang.blaze3d.shaders.GpuDebugOptions(MIN, true, true, true),
+			new com.mojang.blaze3d.shaders.GpuDebugOptions(MAX, false, false, true));
+		rec("HintsAndWorkarounds", true,
+			new com.mojang.blaze3d.systems.HintsAndWorkarounds(false, false),
+			new com.mojang.blaze3d.systems.HintsAndWorkarounds(false, false),
+			new com.mojang.blaze3d.systems.HintsAndWorkarounds(true, false),
+			new com.mojang.blaze3d.systems.HintsAndWorkarounds(false, true),
+			new com.mojang.blaze3d.systems.HintsAndWorkarounds(true, true));
+		String sampler = "com.mojang.blaze3d.vulkan.glsl.SpvSampler";
+		rec("SpvSampler", true,
+			pkgRecord(sampler, "tex", 0, 1), pkgRecord(sampler, "tex", 0, 1), pkgRecord(sampler, "", -1, 6),
+			pkgRecord(sampler, "é中", 7, MIN), pkgRecord(sampler, "tex", 0, 2), pkgRecord(sampler, "tex", 1, 1));
+		String ubo = "com.mojang.blaze3d.vulkan.glsl.SpvUniformBuffer";
+		rec("SpvUniformBuffer", true,
+			pkgRecord(ubo, "Globals", 0), pkgRecord(ubo, "Globals", 0), pkgRecord(ubo, "", MAX), pkgRecord(ubo, "Globals", 1),
+			pkgRecord(ubo, "globals", 0));
+		String var = "com.mojang.blaze3d.vulkan.glsl.SpvVariable";
+		rec("SpvVariable", true,
+			pkgRecord(var, "Position", 0), pkgRecord(var, "Position", 0), pkgRecord(var, "UV0", -1), pkgRecord(var, "😀", MIN),
+			pkgRecord(var, "Position", 3));
+		rec("FrameSize", true,
+			new net.minecraft.client.resources.metadata.animation.FrameSize(16, 16),
+			new net.minecraft.client.resources.metadata.animation.FrameSize(16, 16),
+			new net.minecraft.client.resources.metadata.animation.FrameSize(0, 0),
+			new net.minecraft.client.resources.metadata.animation.FrameSize(-1, 5),
+			new net.minecraft.client.resources.metadata.animation.FrameSize(5, -1),
+			new net.minecraft.client.resources.metadata.animation.FrameSize(MIN, MAX));
+		boolean[][] df = {
+			{false, false, false, false, false, false, false}, {false, false, false, false, false, false, false},
+			{true, true, true, true, true, true, true}, {true, false, true, false, true, false, true},
+			{false, false, false, true, false, false, false}, {false, false, false, false, false, false, true},
+		};
+		Object[] dfs = new Object[df.length];
+		for (int k = 0; k < df.length; k++) {
+			boolean[] v = df[k];
+			dfs[k] = new com.mojang.blaze3d.systems.DeviceFeatures(v[0], v[1], v[2], v[3], v[4], v[5], v[6]);
+		}
+		rec("DeviceFeatures", true, dfs);
+
+		byte[] flags = {0, 0, 1, 2, 3, 4, -128, 127, -1};
+		Object[] chains = new Object[flags.length];
+		for (int k = 0; k < flags.length; k++) {
+			chains[k] = new net.minecraft.commands.execution.ChainModifiers(flags[k]);
+		}
+		rec("ChainModifiers", true, chains);
+		row("CHAINDEF", i(net.minecraft.commands.execution.ChainModifiers.DEFAULT.flags()));
+		for (byte fl : flags) {
+			net.minecraft.commands.execution.ChainModifiers c = new net.minecraft.commands.execution.ChainModifiers(fl);
+			row("CHAIN", i(fl), b(c.isForked()), b(c.isReturn()), i(c.setForked().flags()), i(c.setReturn().flags()),
+				b(c.setForked() == c), b(c.setReturn() == c));
+		}
+
+		rec("RetryOptions", true,
+			net.minecraft.gametest.framework.RetryOptions.noRetries(),
+			new net.minecraft.gametest.framework.RetryOptions(1, true),
+			new net.minecraft.gametest.framework.RetryOptions(0, false),
+			new net.minecraft.gametest.framework.RetryOptions(-5, true),
+			new net.minecraft.gametest.framework.RetryOptions(3, false),
+			new net.minecraft.gametest.framework.RetryOptions(MAX, true));
+		int[] tries = {MIN, -1, 0, 1, 2, 3, MAX};
+		int[] attempts = {0, 1, 2, 3, 4, MAX};
+		int[] successes = {0, 1, 2, 3};
+		for (int nt : tries) {
+			for (boolean halt : new boolean[]{true, false}) {
+				net.minecraft.gametest.framework.RetryOptions o = new net.minecraft.gametest.framework.RetryOptions(nt, halt);
+				StringBuilder bits = new StringBuilder();
+				for (int at : attempts) {
+					for (int su : successes) {
+						bits.append(o.hasTriesLeft(at, su) ? '1' : '0');
+					}
+				}
+				row("RETRY", i(nt), b(halt), b(o.unlimitedTries()), b(o.hasRetries()), bits.toString());
+			}
+		}
+
+		long[] times = {0L, 1L, -1L, 1000L, 123456789012L, Long.MIN_VALUE, Long.MAX_VALUE};
+		Object[] watches = new Object[times.length + 2];
+		for (int k = 0; k < times.length; k++) {
+			watches[k] = new net.minecraft.world.Stopwatch(times[k], times[(k + 3) % times.length]);
+		}
+		watches[times.length] = new net.minecraft.world.Stopwatch(42L);
+		watches[times.length + 1] = new net.minecraft.world.Stopwatch(42L, 0L);
+		rec("Stopwatch", true, watches);
+		for (long ct : times) {
+			for (long acc : times) {
+				net.minecraft.world.Stopwatch w = new net.minecraft.world.Stopwatch(ct, acc);
+				for (long now : times) {
+					row("WATCH", l(ct), l(acc), l(now), l(w.elapsedMilliseconds(now)), d(w.elapsedSeconds(now)));
+				}
+			}
+		}
+
+		rec("ScreenPosition", true,
+			new net.minecraft.client.gui.navigation.ScreenPosition(0, 0),
+			new net.minecraft.client.gui.navigation.ScreenPosition(0, 0),
+			new net.minecraft.client.gui.navigation.ScreenPosition(1, 2),
+			new net.minecraft.client.gui.navigation.ScreenPosition(2, 1),
+			new net.minecraft.client.gui.navigation.ScreenPosition(-7, 3),
+			new net.minecraft.client.gui.navigation.ScreenPosition(MIN, MAX));
+		int[] coords = {0, 1, -7, MIN, MAX};
+		for (net.minecraft.client.gui.navigation.ScreenAxis axis : net.minecraft.client.gui.navigation.ScreenAxis.values()) {
+			for (int pv : coords) {
+				for (int sv : coords) {
+					net.minecraft.client.gui.navigation.ScreenPosition sp =
+						net.minecraft.client.gui.navigation.ScreenPosition.of(axis, pv, sv);
+					row("SPOF", axis.name(), i(pv), i(sv), i(sp.x()), i(sp.y()));
+				}
+			}
+		}
+		for (int x : coords) {
+			for (int y : coords) {
+				net.minecraft.client.gui.navigation.ScreenPosition sp = new net.minecraft.client.gui.navigation.ScreenPosition(x, y);
+				for (net.minecraft.client.gui.navigation.ScreenDirection dir : net.minecraft.client.gui.navigation.ScreenDirection.values()) {
+					net.minecraft.client.gui.navigation.ScreenPosition s2 = sp.step(dir);
+					row("SPSTEP", i(x), i(y), dir.name(), i(s2.x()), i(s2.y()));
+				}
+				for (net.minecraft.client.gui.navigation.ScreenAxis axis : net.minecraft.client.gui.navigation.ScreenAxis.values()) {
+					row("SPCOORD", i(x), i(y), axis.name(), i(sp.getCoordinate(axis)));
+				}
+			}
+		}
+
+		com.mojang.blaze3d.platform.Transparency[] tc = {
+			com.mojang.blaze3d.platform.Transparency.NONE, com.mojang.blaze3d.platform.Transparency.TRANSPARENT,
+			com.mojang.blaze3d.platform.Transparency.TRANSLUCENT, com.mojang.blaze3d.platform.Transparency.TRANSPARENT_AND_TRANSLUCENT,
+		};
+		rec("Transparency", true, tc[0], tc[1], tc[2], tc[3], new com.mojang.blaze3d.platform.Transparency(false, false));
+		for (boolean x : new boolean[]{false, true}) {
+			for (boolean y : new boolean[]{false, true}) {
+				row("TROF", b(x), b(y), i(constIndex(tc, com.mojang.blaze3d.platform.Transparency.of(x, y))));
+			}
+		}
+		for (int a = 0; a < tc.length; a++) {
+			for (int c = 0; c < tc.length; c++) {
+				row("TROR", i(a), i(c), i(constIndex(tc, tc[a].or(tc[c]))));
+			}
+			row("TROPAQUE", i(a), b(tc[a].isOpaque()));
+		}
+		// `or` on an instance that is NOT one of the constants still returns a constant.
+		row("TROR", "fresh", "1", i(constIndex(tc, new com.mojang.blaze3d.platform.Transparency(false, false).or(tc[1]))));
+
+		rec("ColumnPos", true,
+			new net.minecraft.server.level.ColumnPos(0, 0), new net.minecraft.server.level.ColumnPos(0, 0),
+			new net.minecraft.server.level.ColumnPos(1, 2), new net.minecraft.server.level.ColumnPos(2, 1),
+			new net.minecraft.server.level.ColumnPos(-1, -1), new net.minecraft.server.level.ColumnPos(31, -17),
+			new net.minecraft.server.level.ColumnPos(MIN, MAX));
+		int[] cp = {0, 1, -1, 15, 16, -16, -17, 31, MIN, MAX, 123456};
+		for (int x : cp) {
+			for (int z : cp) {
+				net.minecraft.server.level.ColumnPos c = new net.minecraft.server.level.ColumnPos(x, z);
+				net.minecraft.world.level.ChunkPos ch = c.toChunkPos();
+				long packed = net.minecraft.server.level.ColumnPos.asLong(x, z);
+				row("COLPOS", i(x), i(z), i(ch.x()), i(ch.z()), l(c.toLong()), l(packed),
+					i(net.minecraft.server.level.ColumnPos.getX(packed)), i(net.minecraft.server.level.ColumnPos.getZ(packed)));
+			}
+		}
+		for (long raw : LONGS) {
+			row("COLPOSRAW", l(raw), i(net.minecraft.server.level.ColumnPos.getX(raw)), i(net.minecraft.server.level.ColumnPos.getZ(raw)));
+		}
+
+		Integer[] ids = {null, null, 0, 5, -1, MIN};
+		Object[] infos = new Object[ids.length];
+		for (int k = 0; k < ids.length; k++) {
+			infos[k] = new net.minecraft.server.jsonrpc.methods.ClientInfo(ids[k]);
+		}
+		rec("ClientInfo", true, infos);
+		for (Integer id : ids) {
+			row("CLIENTINFO", id == null ? "\\N" : i(id),
+				b(net.minecraft.server.jsonrpc.methods.ClientInfo.of(id).equals(new net.minecraft.server.jsonrpc.methods.ClientInfo(id))));
+		}
+
+		rec("UploadResult", true,
+			new com.mojang.realmsclient.gui.screens.UploadResult(200, null),
+			new com.mojang.realmsclient.gui.screens.UploadResult(200, null),
+			new com.mojang.realmsclient.gui.screens.UploadResult(400, "bad"),
+			new com.mojang.realmsclient.gui.screens.UploadResult(400, ""),
+			new com.mojang.realmsclient.gui.screens.UploadResult(-1, null),
+			new com.mojang.realmsclient.gui.screens.UploadResult(500, "x"));
+		int[] codes = {MIN, -1, 0, 199, 200, 201, 299, 300, 399, 400, 401, 404, 500, MAX};
+		String[] errs = {null, "", "bad request"};
+		for (int code : codes) {
+			for (int e = 0; e < errs.length; e++) {
+				row("UPLOAD", i(code), i(e),
+					esc(new com.mojang.realmsclient.gui.screens.UploadResult(code, errs[e]).getSimplifiedErrorMessage()));
+			}
+		}
+		com.mojang.realmsclient.gui.screens.UploadResult.Builder builder = new com.mojang.realmsclient.gui.screens.UploadResult.Builder();
+		row("UPBUILD", "default", esc(builder.build().toString()));
+		row("UPBUILD", "status", esc(builder.withStatusCode(404).build().toString()));
+		row("UPBUILD", "both", esc(builder.withErrorMessage("gone").build().toString()));
+		row("UPBUILD", "reset-message", esc(builder.withErrorMessage(null).build().toString()));
+		row("UPBUILD", "chain-identity", b(builder.withStatusCode(1) == builder), b(builder.withErrorMessage("m") == builder));
+	}
+
+	static int constIndex(Object[] constants, Object x) {
+		for (int k = 0; k < constants.length; k++) {
+			if (constants[k] == x) {
+				return k;
+			}
+		}
+		return -1;
 	}
 }
