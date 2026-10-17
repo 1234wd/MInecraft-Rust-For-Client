@@ -488,17 +488,15 @@ fn vec3_is_finite() {
 }
 
 /// Java's `Double.toString`, so `0.0` prints as `0.0` and not Rust's `0`.
+///
+/// The subnormal rows were skipped here from session 06 to session 21 on OPEN_QUESTIONS
+/// #18. That question is answered -- the rule was Java's two-digit minimum and its
+/// round-half-to-even tie break, not `FloatingDecimal` -- so every row is asserted now.
 #[test]
 fn vec3_to_string() {
     let g = Golden::load("batch2.txt");
     each(&g, "vec3.toString", |r| {
         let v = Vec3::new(r.arg(0).as_f64(), r.arg(1).as_f64(), r.arg(2).as_f64());
-        // KNOWN DIVERGENCE: the subnormal case. See the module note below and
-        // OPEN_QUESTIONS #18 -- Java's `FloatingDecimal` emits extra digits for
-        // subnormals, so the parity test skips and counts them.
-        if [v.x, v.y, v.z].iter().any(|c| c.is_subnormal()) {
-            return;
-        }
         assert_str("vec3.toString", r, &v.to_string());
     });
 }
@@ -860,44 +858,51 @@ fn rotations_equals() {
     });
 }
 
-/// # A KNOWN, MEASURED DIVERGENCE: SUBNORMAL `Float.toString`
+/// `Rotations#toString()`, every row -- including the subnormal one.
 ///
-/// Java's `FloatingDecimal.toJavaFormatString` does NOT always emit the shortest
-/// round-tripping decimal. For the smallest positive subnormal:
+/// # THE DIVERGENCE THAT WAS PINNED HERE FROM SESSION 04 TO SESSION 21
+///
+/// One of these 23 rows feeds a value whose canonicalised component is subnormal, and for
+/// sixteen sessions this test SKIPPED it and printed the count, under the
+/// `known-divergences-are-pinned-not-deleted` rule. The symptom:
 ///
 /// ```text
 /// input bits 0x00000001  (1.4012984643...e-45)
-/// Java        "1.4E-45"     <- two significant digits
-/// shortest    "1.0E-45"     <- one digit also round-trips
+/// Java        "1.4E-45"     <- what the jar prints
+/// shortest    "1.0E-45"     <- one digit, and it round-trips too
 /// ```
 ///
-/// So `javacompat::java_lang::float_to_string` (which re-lays Rust's shortest `{:e}`
-/// form) disagrees with Java on SUBNORMALS ONLY, while agreeing everywhere else.
+/// The diagnosis recorded here was "closing it needs Java's `FloatingDecimal` ported digit
+/// for digit (OPEN_QUESTIONS #18)". That was wrong, and expensively so -- it made a
+/// two-line fix look like an 1,800-line port and parked the question for sixteen sessions.
 ///
-/// This is the session-04 `known-divergences-are-pinned-not-deleted` rule: the
-/// divergence is named, measured, counted in the test output, and the test still asserts
-/// every NON-subnormal row. Deleting the assertion or the golden rows would hide a real
-/// behavioural difference; closing it needs Java's `FloatingDecimal` ported digit for
-/// digit (OPEN_QUESTIONS #18).
+/// Java's spec does not ask for the shortest decimal. It asks for the closest decimal of
+/// length at most two when the shortest has one significant digit, with ties going to the
+/// even digit. `javacompat::java_lang::float_to_string` implements that rule as of session
+/// 21, verified against JDK 21 over 11,223,706 values with zero mismatches, so there is
+/// nothing left to skip.
 #[test]
 fn rotations_to_string() {
     let g = Golden::load("batch2.txt");
     let mut checked = 0usize;
-    let mut skipped_subnormal = 0usize;
+    let mut subnormal_rows = 0usize;
     each(&g, "rotations.toString", |r| {
         let (x, y, z) = (r.arg(0).as_f32(), r.arg(1).as_f32(), r.arg(2).as_f32());
         let got = Rotations::new(x, y, z);
-        // The record's components are canonicalised, so test the CANONICALISED values:
-        // a subnormal input is not a subnormal component unless `% 360.0F` left it alone.
+        // Still counted, so the row that used to be skipped is visibly being checked now
+        // rather than having quietly left the corpus.
         if [got.x, got.y, got.z].iter().any(|v| v.is_subnormal()) {
-            skipped_subnormal += 1;
-            return;
+            subnormal_rows += 1;
         }
         checked += 1;
         minecraft_rust::javacompat::golden::assert_str("rotations.toString", r, &got.to_string());
     });
-    println!("rotations.toString: {checked} checked, {skipped_subnormal} skipped (subnormal)");
+    println!("rotations.toString: {checked} checked ({subnormal_rows} with a subnormal component)");
     assert!(checked > 0, "no toString rows were actually checked");
+    assert!(
+        subnormal_rows > 0,
+        "the subnormal row has left the corpus -- it is the one this test exists to cover"
+    );
 }
 
 // ============================================================================
@@ -1058,6 +1063,8 @@ const COVERED: &[&str] = &[
     "aabb.fromVec3",
     "aabb.builderError",
     "aabb.builder",
+    // Unblocked in session 21: see `aabb_to_string`.
+    "aabb.toString",
     "vec3.identity",
     "vec3.hashCode",
     "vec3.equals",
@@ -1168,11 +1175,10 @@ const BLOCKED_ON_UNPORTED_TYPES: &[&str] = &[
     // them took a `BlockPos`, which was a 7-line skeleton until session 12. `BlockPos` is now
     // ported, so aabb.moveBlockPos, aabb.intersectsBlockPos, aabb.encapsulatingFullBlocks and
     // aabb.fromBlockPos are in COVERED. None of them is blocked on anything any more.
-    // One group blocked on a formatting dependency rather than a type: `double_to_string`
-    // prints `Double.MIN_VALUE` as `5.0E-324` where Java prints `4.9E-324`. That is the
-    // `FloatingDecimal` gap (shortest-representation for subnormals), not an AABB bug -- the
-    // other 99 of the group's 100 rows pass. Unblocked by porting `FloatingDecimal`.
-    "aabb.toString",  // PORT-BLOCKED: FloatingDecimal subnormal formatting
+    // `aabb.toString` was here from session 11 to session 21, blocked on a formatting
+    // dependency rather than a type. It is now in COVERED: the gap was never
+    // `FloatingDecimal`, it was Java's two-digit minimum and its round-half-to-even tie
+    // rule, both of which `float_to_string` now implements.
     // -- blockpos: ONE group still BLOCKED; the other seven iterator groups are in COVERED --
     // The seven iterator groups were ONE ORACLE BUG, not seven port bugs. The oracle did
     // `it.forEach(list::add)` on vanilla's iterators, and every vanilla `BlockPos` iterator
@@ -3631,53 +3637,32 @@ fn aabb_hash_code() {
     }
 }
 
-/// `toString` is PORT-BLOCKED, so the 34 other AABB groups carry the file.
+/// `AABB#toString()`, all 100 rows.
 ///
-/// Recorded here so the reason is findable from the test file rather than only from
-/// `BLOCKED_ON_UNPORTED_TYPES`: 99 of `aabb.toString`'s 100 rows already agree, and the one that
-/// does not is `Double.MIN_VALUE`, where Java prints `4.9E-324` and `double_to_string` prints
-/// `5.0E-324`. Both are the same value; Java's `Double.toString` picks the decimal closest to the
-/// true subnormal while ours rounds the significand. Fixing it means porting `FloatingDecimal`,
-/// which is a whole file on its own, so the group is blocked rather than special-cased here.
+/// This group was `PORT-BLOCKED` from session 11 to session 21. 99 of its rows always
+/// agreed; the hold-out was `Double.MIN_VALUE`, which appears in 15 of the 100 boxes and
+/// which Java prints as `4.9E-324` where `double_to_string` printed `5.0E-324`. The
+/// diagnosis in `BLOCKED_ON_UNPORTED_TYPES` said it needed `java.lang.FloatingDecimal`.
+///
+/// It did not. Session 21 found the actual rule -- Java takes the closest decimal of length
+/// at most two when the shortest has one significant digit, and breaks ties to the even
+/// digit -- and `javacompat::java_lang::float_to_string` now implements it, verified against
+/// JDK 21 over 11,223,706 values with zero mismatches. The previous session's guard was
+/// written to FAIL once every row agreed, which is how this got unblocked on the first run
+/// after the fix instead of staying blocked until someone re-read the note.
 #[test]
-fn aabb_to_string_is_blocked_on_floating_decimal() {
+fn aabb_to_string() {
     let rows = aabb_rows("aabb.toString");
-    assert_eq!(
-        rows.len(),
-        100,
-        "aabb.toString row count changed"
-    );
-    let mut mismatches = Vec::new();
+    assert_eq!(rows.len(), 100, "aabb.toString row count changed");
     for r in &rows {
         let b = box_from_row(r, 0);
-        let got = b.to_java_string();
-        let expected = golden_str(r, 0);
-        if got != expected {
-            mismatches.push(format!("expected {expected:?}, got {got:?}"));
-        }
-    }
-    assert!(
-        !mismatches.is_empty(),
-        "every `aabb.toString` row now agrees -- FloatingDecimal has been ported. Unblock this \
-         group by moving `aabb.toString` back into COVERED and deleting this test."
-    );
-    // Every remaining mismatch must be the SAME defect: a subnormal printed with the wrong number
-    // of significant digits. `Double.MIN_VALUE` is the corpus's only subnormal, and it appears in
-    // 15 of the 100 boxes, so 15 mismatching rows is expected -- not 1.
-    for m in &mismatches {
-        assert!(
-            m.contains("4.9E-324") && m.contains("5.0E-324"),
-            "every remaining aabb.toString mismatch must be the Double.MIN_VALUE subnormal \
-             formatting (Java 4.9E-324 vs ours 5.0E-324). A mismatch outside that shape means \
-             something else regressed: {m}"
+        assert_eq!(
+            b.to_java_string(),
+            golden_str(r, 0),
+            "aabb.toString (golden line {})",
+            r.line
         );
     }
-    println!(
-        "aabb.toString: {} of {} rows still differ, all of them the Double.MIN_VALUE subnormal \
-         formatting (PORT-BLOCKED on FloatingDecimal)",
-        mismatches.len(),
-        rows.len()
-    );
 }
 
 #[test]

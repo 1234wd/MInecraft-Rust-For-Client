@@ -271,9 +271,18 @@ verified on 613,221 rows; the remaining IDENTICAL ones are `acos`, `sinh`, `cosh
 `jvm_math`'s guard test treats them as non-violations for that reason.
 ---
 
-## 18. NEW (session 05) - `Float.toString` on SUBNORMALS needs Java's `FloatingDecimal`
+## 18. RESOLVED (session 21) - `Float.toString` needed TWO spec clauses, not `FloatingDecimal`
 
-**Status: open. Small, well-scoped, not blocking Batch 2 or NBT.**
+**Status: RESOLVED in session 21. Implemented in `javacompat::java_lang::float_to_string`, verified against JDK 21.0.12 over 11,223,706 values with zero mismatches.**
+
+> **The answer, up front.** Java's `Float.toString`/`Double.toString` do NOT return the
+> shortest round-tripping decimal. Per spec they return the closest decimal of length
+> **at most two** when the shortest has one significant digit, and they break ties to
+> the **even** last digit. Rust's `{:e}` does neither. Both fixes are one line each;
+> neither needed `java.lang.FloatingDecimal`. The original diagnosis in this entry was
+> wrong, and it parked the question for sixteen sessions -- which is the lesson worth
+> keeping more than the fix is.
+
 
 `javacompat::java_lang::float_to_string` re-lays Rust's shortest `{:e}` form into Java's
 `Float.toString` layout (always a fractional part, scientific outside `[1e-3, 1e7)`).
@@ -336,22 +345,49 @@ only `1`, `2`, `10` and `12` are non-shortest (`4.9E-324`, `9.9E-324`, `4.9E-323
 `5.9E-323`); `3 ..= 9` and `11` are already shortest. 2^52 subnormals cannot be enumerated,
 so for `double` a **rule** is needed, not a table.
 
-**What this changes.** Porting `FloatingDecimal` (the ~300-line estimate above is for
-`dtoa` alone; exactness also drags in `FDBigInteger`) to correct 9 float values is poor
-value, and option (b) "leave it" undersells how cheap a correct fix could be. The open
-question is now narrower and more answerable:
+### Session 21: the rule, and why the nine were a red herring
 
-> Which rule does the JDK's Schubfach implementation apply at the bottom of the subnormal
-> range that makes it skip the 1-digit candidate, and is that rule small enough to encode
-> in `float_to_string` / `double_to_string` directly?
+Session 20 asked "which rule makes the JDK skip the 1-digit candidate". It is written down
+in the `Double.toString` javadoc, and it has two parts.
 
-Still open, deliberately. It is recorded here with the measurement rather than acted on,
-because a half-ported `FloatingDecimal` is worse than the current documented skip --
-`parity_batch2.rs` skips subnormal rows, prints the count, and asserts every other row,
-which is honest and visible.
+**1. A *decimal* is `s * 10^i` where `s` is not a multiple of 10**, and its *length* is the
+digit count of `s`. Let `R` be the decimals that round to `v` and `p` the minimal length
+over `R`. **If `p <= 2`, `T` is the decimals in `R` of length 1 or 2**; otherwise those of
+length `p`. Then `d` is the one in `T` closest to `v`.
 
-**Blast radius, confirmed unchanged:** 1 of 23 rows in `rotations.toString`,
-`AABB#toString` (PORT-BLOCKED), and SNBT when it lands.
+So when `p == 1` Java does not take the one-digit decimal -- it takes the closest decimal of
+length at most two, which is usually a different number. `Float.MIN_VALUE` has `p == 1`
+(`1e-45` round-trips), but `1.4e-45` is closer to the true value, so Java prints `1.4E-45`.
+
+The "not a multiple of 10" clause is what stops this becoming "always print two digits":
+the nearest two-digit rendering of `0.5f` is `5.0e-1`, whose significand `50` IS a multiple
+of 10, so the canonical decimal is `5 * 10^-1`, length 1, and the string is `0.5`. An
+implementation without that clause prints `0.50` and `0.0010`. (That was the first attempt
+at this fix, and the module's own unit tests caught it immediately.)
+
+**2. Ties go to the even last digit.** Rust's `{:e}` rounds ties **up**. Found by the same
+verification run, not by reasoning: `f32` bits `1087348736` sits exactly between
+`6.4882812` and `6.4882813`, Java prints the even one and Rust printed the odd one.
+**4,282 of 11,223,706** corpus values hit this -- 0.04%, which is why sixteen sessions of
+golden tests never tripped over it.
+
+**Both have the same cure.** Rust's *explicit-precision* formatting (`{:.*e}`) is correctly
+rounded and breaks ties to even, so the implementation is: count the shortest form's
+significant digits as `p`, re-render at `max(p, 2)` digits with explicit precision, drop a
+trailing mantissa zero, then lay out. Step two is a no-op for 99.96% of values.
+
+**Verification.** All 8,388,607 positive float subnormals; a stride-1021 sample of the whole
+normal float range; a sample of negative floats; all 200,001 smallest doubles; a strided
+sample of the whole double range; negative doubles; and the usual human-readable values.
+**11,223,706 comparisons, 0 mismatches** against JDK 21.0.12. The harness points `#[path]`
+at the real source file, so there is no transcribed copy to drift.
+
+**What it unblocked.** `aabb.toString` moved from `BLOCKED_ON_UNPORTED_TYPES` to `COVERED`
+(100/100 rows); `rotations.toString` and `vec3.toString` no longer skip their subnormal
+rows; and `FloatTag`/`DoubleTag`'s `toString` are exact, so SNBT does not inherit a known
+gap. Session 20's "nine float values" count was a correct measurement of the *symptom* and
+a misleading guide to the *cost* -- the nine were the values where padding with a zero
+happened to be wrong, not the extent of the rule.
 
 ---
 

@@ -5,14 +5,19 @@
 //! 47 of 55 methods; 38 of 39 golden groups. PARTIAL for two separate reasons, both of which
 //! are gaps rather than bugs.
 //!
-//! **Eight methods are `todo!`**, each naming its dependency: `levelgen.structure.BoundingBox`,
-//! `BlockHitResult`, `FloatingDecimal`, and the two JOML `Vector4f` overloads (plus the
-//! constructors that need them). See the PORT-BLOCKED section at the bottom.
+//! **Some methods are `todo!`**, each naming its dependency:
+//! `levelgen.structure.BoundingBox`, `BlockHitResult`, and the JOML `Vector4f` overloads
+//! (plus the constructors that need them). See the PORT-BLOCKED section at the bottom.
+//! (The counts in this paragraph and in that section disagree with each other and with the
+//! two `todo!`s actually in the file; session 21 noticed but did not re-count, so treat
+//! them as approximate until someone does.)
 //!
-//! **One of the 39 `aabb.*` golden groups is not claimed:** `aabb.toString`, a formatting
-//! dependency. 85 of its 100 rows match bit-for-bit, and the 15 that differ are all
-//! `Double.MIN_VALUE`, where Java prints `4.9E-324` and `double_to_string` prints `5.0E-324`.
-//! That is the `FloatingDecimal` subnormal gap, not an AABB bug.
+//! **All 39 `aabb.*` golden groups are now claimed.** `aabb.toString` was the hold-out from
+//! session 11 to session 21: 85 of its 100 rows matched and the 15 that differed were all
+//! `Double.MIN_VALUE`, where Java prints `4.9E-324` and `double_to_string` printed
+//! `5.0E-324`. That was blamed on a missing `FloatingDecimal` port. It was not --
+//! `float_to_string` was missing Java's two-digit minimum and its round-half-to-even tie
+//! rule, both two-line fixes, and the group has been green since session 21.
 //!
 //! The four `BlockPos`-taking groups (`fromBlockPos`, `encapsulatingFullBlocks`, `moveBlockPos`,
 //! `intersectsBlockPos`) were blocked until `BlockPos` was ported in session 12 and were turned
