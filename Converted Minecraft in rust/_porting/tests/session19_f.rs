@@ -131,19 +131,115 @@ mod bit_storage {
         assert_eq!(h, -7060619042545238026);
     }
 
+    /// Over the index range a real storage can reach, the magic table IS true division.
+    ///
+    /// The bound is not arbitrary and it is not a weakened assertion. `cellIndex` computes
+    /// `((long) i * mul + add) >> 32 >> shift` with `mul == add == floor(2^32 / vpl)`, and
+    /// that approximation drifts one unit low once `i` gets large. An exhaustive scan of
+    /// the whole non-negative `int` domain (2 endpoint checks per quotient block, which is
+    /// sufficient because both sides are monotone) puts the EARLIEST divergence of any bit
+    /// width at index 715,827,890 (`bits = 6`, `vpl = 10`); the six diverging widths have
+    /// 735,427,931 divergent indices between them, all at `i >= 2^29.4`.
+    ///
+    /// A storage that big cannot exist: `data` would need ~71.6M longs (573 MB) for one
+    /// `BitStorage`, and the largest in the game is a 4096-entry chunk section. So 200,000
+    /// is far above anything reachable and far below the first divergence.
+    ///
+    /// `magic_cell_index_diverges_from_true_division_exactly_where_java_does` pins the
+    /// other side of that line.
     #[test]
-fn magic_cell_index_matches_true_division_for_valid_indices() {
-    let size = 200_000;
+    fn magic_cell_index_matches_true_division_for_valid_indices() {
+        let size = 200_000;
 
-    for bits in 1..=32 {
-        let s = SimpleBitStorage::new(bits, size);
-        let vpl = 64 / bits;
+        for bits in 1..=32 {
+            let s = SimpleBitStorage::new(bits, size);
+            let vpl = 64 / bits;
 
-        for i in 0..size {
-            assert_eq!(s.cell_index(i), i / vpl, "bits {bits} index {i}");
+            for i in 0..size {
+                assert_eq!(s.cell_index(i), i / vpl, "bits {bits} index {i}");
+            }
         }
     }
-}
+
+    /// The magic table is NOT true division at the top of the `int` range, and the port
+    /// must be wrong in exactly the way Java is wrong.
+    ///
+    /// This is the test that was missing. An earlier version of the test above asserted
+    /// `cell_index(i) == i / vpl` at an extreme index and failed with magic `102261125`
+    /// against an expected `102261126` -- and the expectation was what was wrong: real
+    /// Java returns `102261125` there too. Asserting true division over the whole domain
+    /// states an invariant vanilla does not have.
+    ///
+    /// It matters in the other direction as well. "Fixing" `cell_index` to use `i / vpl`
+    /// would look like a cleanup, pass the test above, and silently diverge from vanilla.
+    /// Nothing else would catch it, because no reachable index gets here.
+    ///
+    /// Oracle: `SimpleBitStorage#cellIndex` on JDK 21, driven with the real `MAGIC` table
+    /// read out of the 26.2 source. Columns: `(bits, index, java_cell_index, true_div)`.
+    #[test]
+    fn magic_cell_index_diverges_from_true_division_exactly_where_java_does() {
+        const PROBES: &[(i32, i32, i32, i32)] = &[
+            // The last index of the block before the first divergence, then the first
+            // divergent index itself, for each of the six widths that diverge at all.
+            (3, 1073741823, 51130563, 51130563),
+            (3, 1073741844, 51130563, 51130564),
+            (5, 1073741820, 89478485, 89478485),
+            (5, 1073741832, 89478485, 89478486),
+            (6, 715827880, 71582788, 71582788),
+            (6, 715827890, 71582788, 71582789),
+            (7, 1073741823, 119304647, 119304647),
+            (7, 1073741832, 119304647, 119304648),
+            (9, 1073741823, 153391689, 153391689),
+            (9, 1073741830, 153391689, 153391690),
+            (10, 1073741820, 178956970, 178956970),
+            (10, 1073741826, 178956970, 178956971),
+            // The very top of the range. Note `i32::MAX` itself AGREES for every width --
+            // the divergence is periodic, not a simple ceiling, which is why a probe that
+            // only tested `i32::MAX` would have reported everything clean.
+            (3, 2147483646, 102261125, 102261126),
+            (3, 2147483647, 102261126, 102261126),
+            (5, 2147483646, 178956970, 178956970),
+            (6, 2147483646, 214748364, 214748364),
+            (7, 2147483646, 238609293, 238609294),
+            (7, 2147483647, 238609294, 238609294),
+            (9, 2147483646, 306783377, 306783378),
+            (9, 2147483647, 306783378, 306783378),
+            (10, 2147483646, 357913940, 357913941),
+            (10, 2147483647, 357913941, 357913941),
+            // Widths that never diverge: vpl 5 (bits 11, 12), vpl 3 (bits 17..21), and
+            // every power-of-two vpl, where the row is (2^31, 0, s) with vpl == 2^(1+s)
+            // so the formula reduces to `i >> (1 + s)` and is exact by construction.
+            (11, 2147483647, 429496729, 429496729),
+            (12, 2147483647, 429496729, 429496729),
+            (17, 2147483647, 715827882, 715827882),
+            (21, 2147483647, 715827882, 715827882),
+            (1, 2147483647, 33554431, 33554431),
+            (2, 2147483647, 67108863, 67108863),
+            (4, 2147483647, 134217727, 134217727),
+            (8, 2147483647, 268435455, 268435455),
+            (13, 2147483647, 536870911, 536870911),
+            (16, 2147483647, 536870911, 536870911),
+            (22, 2147483647, 1073741823, 1073741823),
+            (32, 2147483647, 1073741823, 1073741823),
+        ];
+
+        let mut diverging = 0;
+        for &(bits, index, want, true_div) in PROBES {
+            // `cellIndex` reads only the MAGIC row picked by `bits`, never `size`, so a
+            // tiny storage answers for an index no real storage could hold.
+            let s = SimpleBitStorage::new(bits, 64);
+            assert_eq!(s.cell_index(index), want, "bits {bits} index {index}");
+            if want != true_div {
+                diverging += 1;
+                assert_eq!(
+                    want,
+                    true_div - 1,
+                    "bits {bits} index {index}: the drift is always exactly one unit low"
+                );
+            }
+        }
+        assert_eq!(diverging, 10, "expected 10 diverging probes; the table was edited");
+    }
 
     #[test]
     fn simple_bit_storage_packs_like_the_jar_for_every_bit_width() {

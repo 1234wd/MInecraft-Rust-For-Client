@@ -665,10 +665,11 @@ pub fn log(x: f64) -> f64 {
 ///
 /// # WHAT COUNTS AS A VIOLATION
 ///
-/// A call to `f64::ln`, `f64::exp`, `f64::sin`, `f64::cos`, `f64::tan`, `f64::asin`,
+/// A call to `f64::ln`, `f64::ln_1p`, `f64::log`, `f64::log2`, `f64::log10`, `f64::exp`,
+/// `f64::exp2`, `f64::exp_m1`, `f64::sin`, `f64::cos`, `f64::tan`, `f64::asin`,
 /// `f64::acos`, `f64::atan`, `f64::atan2`, `f64::sinh`, `f64::cosh`, `f64::tanh`,
-/// `f64::log10`, `f64::log1p`, `f64::log2`, `f64::exp2`, `f64::exp_m1`, `f64::hypot`,
-/// `f64::cbrt`, `f64::sinh`, `f64::cosh`, `f64::tan`, `f64::to_degrees`, `f64::to_radians`.
+/// `f64::asinh`, `f64::acosh`, `f64::atanh`, `f64::cbrt`, `f64::hypot`, `f64::powf`,
+/// `f64::to_degrees`, `f64::to_radians` (and the `f32` spelling of each).
 ///
 /// **NOT** a violation, and the list is deliberate:
 /// * `sqrt` -- IEEE-754 requires correctly rounded, so the host and HotSpot agree.
@@ -702,9 +703,13 @@ fn ported_code_never_calls_a_host_transcendental() {
     const FORBIDDEN: &[&str] = &[
         // one-argument forms: `x.ln()`, `x.exp()`, ...
         ".ln()",
+        // `ln_1p`, NOT `log1p`. The list said `.log1p()` for six sessions, which is a C
+        // name, not a Rust one: `f64` has no `log1p` method, so that entry could never
+        // match anything while the real spelling went unwatched. A guard pattern that
+        // cannot fire is worse than a missing one, because it reads as covered.
+        ".ln_1p()",
         ".log10()",
         ".log2()",
-        ".log1p()",
         ".exp()",
         ".exp2()",
         ".exp_m1()",
@@ -717,11 +722,22 @@ fn ported_code_never_calls_a_host_transcendental() {
         ".sinh()",
         ".cosh()",
         ".tanh()",
+        // The inverse hyperbolics. Nothing ported calls them yet, which is exactly when
+        // to add them -- the three bugs in the module docs all arrived in code that was
+        // not being watched at the time it was written.
+        ".asinh()",
+        ".acosh()",
+        ".atanh()",
         ".cbrt()",
         ".hypot(",
         // two-argument forms: `a.powf(b)`, `x.powf(y)`, ...
         ".powf(",
         ".atan2(",
+        // `f64::log(self, base)` -- an arbitrary-base logarithm, and the host's. Spelled
+        // with the open paren so it does not also match `.log10()` / `.log2()`, which have
+        // their own entries, nor a `logger.log(..)`-style call on some other type (there
+        // are none in the tree, and the assertion below would name the file if one landed).
+        ".log(",
         ".to_degrees()",
         ".to_radians()",
     ];
