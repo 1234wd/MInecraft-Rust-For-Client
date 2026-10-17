@@ -2101,3 +2101,97 @@ DISPLAY	1	DisplayData[width=-5, height=7, fullscreenWidth=OptionalInt.empty, ful
 DISPLAY	2	DisplayData[width=-5, height=7, fullscreenWidth=OptionalInt[3], fullscreenHeight=OptionalInt[4], isFullscreen=true]	DisplayData[width=1, height=2, fullscreenWidth=OptionalInt[3], fullscreenHeight=OptionalInt[4], isFullscreen=false]
 DISPLAY	3	DisplayData[width=-5, height=7, fullscreenWidth=OptionalInt[0], fullscreenHeight=OptionalInt.empty, isFullscreen=false]	DisplayData[width=1, height=2, fullscreenWidth=OptionalInt[0], fullscreenHeight=OptionalInt.empty, isFullscreen=true]
 DISPLAY	4	DisplayData[width=-5, height=7, fullscreenWidth=OptionalInt[-2147483648], fullscreenHeight=OptionalInt[-1], isFullscreen=true]	DisplayData[width=-2147483648, height=2147483647, fullscreenWidth=OptionalInt[-2147483648], fullscreenHeight=OptionalInt[-1], isFullscreen=false]
+DOTS	0	O o o
+DOTS	1	O o o
+DOTS	299	O o o
+DOTS	300	o O o
+DOTS	599	o O o
+DOTS	600	o o O
+DOTS	900	o O o
+DOTS	1199	o O o
+DOTS	1200	O o o
+DOTS	-1	O o o
+DOTS	-299	O o o
+DOTS	-300	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 4
+DOTS	-301	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 4
+DOTS	-600	EX:java.lang.ArrayIndexOutOfBoundsException: Index -2 out of bounds for length 4
+DOTS	-1200	O o o
+DOTS	-1201	O o o
+DOTS	9223372036854775807	o o O
+DOTS	-9223372036854775808	EX:java.lang.ArrayIndexOutOfBoundsException: Index -2 out of bounds for length 4
+DOTS	123456789	o o O
+MATDEF	64	32	64	32
+MATDEF	0	0	0	0
+MATDEF	-1	2147483647	-1	2147483647
+SETONCE	100
+FFUNIV	main	main	false	true
+FFUNIV			false	true
+FFUNIV	\u00e9	\u00e9	false	true
+SAVEDDATA	D f t f D t t f	010101110
+SPVCDIM	-1	0xffffffff
+SPVCDIM	0	1D
+SPVCDIM	1	2D
+SPVCDIM	2	3D
+SPVCDIM	3	Cube
+SPVCDIM	4	Rect
+SPVCDIM	5	Buffer
+SPVCDIM	6	SubpassData
+SPVCDIM	7	0x7
+SPVCDIM	16	0x10
+SPVCDIM	255	0xff
+SPVCDIM	-2147483648	0x80000000
+SPVCDIM	2147483647	0x7fffffff
+SPVCDIM	-16	0xfffffff0
+THROTTLE	1	1	I T I I T T T I I I I T I T T T T T T I	1:0,0:1,1:0,0:1,0:2,0:1,1:0,1:0,0:1,0:2,0:3,0:4,0:3,0:4,0:3,0:2,0:1,1:0,1:0,1:0,0:1
+THROTTLE	5	10	I T I I T T T I I I I T I T T T T T T I	1:0,1:5,1:4,1:9,0:14,0:13,0:12,0:11,0:16,0:21,0:26,0:31,0:30,0:35,0:34,0:33,0:32,0:31,0:30,0:29,0:34
+THROTTLE	0	0	I T I I T T T I I I I T I T T T T T T I	1:0,1:0,1:0,1:0,1:0,1:0,1:0,1:0,1:0,1:0,1:0,1:0,1:0,1:0,1:0,1:0,1:0,1:0,1:0,1:0,1:0
+THROTTLE	-3	5	I T I I T T T I I I I T I T T T T T T I	1:0,1:-3,1:-3,1:-6,1:-9,1:-9,1:-9,1:-9,1:-12,1:-15,1:-18,1:-21,1:-21,1:-24,1:-24,1:-24,1:-24,1:-24,1:-24,1:-24,1:-27
+THROTTLE	2147483647	2147483647	I T I I T T T I I I I T I T T T T T T I	1:0,0:2147483647,1:2147483646,1:-3,1:2147483644,1:2147483643,1:2147483642,1:2147483641,1:-8,1:2147483639,1:-10,1:2147483637,1:2147483636,1:-13,1:-13,1:-13,1:-13,1:-13,1:-13,1:-13,1:2147483634
+THROTTLE	2147483647	0	I T I I T T T I I I I T I T T T T T T I	1:0,1:2147483647,1:2147483646,1:-3,1:2147483644,1:2147483643,1:2147483642,1:2147483641,1:-8,1:2147483639,1:-10,1:2147483637,1:2147483636,1:-13,1:-13,1:-13,1:-13,1:-13,1:-13,1:-13,1:2147483634
+THROTTLE	10	-1	I T I I T T T I I I I T I T T T T T T I	1:0,1:10,1:9,1:19,1:29,1:28,1:27,1:26,1:36,1:46,1:56,1:66,1:65,1:75,1:74,1:73,1:72,1:71,1:70,1:69,1:79
+THROTTLE	7	20	I T I I T T T I I I I T I T T T T T T I	1:0,1:7,1:6,1:13,0:20,1:19,1:18,1:17,0:24,0:31,0:38,0:45,0:44,0:51,0:50,0:49,0:48,0:47,0:46,0:45,0:52
+SCISSOR	new	false,0,0,0,0
+SCISSOR	enable	true,1,-2,300,2147483647
+SCISSOR	copy	true,1,-2,300,2147483647
+SCISSOR	disable	false,1,-2,300,2147483647
+SCISSOR	copy-after-disable	true,1,-2,300,2147483647
+SCISSOR	setFrom	false,1,-2,300,2147483647
+BDPSET	0	0
+BDPSET	5	5
+BDPSET	10	10
+BDPSET	11	10
+BDPSET	2147483647	10
+BDPSET	-1	-1
+BDPSET	-2147483648	-2147483648
+BDP	0	1	BlockPos{x=0, y=0, z=0}	0	-1	1	110000	0,-1,-1,-1,-1,-1
+BDP	1	1	BlockPos{x=1, y=-1, z=0}	9	999	1	110000	1,0,1,-1,1,1
+BDP	2	2	BlockPos{x=2, y=-2, z=0}	0	1999	2	001100	1,-1,0,-1,-1,-1
+BDP	3	2	BlockPos{x=3, y=-3, z=0}	9	2999	2	001100	1,1,1,0,1,1
+BDP	4	-2147483648	BlockPos{x=4, y=-4, z=0}	3	3999	-2147483648	000010	1,-1,1,-1,0,-1
+BDP	5	2147483647	BlockPos{x=5, y=-5, z=0}	3	4999	2147483647	000001	1,-1,1,-1,1,0
+STD140	f v3 f	4,32,36
+STD140	f f f f	4,8,12,16
+STD140	v2 f v3 v4 m4	8,12,32,48,112
+STD140	i iv2 iv3 iv4	4,16,32,48
+STD140	m4 f v2	64,68,80
+STD140	a16 f a8 f a1	0,4,8,12,12
+STD140	f a3 f a5	4,6,12,15
+ANIM	s:10 q t:12.5 f:4:1.0 q t:12.5 x q t:12.5	S1@10,ms=125,S1@6,ms=325,-0@-2147483648,ms=107374182400
+ANIM	i:5 i:9 q t:5.0 a:0:3 q a:1:7 q t:7.25 a:1:9 q	S1@5,ms=0,-0@-2147483648,S1@7,ms=12,S1@7
+ANIM	s:-2147483648 q i:3 q f:2:0.5 q t:0.0	-0@-2147483648,S1@3,S1@2,ms=-100
+ANIM	s:2147483647 f:-1:1.0 q t:1.0E9 f:1000:1.0E10 q t:3.0E38 c:0 q	-0@-2147483648,ms=157374185472,-0@-2147483648,ms=9223372036854775807,S1@77
+ANIM	s:0 f:3:-2.5 q t:-1.0 f:1:NaN q t:Infinity t:NaN	S1@7,ms=-400,S1@7,ms=9223372036854775807,ms=0
+WALK	u:1.0:0.4:1.0 u:1.0:0.4:1.0 u:0.0:0.4:2.0 x u:0.5:1.0:0.5	3ecccccd,3ecccccd,1,0,0,3e4ccccd,3e4ccccd,3ecccccd,3ecccccd,becccccd,becccccd,3f4ccccd,3f4ccccd;3f23d70a,3f851eb8,1,3ecccccd,3ecccccc,3f051eb8,3f3851eb,3f23d70a,3f851eb8,3e23d70c,be75c290,3f6147ae,3fd70a3d;3ec49ba5,403645a1,1,3f23d70a,40051eb8,3f03126e,401db22c,3ec49ba5,403645a1,3f656042,3fa7ef9d,3e03126c,40676c8a;0,0,0,0,0,0,0,0,0,0,0,0,0;3f000000,3e800000,1,0,0,3e800000,3e000000,3f000000,3e800000,bf000000,be800000,3f800000,3f000000
+WALK	p:3.0 u:-1.0:0.5:1.0 u:NaN:0.5:1.0 x	40400000,0,1,0,c0400000,3f800000,bfc00000,3f800000,0,c0400000,c0c00000,3f800000,40400000;3f800000,3f800000,1,3f800000,0,3f800000,3f000000,3f800000,3f800000,3f800000,bf800000,bf800000,40000000;7fc00000,7fc00000,0,7fc00000,7fc00000,7fc00000,7fc00000,7fc00000,7fc00000,7fc00000,7fc00000,7fc00000,7fc00000;0,0,0,0,0,0,0,0,0,0,0,0,0
+WALK	p:1.0E-6 u:1.0E-5:1.0:1.0 u:2.0E-5:0.0:-1.0 p:Infinity u:0.0:0.5:1.0	358637bd,0,0,0,b58637bd,350637bd,b50637bd,358637bd,0,b58637bd,b60637bd,360637bd,358637bd;3727c5ac,3727c5ac,0,358637bd,0,36b88ca3,36a7c5ac,3727c5ac,3727c5ac,b70637bc,b727c5ac,379f6230,37a7c5ac;3727c5ac,b7a7c5ac,0,3727c5ac,b727c5ac,3727c5ac,b77ba882,3727c5ac,b7a7c5ac,3727c5ac,80000000,3727c5ac,b7fba882;7f800000,b7a7c5ac,1,ffc00000,7f800000,3f800000,7f800000,3f800000,ffc00000,ff800000,7f800000,3f800000,ff800000;ffc00000,ffc00000,0,ffc00000,ffc00000,ffc00000,ffc00000,ffc00000,ffc00000,ffc00000,ffc00000,ffc00000,ffc00000
+CHESTLID	t o t t t t t t t t t t t t c t t t o t c t t t t t t t t t t t t	0,0,0;0,0,0;0,3d4ccccd,3dcccccd;3dcccccd,3e19999a,3e4ccccd;3e4ccccd,3e800000,3e99999a;3e99999a,3eb33334,3ecccccd;3ecccccd,3ee66666,3f000000;3f000000,3f0ccccd,3f19999a;3f19999a,3f266667,3f333334;3f333334,3f400001,3f4cccce;3f4cccce,3f59999b,3f666668;3f666668,3f733334,3f800000;3f800000,3f800000,3f800000;3f800000,3f800000,3f800000;3f800000,3f800000,3f800000;3f800000,3f733333,3f666666;3f666666,3f599999,3f4ccccc;3f4ccccc,3f3fffff,3f333332;3f4ccccc,3f3fffff,3f333332;3f333332,3f3fffff,3f4ccccc;3f333332,3f3fffff,3f4ccccc;3f4ccccc,3f3fffff,3f333332;3f333332,3f266665,3f199998;3f199998,3f0ccccb,3efffffd;3efffffd,3ee66664,3eccccca;3eccccca,3eb33330,3e999997;3e999997,3e7ffffb,3e4cccc8;3e4cccc8,3e199995,3dccccc3;3dccccc3,3d4cccc3,0;0,0,0;0,0,0;0,0,0;0,0,0
+CUBEDEF	0	0	0	0
+CUBEDEF	1	3f000000	3f000000	3f000000
+CUBEDEF	2	80000000	7fc00000	7149f2ca
+CUBEDEF	3	3fa00000	3fa00000	3fa00000
+CUBEDEF	4	3f8ccccd	bf800000	7f7fffff
+CUBEDEF	5	0	0	0
+CUBEDEF	6	7f800000	7f800000	7f800000
+BEAMSEC	0	0	1,2,3,4
+BEAMSEC	-1	-1	1,2,3,4
+BEAMSEC	305419896	305419896	1,2,3,4

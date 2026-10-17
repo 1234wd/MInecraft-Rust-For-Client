@@ -89,6 +89,7 @@ public class SmallProbe {
 			hashes();
 			recordsB();
 			recordsC();
+			stateD1();
 		}
 		System.err.println("small_probe: " + rows + " rows -> " + target);
 	}
@@ -721,5 +722,273 @@ public class SmallProbe {
 		for (int k = 0; k < dd.length; k++) {
 			row("DISPLAY", i(k), esc(dd[k].withSize(-5, 7).toString()), esc(dd[k].withFullscreen(!dd[k].isFullscreen()).toString()));
 		}
+	}
+
+	// ------------------------------------------------------------------ sub-batch D1: small stateful classes
+	//
+	// Stateful classes are driven by a SCRIPT that the row itself carries, so the Rust side replays
+	// exactly what ran here instead of keeping a second copy of the op list in sync by hand.
+
+	static String exText(Throwable t) {
+		return t.getClass().getName() + ": " + t.getMessage();
+	}
+
+	static Object field(Object o, String name) throws Exception {
+		java.lang.reflect.Field fl = o.getClass().getDeclaredField(name);
+		fl.setAccessible(true);
+		return fl.get(o);
+	}
+
+	static Object superField(Object o, Class<?> owner, String name) throws Exception {
+		java.lang.reflect.Field fl = owner.getDeclaredField(name);
+		fl.setAccessible(true);
+		return fl.get(o);
+	}
+
+	static void stateD1() throws Exception {
+		// LoadingDotsText.get(long): a NEGATIVE index for some negative times -> AIOOBE
+		long[] dotTimes = {0L, 1L, 299L, 300L, 599L, 600L, 900L, 1199L, 1200L, -1L, -299L, -300L, -301L, -600L, -1200L, -1201L,
+			Long.MAX_VALUE, Long.MIN_VALUE, 123456789L};
+		for (long t : dotTimes) {
+			String r;
+			try {
+				r = esc(net.minecraft.client.gui.screens.LoadingDotsText.get(t));
+			} catch (RuntimeException e) {
+				r = "EX:" + esc(exText(e));
+			}
+			row("DOTS", l(t), r);
+		}
+
+		// MaterialDefinition: two package-private final ints, no methods
+		for (int[] v : new int[][]{{64, 32}, {0, 0}, {-1, MAX}}) {
+			Object m = new net.minecraft.client.model.geom.builders.MaterialDefinition(v[0], v[1]);
+			row("MATDEF", i(v[0]), i(v[1]), String.valueOf(field(m, "xTexSize")), String.valueOf(field(m, "yTexSize")));
+		}
+
+		// SetOnceOptionState
+		net.minecraft.commands.arguments.selector.options.SetOnceOptionState so =
+			new net.minecraft.commands.arguments.selector.options.SetOnceOptionState();
+		StringBuilder sob = new StringBuilder();
+		sob.append(so.canParse() ? '1' : '0');
+		so.markParsed();
+		sob.append(so.canParse() ? '1' : '0');
+		so.markParsed();
+		sob.append(so.canParse() ? '1' : '0');
+		row("SETONCE", sob.toString());
+
+		// FeatureFlagUniverse: toString is the id; equals is identity
+		for (String s : new String[]{"main", "", "é"}) {
+			net.minecraft.world.flag.FeatureFlagUniverse u = new net.minecraft.world.flag.FeatureFlagUniverse(s);
+			row("FFUNIV", esc(s), esc(u.toString()), b(u.equals(new net.minecraft.world.flag.FeatureFlagUniverse(s))), b(u.equals(u)));
+		}
+
+		// SavedData (abstract): script over setDirty()/setDirty(b)
+		net.minecraft.world.level.saveddata.SavedData sd = new net.minecraft.world.level.saveddata.SavedData() {};
+		StringBuilder sdb = new StringBuilder();
+		sdb.append(sd.isDirty() ? '1' : '0');
+		String sdScript = "D f t f D t t f";
+		for (String op : sdScript.split(" ")) {
+			switch (op) {
+				case "D" -> sd.setDirty();
+				case "t" -> sd.setDirty(true);
+				default -> sd.setDirty(false);
+			}
+			sdb.append(sd.isDirty() ? '1' : '0');
+		}
+		row("SAVEDDATA", sdScript, sdb.toString());
+
+		// SpvcUtil.imageDimensionToString (package-private class and method)
+		java.lang.reflect.Method dimStr = Class.forName("com.mojang.blaze3d.vulkan.glsl.SpvcUtil")
+			.getDeclaredMethod("imageDimensionToString", int.class);
+		dimStr.setAccessible(true);
+		for (int dim : new int[]{-1, 0, 1, 2, 3, 4, 5, 6, 7, 16, 255, MIN, MAX, -16}) {
+			row("SPVCDIM", i(dim), esc((String) dimStr.invoke(null, dim)));
+		}
+
+		// TickThrottler: I = increment, T = tick; record isUnderThreshold and the private count after each op
+		int[][] throttles = {{1, 1}, {5, 10}, {0, 0}, {-3, 5}, {MAX, MAX}, {MAX, 0}, {10, -1}, {7, 20}};
+		String thrScript = "I T I I T T T I I I I T I T T T T T T I";
+		for (int[] tv : throttles) {
+			net.minecraft.util.TickThrottler th = new net.minecraft.util.TickThrottler(tv[0], tv[1]);
+			StringBuilder out = new StringBuilder();
+			out.append(th.isUnderThreshold() ? '1' : '0').append(':').append(field(th, "count"));
+			for (String op : thrScript.split(" ")) {
+				if (op.equals("I")) {
+					th.increment();
+				} else {
+					th.tick();
+				}
+				out.append(',').append(th.isUnderThreshold() ? '1' : '0').append(':').append(field(th, "count"));
+			}
+			row("THROTTLE", i(tv[0]), i(tv[1]), thrScript, out.toString());
+		}
+
+		// ScissorState
+		com.mojang.blaze3d.systems.ScissorState sc = new com.mojang.blaze3d.systems.ScissorState();
+		row("SCISSOR", "new", scissor(sc));
+		sc.enable(1, -2, 300, MAX);
+		row("SCISSOR", "enable", scissor(sc));
+		com.mojang.blaze3d.systems.ScissorState copy = new com.mojang.blaze3d.systems.ScissorState(sc);
+		row("SCISSOR", "copy", scissor(copy));
+		sc.disable();
+		row("SCISSOR", "disable", scissor(sc));
+		row("SCISSOR", "copy-after-disable", scissor(copy));
+		copy.setFrom(sc);
+		row("SCISSOR", "setFrom", scissor(copy));
+
+		// BlockDestructionProgress: progress clamps above 10 only; equals/hashCode by id; compareTo by progress then id
+		int[] progresses = {0, 5, 10, 11, MAX, -1, MIN};
+		for (int p : progresses) {
+			net.minecraft.server.level.BlockDestructionProgress bp =
+				new net.minecraft.server.level.BlockDestructionProgress(7, new net.minecraft.core.BlockPos(1, 2, 3));
+			bp.setProgress(p);
+			row("BDPSET", i(p), i(bp.getProgress()));
+		}
+		net.minecraft.server.level.BlockDestructionProgress[] bdps = new net.minecraft.server.level.BlockDestructionProgress[6];
+		int[][] bdv = {{1, 0}, {1, 9}, {2, 0}, {2, 9}, {MIN, 3}, {MAX, 3}};
+		for (int k = 0; k < bdv.length; k++) {
+			bdps[k] = new net.minecraft.server.level.BlockDestructionProgress(bdv[k][0], new net.minecraft.core.BlockPos(k, -k, 0));
+			bdps[k].setProgress(bdv[k][1]);
+			bdps[k].updateTick(1000L * k - 1);
+		}
+		for (int a = 0; a < bdps.length; a++) {
+			StringBuilder eq = new StringBuilder();
+			StringBuilder cmp = new StringBuilder();
+			for (int c = 0; c < bdps.length; c++) {
+				eq.append(bdps[a].equals(bdps[c]) ? '1' : '0');
+				cmp.append(c == 0 ? "" : ",").append(bdps[a].compareTo(bdps[c]));
+			}
+			row("BDP", i(a), i(bdps[a].getId()), bdps[a].getPos().toString(), i(bdps[a].getProgress()),
+				l(bdps[a].getUpdatedRenderTick()), i(bdps[a].hashCode()), eq.toString(), cmp.toString());
+		}
+
+		// Std140SizeCalculator: f i v2 iv2 v3 iv3 v4 iv4 m4, plus a raw align
+		String[] stdScripts = {"f v3 f", "f f f f", "v2 f v3 v4 m4", "i iv2 iv3 iv4", "m4 f v2", "a16 f a8 f a1", "f a3 f a5"};
+		for (String scr : stdScripts) {
+			com.mojang.blaze3d.buffers.Std140SizeCalculator calc = new com.mojang.blaze3d.buffers.Std140SizeCalculator();
+			StringBuilder out = new StringBuilder();
+			for (String op : scr.split(" ")) {
+				switch (op) {
+					case "f" -> calc.putFloat();
+					case "i" -> calc.putInt();
+					case "v2" -> calc.putVec2();
+					case "iv2" -> calc.putIVec2();
+					case "v3" -> calc.putVec3();
+					case "iv3" -> calc.putIVec3();
+					case "v4" -> calc.putVec4();
+					case "iv4" -> calc.putIVec4();
+					case "m4" -> calc.putMat4f();
+					default -> calc.align(Integer.parseInt(op.substring(1)));
+				}
+				out.append(out.length() == 0 ? "" : ",").append(calc.get());
+			}
+			row("STD140", scr, out.toString());
+		}
+
+		// AnimationState: script of start/startIfStopped/animateWhen/stop/fastForward/copyFrom, sampling after each op
+		String[] animScripts = {
+			"s:10 q t:12.5 f:4:1.0 q t:12.5 x q t:12.5",
+			"i:5 i:9 q t:5.0 a:0:3 q a:1:7 q t:7.25 a:1:9 q",
+			"s:-2147483648 q i:3 q f:2:0.5 q t:0.0",
+			"s:2147483647 f:-1:1.0 q t:1.0E9 f:1000:1.0E10 q t:3.0E38 c:0 q",
+			"s:0 f:3:-2.5 q t:-1.0 f:1:NaN q t:Infinity t:NaN",
+		};
+		for (String scr : animScripts) {
+			net.minecraft.world.entity.AnimationState st = new net.minecraft.world.entity.AnimationState();
+			net.minecraft.world.entity.AnimationState other = new net.minecraft.world.entity.AnimationState();
+			other.start(77);
+			StringBuilder out = new StringBuilder();
+			for (String op : scr.split(" ")) {
+				String[] p = op.split(":");
+				switch (p[0]) {
+					case "s" -> st.start(Integer.parseInt(p[1]));
+					case "i" -> st.startIfStopped(Integer.parseInt(p[1]));
+					case "a" -> st.animateWhen(p[1].equals("1"), Integer.parseInt(p[2]));
+					case "x" -> st.stop();
+					case "f" -> st.fastForward(Integer.parseInt(p[1]), Float.parseFloat(p[2]));
+					case "c" -> st.copyFrom(other);
+					case "q" -> {
+						int[] calls = {0};
+						st.ifStarted(s -> calls[0]++);
+						out.append(out.length() == 0 ? "" : ",").append(st.isStarted() ? "S" : "-").append(calls[0])
+							.append('@').append(field(st, "startTick"));
+					}
+					case "t" -> out.append(out.length() == 0 ? "" : ",").append("ms=").append(st.getTimeInMillis(Float.parseFloat(p[1])));
+					default -> throw new IllegalStateException(op);
+				}
+			}
+			row("ANIM", scr, out.toString());
+		}
+
+		// WalkAnimationState: u:target:factor:scale, p:speed, x = stop; sample everything after each op
+		String[] walkScripts = {
+			"u:1.0:0.4:1.0 u:1.0:0.4:1.0 u:0.0:0.4:2.0 x u:0.5:1.0:0.5",
+			"p:3.0 u:-1.0:0.5:1.0 u:NaN:0.5:1.0 x",
+			"p:1.0E-6 u:1.0E-5:1.0:1.0 u:2.0E-5:0.0:-1.0 p:Infinity u:0.0:0.5:1.0",
+		};
+		float[] partials = {0.0f, 0.5f, 1.0f, -1.0f, 2.0f};
+		for (String scr : walkScripts) {
+			net.minecraft.world.entity.WalkAnimationState w = new net.minecraft.world.entity.WalkAnimationState();
+			StringBuilder out = new StringBuilder();
+			for (String op : scr.split(" ")) {
+				String[] p = op.split(":");
+				switch (p[0]) {
+					case "u" -> w.update(Float.parseFloat(p[1]), Float.parseFloat(p[2]), Float.parseFloat(p[3]));
+					case "p" -> w.setSpeed(Float.parseFloat(p[1]));
+					default -> w.stop();
+				}
+				out.append(out.length() == 0 ? "" : ";").append(f(w.speed())).append(',').append(f(w.position())).append(',')
+					.append(w.isMoving() ? '1' : '0');
+				for (float pt : partials) {
+					out.append(',').append(f(w.speed(pt))).append(',').append(f(w.position(pt)));
+				}
+			}
+			row("WALK", scr, out.toString());
+		}
+
+		// ChestLidController: o = shouldBeOpen(true), c = shouldBeOpen(false), t = tickLid; sample openness at partials
+		String chestScript = "t o t t t t t t t t t t t t c t t t o t c t t t t t t t t t t t t";
+		net.minecraft.world.level.block.entity.ChestLidController lid = new net.minecraft.world.level.block.entity.ChestLidController();
+		StringBuilder lidOut = new StringBuilder();
+		for (String op : chestScript.split(" ")) {
+			switch (op) {
+				case "o" -> lid.shouldBeOpen(true);
+				case "c" -> lid.shouldBeOpen(false);
+				default -> lid.tickLid();
+			}
+			lidOut.append(lidOut.length() == 0 ? "" : ";").append(f(lid.getOpenness(0.0f))).append(',').append(f(lid.getOpenness(0.5f)))
+				.append(',').append(f(lid.getOpenness(1.0f)));
+		}
+		row("CHESTLID", chestScript, lidOut.toString());
+
+		// CubeDeformation: package-private growX/Y/Z; extend(float) and extend(float,float,float)
+		net.minecraft.client.model.geom.builders.CubeDeformation[] cds = {
+			net.minecraft.client.model.geom.builders.CubeDeformation.NONE,
+			new net.minecraft.client.model.geom.builders.CubeDeformation(0.5f),
+			new net.minecraft.client.model.geom.builders.CubeDeformation(-0.0f, Float.NaN, 1e30f),
+			new net.minecraft.client.model.geom.builders.CubeDeformation(1.0f).extend(0.25f),
+			new net.minecraft.client.model.geom.builders.CubeDeformation(1.0f).extend(0.1f, -2.0f, Float.MAX_VALUE),
+			net.minecraft.client.model.geom.builders.CubeDeformation.NONE.extend(-0.0f),
+			new net.minecraft.client.model.geom.builders.CubeDeformation(Float.MAX_VALUE).extend(Float.MAX_VALUE),
+		};
+		for (int k = 0; k < cds.length; k++) {
+			row("CUBEDEF", i(k), f((Float) field(cds[k], "growX")), f((Float) field(cds[k], "growY")), f((Float) field(cds[k], "growZ")));
+		}
+
+		// BeaconBeamOwner.Section
+		for (int color : new int[]{0, -1, 0x12345678}) {
+			net.minecraft.world.level.block.entity.BeaconBeamOwner.Section s = new net.minecraft.world.level.block.entity.BeaconBeamOwner.Section(color);
+			StringBuilder out = new StringBuilder();
+			out.append(s.getHeight());
+			for (int k = 0; k < 3; k++) {
+				s.increaseHeight();
+				out.append(',').append(s.getHeight());
+			}
+			row("BEAMSEC", i(color), i(s.getColor()), out.toString());
+		}
+	}
+
+	static String scissor(com.mojang.blaze3d.systems.ScissorState s) {
+		return b(s.enabled()) + "," + s.x() + "," + s.y() + "," + s.width() + "," + s.height();
 	}
 }
