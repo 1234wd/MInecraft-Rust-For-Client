@@ -79,3 +79,30 @@ fn every_probe_group_is_claimed() {
         "session22 reads groups small_probe.txt does not have: {missing:?}"
     );
 }
+
+#[test]
+fn nan_canon_collapses_nan_tokens_and_nothing_else() {
+    // Each NaN shape: f32/f64, quiet/signalling, either sign, as a whole field or in a transcript.
+    assert_eq!(nan_canon("ffc00000"), "7fc00000");
+    assert_eq!(nan_canon("7f800001"), "7fc00000");
+    assert_eq!(nan_canon("fff8000000000000"), "7ff8000000000000");
+    assert_eq!(nan_canon("7ff0000000000001"), "7ff8000000000000");
+    assert_eq!(
+        nan_canon("ms=ffc00000,3f800000;fff8000000000001 R"),
+        "ms=7fc00000,3f800000;7ff8000000000000 R"
+    );
+    // Not NaN: infinities, both zeros, a short token, a NaN-shaped tail of a longer token.
+    for keep in [
+        "7f800000",
+        "ff800000",
+        "80000000",
+        "0",
+        "8000000000000000",
+        "7ff0000000000000",
+        "fc00000",
+        "aaffc00000",
+        "x=7fc0000",
+    ] {
+        assert_eq!(nan_canon(keep), keep);
+    }
+}

@@ -25,7 +25,8 @@
 //! with Rust's signum it could be true. So this is `javacompat::java_lang::signum_f64`.
 //!
 //! Verified by the `SMOOTH` group of `small_probe.txt` (`tests/session22.rs`): three scripts with
-//! both zeros, NaN, `-Infinity`, `1.0E300` and subnormals, every return value as raw bits.
+//! both zeros, NaN, `-Infinity`, `1.0E300` and subnormals, every return value as raw bits
+//! (any NaN equal to any NaN: the sign of a computed NaN is not portable -- see `nan_canon`).
 
 use crate::javacompat::java_lang;
 use crate::net::minecraft::util::Mth::Mth;

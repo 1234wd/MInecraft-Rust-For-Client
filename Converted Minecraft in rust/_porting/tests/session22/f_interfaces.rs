@@ -94,7 +94,13 @@ fn tab_order_holder_owner_and_rotate_towards_match_the_jar() {
             .iter()
             .map(|&m| hex32(Ctl.rotate_towards(from, to, m)))
             .collect();
-        assert_eq!(got.join(","), r[3], "rotateTowards({}, {}, *)", r[1], r[2]);
+        assert_eq!(
+            nan_canon(&got.join(",")),
+            nan_canon(r[3]),
+            "rotateTowards({}, {}, *)",
+            r[1],
+            r[2]
+        );
     }
 }
 
@@ -154,7 +160,12 @@ fn glyph_info_defaults_match_the_jar() {
             g.get_shadow_offset(),
         ]
         .map(hex32);
-        assert_eq!(got.to_vec(), r[2..7].to_vec(), "simple({})", r[1]);
+        assert_eq!(
+            nan_canon(&got.join(" ")),
+            nan_canon(&r[2..7].join(" ")),
+            "simple({})",
+            r[1]
+        );
     }
 }
 
@@ -411,8 +422,8 @@ fn lerp_functions_match_the_jar() {
         ]
         .map(hex32);
         assert_eq!(
-            got.to_vec(),
-            r[4..9].to_vec(),
+            nan_canon(&got.join(" ")),
+            nan_canon(&r[4..9].join(" ")),
             "alpha {} from {} to {}",
             r[1],
             r[2],

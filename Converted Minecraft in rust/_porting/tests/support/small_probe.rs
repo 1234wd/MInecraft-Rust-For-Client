@@ -129,3 +129,48 @@ pub fn hex32(v: f32) -> String {
 pub fn hex64(v: f64) -> String {
     format!("{:x}", v.to_bits())
 }
+
+/// `s` with every 8- or 16-hex-digit token that is a NaN bit pattern replaced by Java's canonical
+/// NaN (`floatToIntBits`'s `7fc00000`, `doubleToLongBits`'s `7ff8000000000000`).
+///
+/// For COMPUTED floats only, and applied to both sides of an assertion. Neither the JLS nor Rust
+/// fixes the sign or payload of the NaN an arithmetic operation returns: x86 generates
+/// `ffc00000` where ARM generates `7fc00000`, and release-mode LLVM folds `x * -1.0` into a
+/// negation that flips a NaN's sign. Java code only sees the difference through
+/// `floatToRawIntBits`, which none of these classes calls. Every non-NaN token -- signed zeros
+/// included -- is still compared bit for bit, and bit-exact operations (casts, writes,
+/// `Math.signum`'s pass-through) keep comparing raw bits.
+///
+/// A NaN-shaped token is always full width (`toHexString` drops only LEADING zeros), so no NaN is
+/// missed. The one cost is that a `double` whose bits fit in 32 and look like a `float` NaN (a
+/// subnormal near `2e-314`) is collapsed too -- on both sides, so it can only hide a difference
+/// between two such values.
+pub fn nan_canon(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    let mut token = String::new();
+    let flush = |token: &mut String, out: &mut String| {
+        let canon = match token.len() {
+            8 => u32::from_str_radix(token, 16)
+                .ok()
+                .filter(|&b| f32::from_bits(b).is_nan())
+                .map(|_| "7fc00000"),
+            16 => u64::from_str_radix(token, 16)
+                .ok()
+                .filter(|&b| f64::from_bits(b).is_nan())
+                .map(|_| "7ff8000000000000"),
+            _ => None,
+        };
+        out.push_str(canon.unwrap_or(token));
+        token.clear();
+    };
+    for c in s.chars() {
+        if c.is_ascii_alphanumeric() {
+            token.push(c);
+        } else {
+            flush(&mut token, &mut out);
+            out.push(c);
+        }
+    }
+    flush(&mut token, &mut out);
+    out
+}

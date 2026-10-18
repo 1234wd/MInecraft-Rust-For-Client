@@ -21,7 +21,8 @@
 //!
 //! Verified by the `AVATAR` group of `small_probe.txt` (`tests/session22.rs`): a fifteen-step
 //! script (a snap, a NaN axis, a `1.0E9` teleport) with every reader at three partial ticks after
-//! every step, as raw bits.
+//! every step, as raw bits (any NaN equal to any NaN: the sign of a computed NaN is not
+//! portable -- see `nan_canon` in `tests/support/small_probe.rs`).
 
 use crate::net::minecraft::util::Mth::Mth;
 use crate::net::minecraft::world::phys::Vec3::Vec3;

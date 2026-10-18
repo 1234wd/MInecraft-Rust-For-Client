@@ -102,8 +102,8 @@ fn material_definition_and_cube_deformation_fields_match_the_jar() {
     assert_eq!(rows.len(), cds.len());
     for (r, c) in rows.iter().zip(cds.iter()) {
         assert_eq!(
-            (hex32(c.grow_x), hex32(c.grow_y), hex32(c.grow_z)),
-            (r[2].to_string(), r[3].to_string(), r[4].to_string()),
+            nan_canon(&[hex32(c.grow_x), hex32(c.grow_y), hex32(c.grow_z)].join(" ")),
+            nan_canon(&r[2..5].join(" ")),
             "deformation[{}]",
             r[1]
         );
@@ -342,7 +342,12 @@ fn walk_animation_state_replays_the_jar_scripts() {
             }
             out.push(s);
         }
-        assert_eq!(out.join(";"), r[2], "script {}", r[1]);
+        assert_eq!(
+            nan_canon(&out.join(";")),
+            nan_canon(r[2]),
+            "script {}",
+            r[1]
+        );
     }
 }
 

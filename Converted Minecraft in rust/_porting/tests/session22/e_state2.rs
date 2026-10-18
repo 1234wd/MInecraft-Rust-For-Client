@@ -113,7 +113,12 @@ fn smooth_double_replays_the_jar_scripts() {
                 out.push(hex64(sm.get_new_delta_value(a, b)));
             }
         }
-        assert_eq!(out.join(","), r[2], "script {}", r[1]);
+        assert_eq!(
+            nan_canon(&out.join(",")),
+            nan_canon(r[2]),
+            "script {}",
+            r[1]
+        );
     }
 }
 
@@ -241,8 +246,8 @@ fn piston_movement_area_matches_the_jar() {
         ]
         .map(hex64);
         assert_eq!(
-            corners.to_vec(),
-            r[4..10].to_vec(),
+            nan_canon(&corners.join(" ")),
+            nan_canon(&r[4..10].join(" ")),
             "box {} {} {}",
             r[1],
             r[2],
@@ -328,7 +333,7 @@ fn client_avatar_state_replays_the_jar_script() {
         }
         out.push(s);
     }
-    assert_eq!(out.join(";"), r[2]);
+    assert_eq!(nan_canon(&out.join(";")), nan_canon(r[2]));
 }
 
 #[test]

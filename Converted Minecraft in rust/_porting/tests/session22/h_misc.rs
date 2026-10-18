@@ -75,10 +75,30 @@ fn gpu_format_and_component_type_match_the_jar() {
 fn block_display_context_is_a_fresh_object_per_create() {
     let r = &rows("BLOCKDISPCTX")[0];
     let (c1, c2) = (BlockDisplayContext::create(), BlockDisplayContext::create());
-    // Java: two creates are neither `==` nor `equals`; one is equal to itself. Identity.
-    assert_eq!(std::ptr::eq(&c1, &c2), boolf(r[1]));
-    assert!(!boolf(r[2]) && boolf(r[3]));
-    assert!(std::ptr::eq(&c1, &c1));
+    // Java: two creates are neither `==` nor `equals`; one is equal to itself. Identity -- which
+    // the port carries as a per-create number, not an address (a zero-sized type has none).
+    assert_eq!(c1 == c2, boolf(r[1]), "c1 == c2");
+    assert_eq!(c1 == c2, boolf(r[2]), "c1.equals(c2)");
+    assert_eq!(c1 == c1, boolf(r[3]), "c1.equals(c1)");
+    let copy = c1;
+    assert!(copy == c1, "a copied reference is the same object");
+    // Distinct across threads as well: four threads, a hundred creates each, no two equal.
+    let handles: Vec<_> = (0..4)
+        .map(|_| {
+            std::thread::spawn(|| {
+                (0..100)
+                    .map(|_| BlockDisplayContext::create())
+                    .collect::<Vec<_>>()
+            })
+        })
+        .collect();
+    let mut seen = std::collections::HashSet::from([c1, c2]);
+    for h in handles {
+        for c in h.join().expect("create thread") {
+            assert!(seen.insert(c), "{c:?} was created twice");
+        }
+    }
+    assert_eq!(seen.len(), 402);
     assert_eq!(r[4], "private", "the jar's constructor is private");
 }
 

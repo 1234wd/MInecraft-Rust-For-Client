@@ -15,7 +15,8 @@
 //! No `equals` override in Java (identity), so no `PartialEq` here.
 //!
 //! Verified by the `CUBEDEF` group of `small_probe.txt` (`tests/session22.rs`), which reads the
-//! three fields back by reflection as raw bits.
+//! three fields back by reflection as raw bits
+//! (any NaN equal to any NaN -- see `nan_canon`).
 
 /// Port of `net.minecraft.client.model.geom.builders.CubeDeformation`.
 #[derive(Debug, Clone, Copy)]

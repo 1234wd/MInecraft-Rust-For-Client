@@ -19,12 +19,18 @@
 //! NaN amounts propagate through both. The resulting box goes through `new AABB(...)`, which
 //! re-sorts each axis.
 //!
+//! A NaN result's SIGN is not part of the contract, in either language. HotSpot computes
+//! `NaN * -1` with a multiply and keeps `7ff8...`; release-mode Rust folds `amount * -1.0` into a
+//! negation and returns `fff8...`. Java code can only tell them apart through
+//! `doubleToRawLongBits` (`AABB.equals`/`hashCode` canonicalise), so the test treats every NaN
+//! corner as one NaN. Found when the session-22 release run failed where debug passed.
+//!
 //! The switch reads the MIN face for `WEST`/`DOWN`/`NORTH` and the MAX face for
 //! `EAST`/`UP`/`SOUTH`; `UP` is also the `default` arm, unreachable for a non-null direction.
 //!
 //! Verified by the `PISTON` group of `small_probe.txt` (`tests/session22.rs`): three boxes (one
 //! all `-0.0`) x six directions x seven amounts (both zeros, a subnormal-adjacent `1e-300`, NaN),
-//! all six corners as raw bits.
+//! all six corners as raw bits, NaNs aside.
 
 use crate::javacompat::java_lang;
 use crate::net::minecraft::core::Direction::Direction;
