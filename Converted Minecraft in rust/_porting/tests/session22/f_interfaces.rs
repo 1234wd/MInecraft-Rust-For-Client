@@ -104,9 +104,12 @@ fn tab_order_holder_owner_and_rotate_towards_match_the_jar() {
     }
 }
 
+/// One `onResize(bits, value)` call, returning the panic text it raises.
+type ResizeCase = Box<dyn Fn(i32) -> String + std::panic::RefUnwindSafe>;
+
 #[test]
 fn palette_resize_and_resource_handle_throw_the_jar_messages() {
-    let cases: [(i32, Box<dyn Fn(i32) -> String + std::panic::RefUnwindSafe>); 4] = [
+    let cases: [(i32, ResizeCase); 4] = [
         (
             0,
             Box::new(|b| panic_text(move || palette_resize::no_resize_expected().on_resize(b, 5))),
@@ -172,7 +175,7 @@ fn glyph_info_defaults_match_the_jar() {
 #[test]
 fn char_predicate_combinators_match_the_jar() {
     let p = |c: u16| c < b'm' as u16;
-    let q = |c: u16| c % 2 == 0;
+    let q = |c: u16| c.is_multiple_of(2);
     let r = &rows("CHARPRED")[0];
     let range = 0..0x300u16;
     assert_eq!(bits(range.clone().map(|c| p.and(q).test(c))), r[1], "and");
