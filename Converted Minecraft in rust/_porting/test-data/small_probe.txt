@@ -9022,3 +9022,123 @@ API	GpuSampler	getMaxAnisotropy()int	abstract
 API	GpuSampler	getMaxLod()java.util.OptionalDouble	abstract
 API	GpuSampler	getMinFilter()com.mojang.blaze3d.textures.FilterMode	abstract
 APISUPER	GpuSampler	java.lang.AutoCloseable	class
+GPUCOMP	UNORM_8	0	1
+GPUCOMP	SNORM_8	1	1
+GPUCOMP	UINT_8	2	1
+GPUCOMP	SINT_8	3	1
+GPUCOMP	UNORM_16	4	2
+GPUCOMP	SNORM_16	5	2
+GPUCOMP	UINT_16	6	2
+GPUCOMP	SINT_16	7	2
+GPUCOMP	FLOAT_16	8	2
+GPUCOMP	UINT_32	9	4
+GPUCOMP	SINT_32	10	4
+GPUCOMP	FLOAT_32	11	4
+GPUCOMP	OPAQUE_8	12	1
+GPUCOMP	OPAQUE_16	13	2
+GPUCOMP	OPAQUE_32	14	4
+GPUCOMP	OPAQUE_64	15	8
+GPUFMT	R8_UNORM	0	UNORM_8	1	1	1	true	false	false
+GPUFMT	R8_SNORM	1	SNORM_8	1	1	1	true	false	false
+GPUFMT	RG8_UNORM	2	UNORM_8	2	2	1	true	false	false
+GPUFMT	RG8_SNORM	3	SNORM_8	2	2	1	true	false	false
+GPUFMT	RGB8_UNORM	4	UNORM_8	3	3	1	true	false	false
+GPUFMT	RGB8_SNORM	5	SNORM_8	3	3	1	true	false	false
+GPUFMT	RGBA8_UNORM	6	UNORM_8	4	4	1	true	false	false
+GPUFMT	RGBA8_SNORM	7	SNORM_8	4	4	1	true	false	false
+GPUFMT	R16_UNORM	8	UNORM_16	1	2	2	true	false	false
+GPUFMT	R16_SNORM	9	SNORM_16	1	2	2	true	false	false
+GPUFMT	RG16_UNORM	10	UNORM_16	2	4	2	true	false	false
+GPUFMT	RG16_SNORM	11	SNORM_16	2	4	2	true	false	false
+GPUFMT	RGB16_UNORM	12	UNORM_16	3	6	2	true	false	false
+GPUFMT	RGB16_SNORM	13	SNORM_16	3	6	2	true	false	false
+GPUFMT	RGBA16_UNORM	14	UNORM_16	4	8	2	true	false	false
+GPUFMT	RGBA16_SNORM	15	SNORM_16	4	8	2	true	false	false
+GPUFMT	R8_UINT	16	UINT_8	1	1	1	true	false	false
+GPUFMT	R8_SINT	17	SINT_8	1	1	1	true	false	false
+GPUFMT	RG8_UINT	18	UINT_8	2	2	1	true	false	false
+GPUFMT	RG8_SINT	19	SINT_8	2	2	1	true	false	false
+GPUFMT	RGB8_UINT	20	UINT_8	3	3	1	true	false	false
+GPUFMT	RGB8_SINT	21	SINT_8	3	3	1	true	false	false
+GPUFMT	RGBA8_UINT	22	UINT_8	4	4	1	true	false	false
+GPUFMT	RGBA8_SINT	23	SINT_8	4	4	1	true	false	false
+GPUFMT	R16_UINT	24	UINT_16	1	2	2	true	false	false
+GPUFMT	R16_SINT	25	SINT_16	1	2	2	true	false	false
+GPUFMT	RG16_UINT	26	UINT_16	2	4	2	true	false	false
+GPUFMT	RG16_SINT	27	SINT_16	2	4	2	true	false	false
+GPUFMT	RGB16_UINT	28	UINT_16	3	6	2	true	false	false
+GPUFMT	RGB16_SINT	29	SINT_16	3	6	2	true	false	false
+GPUFMT	RGBA16_UINT	30	UINT_16	4	8	2	true	false	false
+GPUFMT	RGBA16_SINT	31	SINT_16	4	8	2	true	false	false
+GPUFMT	R32_UINT	32	UINT_32	1	4	4	true	false	false
+GPUFMT	R32_SINT	33	SINT_32	1	4	4	true	false	false
+GPUFMT	RG32_UINT	34	UINT_32	2	8	4	true	false	false
+GPUFMT	RG32_SINT	35	SINT_32	2	8	4	true	false	false
+GPUFMT	RGB32_UINT	36	UINT_32	3	12	4	true	false	false
+GPUFMT	RGB32_SINT	37	SINT_32	3	12	4	true	false	false
+GPUFMT	RGBA32_UINT	38	UINT_32	4	16	4	true	false	false
+GPUFMT	RGBA32_SINT	39	SINT_32	4	16	4	true	false	false
+GPUFMT	R16_FLOAT	40	FLOAT_16	1	2	2	true	false	false
+GPUFMT	RG16_FLOAT	41	FLOAT_16	2	4	2	true	false	false
+GPUFMT	RGB16_FLOAT	42	FLOAT_16	3	6	2	true	false	false
+GPUFMT	RGBA16_FLOAT	43	FLOAT_16	4	8	2	true	false	false
+GPUFMT	R32_FLOAT	44	FLOAT_32	1	4	4	true	false	false
+GPUFMT	RG32_FLOAT	45	FLOAT_32	2	8	4	true	false	false
+GPUFMT	RGB32_FLOAT	46	FLOAT_32	3	12	4	true	false	false
+GPUFMT	RGBA32_FLOAT	47	FLOAT_32	4	16	4	true	false	false
+GPUFMT	RGB10A2_UNORM	48	OPAQUE_32	1	4	4	true	false	false
+GPUFMT	RGB10A2_UINT	49	OPAQUE_32	1	4	4	true	false	false
+GPUFMT	RG11B10_FLOAT	50	OPAQUE_32	1	4	4	true	false	false
+GPUFMT	D32_FLOAT	51	OPAQUE_32	1	4	4	false	true	false
+GPUFMT	D32_FLOAT_S8_UINT	52	OPAQUE_64	1	8	8	false	true	true
+GPUFMT	D24_UNORM_S8_UINT	53	OPAQUE_32	1	4	4	false	true	true
+GPUFMT	D16_UNORM	54	OPAQUE_16	1	2	2	false	true	false
+GPUFMT	S8_UINT	55	OPAQUE_8	1	1	1	false	false	true
+BLOCKDISPCTX	false	false	true	private
+MULTICHEST	SINGLE=1,LEFT=-2,RIGHT=300	1,-2,300	MultiblockChestResources[single=#1, left=#-2, right=#300]
+REC	MultiblockChestResources	0	MultiblockChestResources[single=1, left=-2, right=300]	1199
+RECEQ	MultiblockChestResources	0	1100
+REC	MultiblockChestResources	1	MultiblockChestResources[single=1, left=-2, right=300]	1199
+RECEQ	MultiblockChestResources	1	1100
+REC	MultiblockChestResources	2	MultiblockChestResources[single=1, left=300, right=-2]	10259
+RECEQ	MultiblockChestResources	2	0010
+REC	MultiblockChestResources	3	MultiblockChestResources[single=0, left=0, right=0]	0
+RECEQ	MultiblockChestResources	3	0001
+BBMODE	NONE	0
+BBMODE	BOX	1
+BBMODE	BOX_AND_INVISIBLE_BLOCKS	2
+REC	RenderableBox	0	RenderableBox[localPos=BlockPos{x=0, y=0, z=0}, size=Vec3i{x=1, y=2, z=3}]	2946
+RECEQ	RenderableBox	0	100001
+REC	RenderableBox	1	RenderableBox[localPos=BlockPos{x=-5, y=-5, z=0}, size=Vec3i{x=10, y=10, z=10}]	4970
+RECEQ	RenderableBox	1	010000
+REC	RenderableBox	2	RenderableBox[localPos=BlockPos{x=-2147483648, y=0, z=0}, size=Vec3i{x=-1, y=0, z=0}]	2147483647
+RECEQ	RenderableBox	2	001000
+REC	RenderableBox	3	RenderableBox[localPos=BlockPos{x=7, y=7, z=7}, size=Vec3i{x=0, y=0, z=0}]	215481
+RECEQ	RenderableBox	3	000100
+REC	RenderableBox	4	RenderableBox[localPos=BlockPos{x=-4, y=-5, z=-6}, size=Vec3i{x=3, y=3, z=3}]	-180696
+RECEQ	RenderableBox	4	000010
+REC	RenderableBox	5	RenderableBox[localPos=BlockPos{x=0, y=0, z=0}, size=Vec3i{x=1, y=2, z=3}]	2946
+RECEQ	RenderableBox	5	100001
+FIELDSEL	0		3	x	100000	true
+FIELDSEL	1	a	3	x	010000	true
+FIELDSEL	2	g/a	3	x	001100	true
+FIELDSEL	3	g/a	3	x	001100	true
+FIELDSEL	4	g/a	8	x	000010	true
+FIELDSEL	5	g/a	3	y	000001	true
+SINGLEKEY	a a bb bb a a ccc a	1/1,1/1,2/2,2/2,1/3,1/3,3/4,1/5
+FILERES	level.dat@4903;a@-1
+PNGINFO	89504e470d0a1a0a0000000d494844520000001000000020	PngInfo[width=16, height=32]	528
+PNGINFO	89504e470d0a1a0a0000000d49484452ffffffff80000000	PngInfo[width=-1, height=-2147483648]	2147483617
+PNGINFO	00000000000000000000000d494844520000000100000001	EX:java.io.IOException	Bad PNG Signature: 0000000000000000
+PNGINFO	89504e470d0a1a0a0000000c494844520000000100000001	EX:java.io.IOException	Bad length for IHDR chunk: 12
+PNGINFO	89504e470d0a1a0a0000000d494441540000000100000001	EX:java.io.IOException	Bad type for IHDR chunk: 49444154
+PNGINFO	ffd8ffe000104a460000000d494844520000000100000001	EX:java.io.IOException	Bad PNG Signature: FFD8FFE000104A46
+PNGINFO	89504e470d0a1a0a0000000dfedcba980000000100000001	EX:java.io.IOException	Bad type for IHDR chunk: FEDCBA98
+PNGINFO	89504e470d0a1a0a0000000d49484452000001	EX:java.io.EOFException	\N
+PNGINFO	89504e470d0a1a0a000000	EX:java.io.EOFException	\N
+PNGINFO	-	EX:java.io.EOFException	\N
+PNGHDR	89504e470d0a1a0a0000000d49484452	ok	LITTLE_ENDIAN
+PNGHDR	89504e470d0a1a0a0000000d494844	EX:java.io.IOException	PNG header missing	BIG_ENDIAN
+PNGHDR	00000000000000000000000d49484452	EX:java.io.IOException	Bad PNG Signature	BIG_ENDIAN
+PNGHDR	89504e470d0a1a0a0000000e49484452	EX:java.io.IOException	Bad length for IHDR chunk!	BIG_ENDIAN
+PNGHDR	89504e470d0a1a0a0000000d49484453ff	EX:java.io.IOException	Bad type for IHDR chunk!	BIG_ENDIAN

@@ -93,6 +93,7 @@ public class SmallProbe {
 			stateD2();
 			interfacesE();
 			apiShapes();
+			classesG();
 		}
 		System.err.println("small_probe: " + rows + " rows -> " + target);
 	}
@@ -1627,5 +1628,171 @@ public class SmallProbe {
 			}
 			row("APISUPER", simple, sup.length() == 0 ? "-" : sup.toString(), c.isInterface() ? "interface" : "class");
 		}
+	}
+
+	// ------------------------------------------------------------------ sub-batch G
+
+	static String hexBytes(byte[] a) {
+		StringBuilder s = new StringBuilder();
+		for (byte x : a) {
+			s.append(String.format("%02x", x & 0xff));
+		}
+		return s.toString();
+	}
+
+	static byte[] fromHex(String h) {
+		byte[] a = new byte[h.length() / 2];
+		for (int k = 0; k < a.length; k++) {
+			a[k] = (byte) Integer.parseInt(h.substring(2 * k, 2 * k + 2), 16);
+		}
+		return a;
+	}
+
+	static void classesG() throws Exception {
+		// GpuFormat and its ComponentType
+		for (com.mojang.blaze3d.GpuFormat.ComponentType ct : com.mojang.blaze3d.GpuFormat.ComponentType.values()) {
+			row("GPUCOMP", ct.name(), i(ct.ordinal()), i(ct.byteSize()));
+		}
+		for (com.mojang.blaze3d.GpuFormat g : com.mojang.blaze3d.GpuFormat.values()) {
+			row("GPUFMT", g.name(), i(g.ordinal()), g.componentType().name(), i(g.componentCount()), i(g.blockSize()), i(g.byteAlignment()),
+				b(g.hasColorAspect()), b(g.hasDepthAspect()), b(g.hasStencilAspect()));
+		}
+
+		// BlockDisplayContext: a fresh object per create(), no equals
+		net.minecraft.client.renderer.block.model.BlockDisplayContext c1 = net.minecraft.client.renderer.block.model.BlockDisplayContext.create();
+		net.minecraft.client.renderer.block.model.BlockDisplayContext c2 = net.minecraft.client.renderer.block.model.BlockDisplayContext.create();
+		row("BLOCKDISPCTX", b(c1 == c2), b(c1.equals(c2)), b(c1.equals(c1)),
+			java.lang.reflect.Modifier.toString(net.minecraft.client.renderer.block.model.BlockDisplayContext.class.getDeclaredConstructors()[0].getModifiers()));
+
+		// MultiblockChestResources<Integer>: select over every ChestType, map's call order, record members
+		net.minecraft.client.renderer.MultiblockChestResources<Integer> mcr = new net.minecraft.client.renderer.MultiblockChestResources<>(1, -2, 300);
+		StringBuilder sel = new StringBuilder();
+		for (net.minecraft.world.level.block.state.properties.ChestType t : net.minecraft.world.level.block.state.properties.ChestType.values()) {
+			sel.append(sel.length() == 0 ? "" : ",").append(t.name()).append('=').append(mcr.select(t));
+		}
+		java.util.List<String> mapCalls = new java.util.ArrayList<>();
+		net.minecraft.client.renderer.MultiblockChestResources<String> mapped = mcr.map(v -> {
+			mapCalls.add(String.valueOf(v));
+			return "#" + v;
+		});
+		row("MULTICHEST", sel.toString(), String.join(",", mapCalls), esc(mapped.toString()));
+		rec("MultiblockChestResources", true, mcr, new net.minecraft.client.renderer.MultiblockChestResources<>(1, -2, 300),
+			new net.minecraft.client.renderer.MultiblockChestResources<>(1, 300, -2), new net.minecraft.client.renderer.MultiblockChestResources<>(0, 0, 0));
+
+		// BoundingBoxRenderable: Mode constants and RenderableBox.fromCorners
+		for (net.minecraft.world.level.block.entity.BoundingBoxRenderable.Mode m : net.minecraft.world.level.block.entity.BoundingBoxRenderable.Mode.values()) {
+			row("BBMODE", m.name(), i(m.ordinal()));
+		}
+		int[][] corners = {{0, 0, 0, 1, 2, 3}, {5, -5, 10, -5, 5, 0}, {MIN, 0, 0, MAX, 0, 0}, {7, 7, 7, 7, 7, 7}, {-1, -2, -3, -4, -5, -6}};
+		Object[] boxes = new Object[corners.length + 1];
+		for (int k = 0; k < corners.length; k++) {
+			int[] c = corners[k];
+			boxes[k] = net.minecraft.world.level.block.entity.BoundingBoxRenderable.RenderableBox.fromCorners(c[0], c[1], c[2], c[3], c[4], c[5]);
+		}
+		boxes[corners.length] = new net.minecraft.world.level.block.entity.BoundingBoxRenderable.RenderableBox(
+			new net.minecraft.core.BlockPos(0, 0, 0), new net.minecraft.core.Vec3i(1, 2, 3));
+		rec("RenderableBox", true, boxes);
+
+		// FieldSelector: the four constructors and equals (toString/hashCode include TagType's identity, so are not written)
+		net.minecraft.nbt.visitors.FieldSelector[] fs = {
+			new net.minecraft.nbt.visitors.FieldSelector(net.minecraft.nbt.IntTag.TYPE, "x"),
+			new net.minecraft.nbt.visitors.FieldSelector("a", net.minecraft.nbt.IntTag.TYPE, "x"),
+			new net.minecraft.nbt.visitors.FieldSelector("g", "a", net.minecraft.nbt.IntTag.TYPE, "x"),
+			new net.minecraft.nbt.visitors.FieldSelector(java.util.List.of("g", "a"), net.minecraft.nbt.IntTag.TYPE, "x"),
+			new net.minecraft.nbt.visitors.FieldSelector("g", "a", net.minecraft.nbt.StringTag.TYPE, "x"),
+			new net.minecraft.nbt.visitors.FieldSelector("g", "a", net.minecraft.nbt.IntTag.TYPE, "y"),
+		};
+		for (int k = 0; k < fs.length; k++) {
+			StringBuilder eq = new StringBuilder();
+			for (net.minecraft.nbt.visitors.FieldSelector o : fs) {
+				eq.append(fs[k].equals(o) ? '1' : '0');
+			}
+			boolean immutable;
+			try {
+				fs[k].path().add("z");
+				immutable = false;
+			} catch (UnsupportedOperationException e) {
+				immutable = true;
+			}
+			row("FIELDSEL", i(k), String.join("/", fs[k].path()), i(net.minecraft.nbt.TagTypes.getType(tagId(fs[k].type())).hashCode() == fs[k].type().hashCode() ? tagId(fs[k].type()) : -1),
+				fs[k].name(), eq.toString(), b(immutable));
+		}
+
+		// SingleKeyCache: compute count after each lookup
+		int[] computes = {0};
+		net.minecraft.util.SingleKeyCache<String, Integer> skc = new net.minecraft.util.SingleKeyCache<>(k -> {
+			computes[0]++;
+			return k.length();
+		});
+		String skcScript = "a a bb bb a " + new String("a") + " ccc a";
+		StringBuilder skcOut = new StringBuilder();
+		for (String key : skcScript.split(" ")) {
+			int v = skc.getValue(key);
+			skcOut.append(skcOut.length() == 0 ? "" : ",").append(v).append('/').append(computes[0]);
+		}
+		row("SINGLEKEY", skcScript, skcOut.toString());
+
+		// FileResourceType: create passes both arguments to the factory, once
+		java.util.List<String> frtCalls = new java.util.ArrayList<>();
+		net.minecraft.util.filefix.access.FileResourceType<java.io.Closeable> frt = new net.minecraft.util.filefix.access.FileResourceType<>((p, dv) -> {
+			frtCalls.add(p + "@" + dv);
+			return () -> {};
+		});
+		frt.create(java.nio.file.Path.of("level.dat"), 4903);
+		frt.create(java.nio.file.Path.of("a"), -1);
+		row("FILERES", String.join(";", frtCalls));
+
+		// PngInfo: fromBytes / fromStream on crafted headers, validateHeader on buffers
+		String sig = "89504e470d0a1a0a";
+		String[] pngs = {
+			sig + "0000000d" + "49484452" + "00000010" + "00000020",
+			sig + "0000000d" + "49484452" + "ffffffff" + "80000000",
+			"0000000000000000" + "0000000d" + "49484452" + "00000001" + "00000001",
+			sig + "0000000c" + "49484452" + "00000001" + "00000001",
+			sig + "0000000d" + "49444154" + "00000001" + "00000001",
+			"ffd8ffe000104a46" + "0000000d" + "49484452" + "00000001" + "00000001",
+			sig + "0000000d" + "fedcba98" + "00000001" + "00000001",
+			sig + "0000000d" + "49484452" + "000001",
+			sig + "000000",
+			"",
+		};
+		for (String h : pngs) {
+			String r;
+			try {
+				net.minecraft.util.PngInfo pi = net.minecraft.util.PngInfo.fromBytes(fromHex(h));
+				r = esc(pi.toString()) + "\t" + i(pi.hashCode());
+			} catch (java.io.IOException e) {
+				r = "EX:" + e.getClass().getName() + "\t" + esc(e.getMessage());
+			}
+			row("PNGINFO", h.isEmpty() ? "-" : h, r);
+		}
+		String[] buffers = {
+			sig + "0000000d" + "49484452",
+			sig + "0000000d" + "494844",
+			"0000000000000000" + "0000000d" + "49484452",
+			sig + "0000000e" + "49484452",
+			sig + "0000000d" + "49484453" + "ff",
+		};
+		for (String h : buffers) {
+			java.nio.ByteBuffer bb = java.nio.ByteBuffer.wrap(fromHex(h));
+			bb.order(java.nio.ByteOrder.LITTLE_ENDIAN);
+			String r;
+			try {
+				net.minecraft.util.PngInfo.validateHeader(bb);
+				r = "ok";
+			} catch (java.io.IOException e) {
+				r = "EX:" + e.getClass().getName() + "\t" + esc(e.getMessage());
+			}
+			row("PNGHDR", h, r, bb.order().toString());
+		}
+	}
+
+	static int tagId(net.minecraft.nbt.TagType<?> t) {
+		for (int k = 0; k <= 12; k++) {
+			if (net.minecraft.nbt.TagTypes.getType(k) == t) {
+				return k;
+			}
+		}
+		return -1;
 	}
 }
