@@ -16,6 +16,7 @@ use crate::nbt_probe::*;
 use minecraft_rust::javacompat::java_io::{self, DataInput, DataInputStream, DataOutputStream};
 use minecraft_rust::javacompat::java_lang;
 use minecraft_rust::javacompat::java_random::JavaRandom;
+use minecraft_rust::net::minecraft::nbt::visitors::FieldSelector::FieldSelector;
 use minecraft_rust::net::minecraft::nbt::ByteArrayTag::ByteArrayTag;
 use minecraft_rust::net::minecraft::nbt::ByteTag::ByteTag;
 use minecraft_rust::net::minecraft::nbt::CompoundTag::CompoundTag;
@@ -252,6 +253,71 @@ pub fn nbt_parse(
             ty.parse(&mut input, visitor, acc).map(|_| ())
         }
     }
+}
+
+/// `NbtIo.writeAnyTag` as hex -- the id, then the payload unless it is `END` -- or `\N` for a
+/// Java `null` (the probe's `anyHex`).
+pub fn any_hex(t: Option<Tag>) -> String {
+    match t {
+        None => "\\N".to_string(),
+        Some(t) => {
+            let mut out = DataOutputStream::new(Vec::new());
+            use minecraft_rust::javacompat::java_io::DataOutput;
+            out.write_byte(t.get_id() as i32).unwrap();
+            if t.get_id() != 0 {
+                t.write(&mut out).expect("write");
+            }
+            hex(&out.into_inner())
+        }
+    }
+}
+
+/// `NbtProbe.SELECTORS`.
+pub fn selectors() -> Vec<Vec<FieldSelector>> {
+    use minecraft_rust::net::minecraft::nbt::{
+        ByteTag as B, CompoundTag as C, DoubleTag as D, IntTag as I, ListTag as L, LongTag as Lg,
+        ShortTag as Sh, StringTag as St,
+    };
+    vec![
+        vec![
+            FieldSelector::of_name(I::TYPE, "id"),
+            FieldSelector::of_name(St::TYPE, "x"),
+            FieldSelector::in_parent("a", B::TYPE, "b"),
+        ],
+        vec![
+            FieldSelector::in_grandparent("a", "b", L::TYPE, "x"),
+            FieldSelector::of_name(C::TYPE, "a"),
+            FieldSelector::of_name(L::TYPE, "y"),
+        ],
+        vec![
+            FieldSelector::in_parent("x", Lg::TYPE, "y"),
+            FieldSelector::in_parent("x", C::TYPE, "z"),
+            FieldSelector::of_name(D::TYPE, "Count"),
+            FieldSelector::of_name(Sh::TYPE, ""),
+        ],
+    ]
+}
+
+/// `NbtProbe.EXTRA_SELECTORS` (session 23).
+pub fn extra_selectors() -> Vec<Vec<FieldSelector>> {
+    use minecraft_rust::net::minecraft::nbt::{
+        CompoundTag as C, IntTag as I, ListTag as L, StringTag as St,
+    };
+    vec![
+        vec![
+            FieldSelector::of_name(I::TYPE, "id"),
+            FieldSelector::of_name(St::TYPE, "id"),
+        ],
+        vec![
+            FieldSelector::in_grandparent("a", "b", I::TYPE, "c"),
+            FieldSelector::in_parent("a", I::TYPE, "d"),
+        ],
+        vec![],
+        vec![
+            FieldSelector::of_name(L::TYPE, "l"),
+            FieldSelector::of_name(C::TYPE, "c"),
+        ],
+    ]
 }
 
 // ------------------------------------------------------------------ exceptions

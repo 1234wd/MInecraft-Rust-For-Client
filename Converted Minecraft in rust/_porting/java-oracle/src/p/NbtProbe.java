@@ -2065,6 +2065,86 @@ public class NbtProbe {
 		};
 	}
 
+	// ------------------------------------------------------------------ session 23: visitors
+
+	/** A FieldTree, portably: depth, selected (name:type) and recursions, each sorted by key. */
+	static String ftree(net.minecraft.nbt.visitors.FieldTree t) {
+		List<String> sel = new ArrayList<>();
+		for (Map.Entry<String, TagType<?>> e : t.selectedFields().entrySet()) {
+			sel.add(esc(e.getKey()) + ":" + e.getValue().getName());
+		}
+		java.util.Collections.sort(sel);
+		List<String> rec = new ArrayList<>();
+		for (Map.Entry<String, net.minecraft.nbt.visitors.FieldTree> e : t.fieldsToRecurse().entrySet()) {
+			rec.add(esc(e.getKey()) + "->" + ftree(e.getValue()));
+		}
+		java.util.Collections.sort(rec);
+		return "(d=" + t.depth() + " sel=" + sel + " rec=" + rec + ")";
+	}
+
+	static final FieldSelector[][] EXTRA_SELECTORS = {
+		{ new FieldSelector(IntTag.TYPE, "id"), new FieldSelector(StringTag.TYPE, "id") },
+		{ new FieldSelector("a", "b", IntTag.TYPE, "c"), new FieldSelector("a", IntTag.TYPE, "d") },
+		{},
+		{ new FieldSelector(ListTag.TYPE, "l"), new FieldSelector(CompoundTag.TYPE, "c") },
+	};
+
+	static void visitorSection() throws Exception {
+		FieldSelector[][] all = new FieldSelector[SELECTORS.length + EXTRA_SELECTORS.length][];
+		System.arraycopy(SELECTORS, 0, all, 0, SELECTORS.length);
+		System.arraycopy(EXTRA_SELECTORS, 0, all, SELECTORS.length, EXTRA_SELECTORS.length);
+		TagType<?>[] types = {IntTag.TYPE, StringTag.TYPE, ByteTag.TYPE, ListTag.TYPE, CompoundTag.TYPE, LongTag.TYPE, DoubleTag.TYPE, ShortTag.TYPE};
+		String[] ids = {"id", "x", "b", "a", "y", "z", "Count", "", "c", "d", "l", "missing"};
+		for (int s = 0; s < all.length; s++) {
+			net.minecraft.nbt.visitors.FieldTree root = net.minecraft.nbt.visitors.FieldTree.createRoot();
+			for (FieldSelector f : all[s]) {
+				root.addEntry(f);
+			}
+			StringBuilder grid = new StringBuilder();
+			for (TagType<?> t : types) {
+				for (String id : ids) {
+					grid.append(root.isSelected(t, id) ? '1' : '0');
+				}
+			}
+			row("FTREE", Integer.toString(s), ftree(root), grid.toString());
+		}
+		// CFX: CollectFields / SkipFields over crafted trees, for the extra selector sets.
+		String[][] trees = {
+			{"t0", "{\"id\":i1,\"x\":S\"s\",\"a\":{\"b\":{\"c\":i2,\"e\":i3},\"d\":i4,\"f\":i5},\"l\":[i1,{\"\":i2}],\"c\":{\"k\":i9}}"},
+			{"t1", "{\"id\":S\"str\",\"a\":{\"d\":S\"notint\"}}"},
+			{"t2", "{}"},
+			{"t3", "{\"a\":[{\"b\":i1}],\"zz\":i0}"},
+		};
+		for (int s = 0; s < EXTRA_SELECTORS.length; s++) {
+			for (String[] tr : trees) {
+				CompoundTag t = (CompoundTag) parseFullLit(tr[1]);
+				byte[] w = nbtWrite(t);
+				CollectFields cf = new CollectFields(EXTRA_SELECTORS[s]);
+				NbtIo.parse(in(w), cf, NbtAccounter.unlimitedHeap());
+				SkipFields sf = new SkipFields(EXTRA_SELECTORS[s]);
+				NbtIo.parse(in(w), sf, NbtAccounter.unlimitedHeap());
+				row("CFX", Integer.toString(s), tr[0], tr[1], anyHex(cf.getResult()), Integer.toString(cf.getMissingFieldCount()), anyHex(sf.getResult()));
+			}
+		}
+		// CFXRAW: hand-written streams CompoundTag cannot produce -- a key repeated after every
+		// field was found (CollectFields must have stopped with BREAK), a list root (CollectFields
+		// HALTs at the root), a repeated selected field.
+		String[][] raws = {
+			{"dup_path", "0a0000" + "0a000161" + "0a000162" + "03000163000000020" + "0" + "030001640000000400" + "0a000161" + "0a000162" + "0300016300000009" + "00" + "00" + "00"},
+			{"list_root", "090000030000000200000001" + "00000002"},
+			{"dup_field", "0a0000" + "0a000163" + "0300016b0000000100" + "0900016c030000000100000001" + "0a000163" + "0300016b0000000200" + "00"},
+		};
+		for (int s = 0; s < EXTRA_SELECTORS.length; s++) {
+			for (String[] rw : raws) {
+				CollectFields cf = new CollectFields(EXTRA_SELECTORS[s]);
+				NbtIo.parse(in(unhex(rw[1])), cf, NbtAccounter.unlimitedHeap());
+				SkipFields sf = new SkipFields(EXTRA_SELECTORS[s]);
+				NbtIo.parse(in(unhex(rw[1])), sf, NbtAccounter.unlimitedHeap());
+				row("CFXRAW", Integer.toString(s), rw[0], rw[1], anyHex(cf.getResult()), Integer.toString(cf.getMissingFieldCount()), anyHex(sf.getResult()));
+			}
+		}
+	}
+
 	public static void main(String[] args) throws Exception {
 		SHALLOW_COPY = CompoundTag.class.getDeclaredMethod("shallowCopy");
 		SHALLOW_COPY.setAccessible(true);
@@ -2089,6 +2169,7 @@ public class NbtProbe {
 			genSection();
 			hashMapStepSection();
 			containerSection();
+			visitorSection();
 			out.flush();
 		}
 		System.err.println("rows: " + rows);

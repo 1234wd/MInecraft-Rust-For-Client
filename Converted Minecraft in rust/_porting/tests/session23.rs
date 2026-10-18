@@ -23,6 +23,8 @@ mod b_support;
 mod c_trees;
 #[path = "session23/d_ops.rs"]
 mod d_ops;
+#[path = "session23/e_visitors.rs"]
+mod e_visitors;
 
 /// The source of every module in this target, for the `rows("...")` scans.
 pub const SOURCES: &[&str] = &[
@@ -31,6 +33,7 @@ pub const SOURCES: &[&str] = &[
     include_str!("session23/b_support.rs"),
     include_str!("session23/c_trees.rs"),
     include_str!("session23/d_ops.rs"),
+    include_str!("session23/e_visitors.rs"),
 ];
 
 /// Every group this target reads, found by scanning [`SOURCES`] for `rows("...")`.

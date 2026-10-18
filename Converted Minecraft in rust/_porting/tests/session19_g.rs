@@ -1165,13 +1165,11 @@ fn unstarted_groups_are_declared() {
     /// test fails, so moving a group here is not a way to stop checking it.
     const COVERED_IN_SESSION23: &[&str] = &[
         "HMOP", "HMRES", "HMCOPY", "HMINT", "HMINTRES", "HMSTEP", "HMEQ", "GEN", "CASE", "CASEW",
-        "CASED", "IDENT", "LGET", "CGET", "TEQ", "CTOPS", "LTOPS", "TLOAD", "TACC",
+        "CASED", "IDENT", "LGET", "CGET", "TEQ", "CTOPS", "LTOPS", "TLOAD", "TACC", "FTREE", "CFX", "CFXRAW",
     ];
 
     /// Blocked on an unported class. Delete an entry when its port lands, and the `COVERED`
-    /// check will then demand a test for it. (`GEN`/`CASE` are covered in session 23 except
-    /// their `PW`/`PU`/`CF*`/`SF*` sub-rows, which need the `visitors` package; session 23's
-    /// `c_trees::UNCHECKED_SUB_ROWS` names them.)
+    /// check will then demand a test for it.
     const BLOCKED: &[(&str, &str)] = &[(
         "READ",
         "NbtIo.read/readAnyTag/readUnnamedTag/parse over crafted streams: needs NbtIo (and          CollectToTag for the parse reader); CompoundTag/ListTag's own TYPE.load on the same          kind of input is covered by session 23's TLOAD",
@@ -1242,6 +1240,7 @@ const SESSION23_SOURCES: &[&str] = &[
     include_str!("session23/b_support.rs"),
     include_str!("session23/c_trees.rs"),
     include_str!("session23/d_ops.rs"),
+    include_str!("session23/e_visitors.rs"),
 ];
 
 /// Helper: `(float) Math.PI`, spelled out so the round-trip corpus has a value with a long

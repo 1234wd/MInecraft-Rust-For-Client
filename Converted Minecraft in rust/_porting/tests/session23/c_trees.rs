@@ -12,8 +12,10 @@
 //! use and `equals` of `NbtIo.read` of `W`, and with traces `TA<p>` (`acceptAsRoot`) and `TP<p>`
 //! (`NbtIo.parse`) under three visitor policies.
 //!
-//! NOT checked, and listed in [`UNCHECKED_SUB_ROWS`]: `PW`/`PU`, `CF<n>` and `SF<n>`, which run
-//! `CollectToTag`/`CollectFields`/`SkipFields` from `net.minecraft.nbt.visitors` -- not ported.
+//! Then `PW`/`PU` (`NbtIo.parse` into a `CollectToTag`: the rebuilt tag's bytes and the quota
+//! used) and, for each of the probe's three selector sets, `CF<n>` (a `CollectFields`: the
+//! collected tag and the missing-field count) and `SF<n>` (a `SkipFields`). Every sub-row of
+//! every tree is compared; [`CHECKED_SUB_ROWS`] is the whole list.
 
 use std::collections::HashMap;
 
@@ -23,6 +25,9 @@ use crate::nbt_probe::*;
 use minecraft_rust::javacompat::java_io::{DataOutput, DataOutputStream};
 use minecraft_rust::javacompat::java_lang::float_to_string::{double_to_string, float_to_string};
 use minecraft_rust::javacompat::java_random::JavaRandom;
+use minecraft_rust::net::minecraft::nbt::visitors::CollectFields::CollectFields;
+use minecraft_rust::net::minecraft::nbt::visitors::CollectToTag::CollectToTag;
+use minecraft_rust::net::minecraft::nbt::visitors::SkipFields::SkipFields;
 use minecraft_rust::net::minecraft::nbt::ByteArrayTag::ByteArrayTag;
 use minecraft_rust::net::minecraft::nbt::ByteTag::ByteTag;
 use minecraft_rust::net::minecraft::nbt::CompoundTag::CompoundTag;
@@ -348,12 +353,10 @@ fn colliding(n: usize) -> Vec<String> {
 
 // ------------------------------------------------------------------ treeRows
 
-/// The sub-rows of a tree that need the unported `visitors` package.
-pub const UNCHECKED_SUB_ROWS: &[&str] = &["PW", "PU", "CF0", "SF0", "CF1", "SF1", "CF2", "SF2"];
-
 /// The sub-rows that ARE checked.
-const CHECKED_SUB_ROWS: &[&str] = &[
-    "W", "S", "Z", "H", "CW", "SW", "RW", "RU", "RE", "TA0", "TP0", "TA1", "TP1", "TA2", "TP2",
+pub const CHECKED_SUB_ROWS: &[&str] = &[
+    "W", "S", "Z", "H", "CW", "SW", "RW", "RU", "RE", "PW", "PU", "CF0", "SF0", "CF1", "SF1",
+    "CF2", "SF2", "TA0", "TP0", "TA1", "TP1", "TA2", "TP2",
 ];
 
 /// Checks one tree against its `kind`/`id` rows; returns how many rows it compared.
@@ -410,7 +413,39 @@ fn check_tree(
         field("RE"),
         "{kind} {id}: read-back equals"
     );
-    let mut checked = 9;
+    let mut collect = CollectToTag::new();
+    let mut acc2 = NbtAccounter::unlimited_heap();
+    nbt_parse(&w, &mut collect, &mut acc2).expect("parse");
+    assert_eq!(
+        any_hex(collect.get_result()),
+        field("PW"),
+        "{kind} {id}: CollectToTag result"
+    );
+    assert_eq!(
+        acc2.get_usage().to_string(),
+        field("PU"),
+        "{kind} {id}: quota used by parse"
+    );
+    for (s, sel) in selectors().iter().enumerate() {
+        let mut cf = CollectFields::new(sel);
+        nbt_parse(&w, &mut cf, &mut NbtAccounter::unlimited_heap()).expect("parse");
+        assert_eq!(
+            vec![
+                any_hex(cf.get_result()),
+                cf.get_missing_field_count().to_string()
+            ],
+            get(&format!("CF{s}"))[3..].to_vec(),
+            "{kind} {id}: CollectFields over selector set {s}"
+        );
+        let mut sf = SkipFields::new(sel);
+        nbt_parse(&w, &mut sf, &mut NbtAccounter::unlimited_heap()).expect("parse");
+        assert_eq!(
+            any_hex(sf.get_result()),
+            field(&format!("SF{s}")),
+            "{kind} {id}: SkipFields over selector set {s}"
+        );
+    }
+    let mut checked = 17;
     if traces {
         for policy in 0..3 {
             let mut ta = Trace::for_policy(policy, id);
@@ -443,7 +478,7 @@ fn tree_rows(kind: &str) -> HashMap<(String, String), Vec<&'static str>> {
     let mut out = HashMap::new();
     for r in rows(kind) {
         assert!(
-            CHECKED_SUB_ROWS.contains(&r[2]) || UNCHECKED_SUB_ROWS.contains(&r[2]),
+            CHECKED_SUB_ROWS.contains(&r[2]),
             "{kind} {}: unknown sub-row {}",
             r[1],
             r[2]
