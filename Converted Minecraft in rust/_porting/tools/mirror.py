@@ -157,6 +157,13 @@ path = "_porting/tests/session19_j.rs"
 name = "session22"
 path = "_porting/tests/session22.rs"
 
+# Session 23: the JDK-order HashMap, CompoundTag and ListTag, checked against
+# `_porting/test-data/nbt_probe.txt` (`java-oracle/src/p/NbtProbe.java`). One target, one module
+# per component under `_porting/tests/session23/`.
+[[test]]
+name = "session23"
+path = "_porting/tests/session23.rs"
+
 # Runtime dependencies. Currently EMPTY on purpose, and that is worth keeping that way.
 #
 # Session 08 measured musl's `log` (the `libm` crate) against FdLibm's as a candidate for

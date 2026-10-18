@@ -1125,6 +1125,12 @@ fn unstarted_groups_are_declared() {
         "F64", "PRIMIO", "SKIP", "OUT",
     ];
 
+    /// Checked by `tests/session23.rs` (session 23: the JDK-order map, `CompoundTag`, `ListTag`).
+    /// Each must be read there -- `rows("<group>")` in one of [`SESSION23_SOURCES`] -- or this
+    /// test fails, so moving a group here is not a way to stop checking it.
+    const COVERED_IN_SESSION23: &[&str] =
+        &["HMOP", "HMRES", "HMCOPY", "HMINT", "HMINTRES", "HMSTEP", "HMEQ"];
+
     /// Blocked on `ListTag` / `CompoundTag` / `NbtIo` / the `visitors` package, none of
     /// which is ported. Delete an entry when its port lands, and the `COVERED` check will
     /// then demand a test for it.
@@ -1137,12 +1143,15 @@ fn unstarted_groups_are_declared() {
         ("IDENT", "CompoundTag's identify() fast path: needs CompoundTag"),
         ("LGET", "ListTag getters: needs ListTag"),
         ("CGET", "CompoundTag getters: needs CompoundTag"),
-        ("HMOP", "java.util.HashMap op log: needs the JDK-order map for CompoundTag"),
-        ("HMRES", "java.util.HashMap iteration order: needs the JDK-order map"),
-        ("HMCOPY", "HashMap copy-constructor order: needs the JDK-order map"),
-        ("HMINT", "HashMap internals (table length): needs the JDK-order map"),
-        ("HMINTRES", "HashMap internals result: needs the JDK-order map"),
     ];
+
+    for group in COVERED_IN_SESSION23 {
+        let claim = format!("rows(\"{group}\")");
+        assert!(
+            SESSION23_SOURCES.iter().any(|src| src.contains(&claim)),
+            "`{group}` is declared COVERED_IN_SESSION23 but no session23 module reads it"
+        );
+    }
 
     // Every group actually present in the file.
     let path = minecraft_rust::javacompat::golden::test_data_dir().join("nbt_probe.txt");
@@ -1158,7 +1167,8 @@ fn unstarted_groups_are_declared() {
     let blocked_names: Vec<&str> = BLOCKED.iter().map(|(n, _)| *n).collect();
 
     for group in &present {
-        let covered = COVERED.contains(&group.as_str());
+        let covered = COVERED.contains(&group.as_str())
+            || COVERED_IN_SESSION23.contains(&group.as_str());
         let blocked = blocked_names.contains(&group.as_str());
         assert!(
             covered || blocked,
@@ -1171,7 +1181,11 @@ fn unstarted_groups_are_declared() {
     }
 
     // And nothing is declared that the file does not contain.
-    for name in COVERED.iter().chain(blocked_names.iter()) {
+    for name in COVERED
+        .iter()
+        .chain(COVERED_IN_SESSION23.iter())
+        .chain(blocked_names.iter())
+    {
         assert!(
             present.iter().any(|p| p == name),
             "`{name}` is declared but nbt_probe.txt has no such group"
@@ -1180,13 +1194,20 @@ fn unstarted_groups_are_declared() {
 
     assert_eq!(
         present.len(),
-        COVERED.len() + BLOCKED.len(),
-        "group bookkeeping drifted: {} in the file, {} covered + {} blocked",
+        COVERED.len() + COVERED_IN_SESSION23.len() + BLOCKED.len(),
+        "group bookkeeping drifted: {} in the file, {} covered + {} covered in session 23 + {} blocked",
         present.len(),
         COVERED.len(),
+        COVERED_IN_SESSION23.len(),
         BLOCKED.len()
     );
 }
+
+/// The sources of `tests/session23.rs` and its modules, for the `COVERED_IN_SESSION23` check.
+const SESSION23_SOURCES: &[&str] = &[
+    include_str!("session23.rs"),
+    include_str!("session23/a_hashmap.rs"),
+];
 
 /// Helper: `(float) Math.PI`, spelled out so the round-trip corpus has a value with a long
 /// mantissa without depending on `Mth`.

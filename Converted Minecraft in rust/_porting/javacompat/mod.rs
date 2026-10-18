@@ -22,6 +22,7 @@
 //! | [`java_object`] | boxed `hashCode`s, `Objects.hash`, record `hashCode`/`equals` | JDK 25 |
 //! | [`time_unit`] | `java.util.concurrent.TimeUnit` (conversion from nanoseconds) | JDK 25 |
 //! | [`bit_set`] | `java.util.BitSet` (the subset `CarvingMask` uses) | JDK 25 |
+//! | [`java_hash_map`] | `java.util.HashMap` with its exact iteration order, tree bins included (the subset `CompoundTag` uses) | JDK 25 |
 //!
 //! Every "pinned to" version is read from the Fabric Loom / Gradle cache, i.e. what
 //! Minecraft 26.2 actually resolves -- see `java-oracle/fetch_libs.ps1`.
@@ -30,6 +31,7 @@ pub mod bit_set;
 pub mod entropy;
 pub mod fraction;
 pub mod golden;
+pub mod java_hash_map;
 pub mod java_io;
 pub mod java_lang;
 pub mod java_object;

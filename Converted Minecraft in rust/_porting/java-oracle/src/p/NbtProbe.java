@@ -1269,6 +1269,257 @@ public class NbtProbe {
 		row(f.toArray(new String[0]));
 	}
 
+	// ------------------------------------------------------------------ session 23: HashMap step logs
+
+	/** One HashMap op: P put, R remove, G get, C clear, K copy constructor. */
+	record HmOp(char op, Object key, int value) {}
+
+	static String hmKey(Object k) {
+		return k instanceof String s ? esc(s) : k.toString();
+	}
+
+	/** Replays {@code ops} on a fresh map; one HMSTEP row per op, with the whole state after it. */
+	@SuppressWarnings({"unchecked", "rawtypes"})
+	static void hmSteps(String name, String keyType, List<HmOp> ops) throws Exception {
+		HashMap m = new HashMap<>();
+		for (int step = 0; step < ops.size(); step++) {
+			HmOp o = ops.get(step);
+			Object ret;
+			switch (o.op()) {
+				case 'P' -> ret = m.put(o.key(), o.value());
+				case 'R' -> ret = m.remove(o.key());
+				case 'G' -> ret = m.get(o.key());
+				case 'C' -> { m.clear(); ret = null; }
+				default -> { m = new HashMap<>(m); ret = null; }
+			}
+			List<String> f = new ArrayList<>();
+			f.add("HMSTEP");
+			f.add(name);
+			f.add(keyType);
+			f.add(Integer.toString(step));
+			f.add(String.valueOf(o.op()));
+			f.add(o.key() == null ? "-" : hmKey(o.key()));
+			f.add(Integer.toString(o.value()));
+			f.add(ret == null ? "\\N" : ret.toString());
+			f.add(Integer.toString(capacity(m)));
+			f.add(Integer.toString(m.size()));
+			f.add(Integer.toString(m.hashCode()));
+			for (Object e : m.entrySet()) {
+				Map.Entry me = (Map.Entry) e;
+				f.add(hmKey(me.getKey()) + "=" + me.getValue());
+			}
+			row(f.toArray(new String[0]));
+		}
+	}
+
+	/** Keys prefix+0, prefix+1, ... whose spread hash lands in bucket {@code b} of a 64-slot table. */
+	static List<String> bucketKeys(String prefix, int b, int n) {
+		List<String> out = new ArrayList<>();
+		for (int i = 0; out.size() < n; i++) {
+			String s = prefix + i;
+			int h = s.hashCode();
+			if (((h ^ (h >>> 16)) & 63) == b) {
+				out.add(s);
+			}
+		}
+		return out;
+	}
+
+	/** Keys prefix+0, prefix+1, ... with {@code (spread hash & mask) == b}, skipping ones used before. */
+	static final java.util.Set<String> SPREAD_USED = new java.util.HashSet<>();
+
+	static List<String> spreadKeys(String prefix, int b, int mask, int n) {
+		List<String> out = new ArrayList<>();
+		for (int i = 0; out.size() < n; i++) {
+			String s = prefix + i;
+			int h = s.hashCode();
+			if (((h ^ (h >>> 16)) & mask) == b && SPREAD_USED.add(s)) {
+				out.add(s);
+			}
+		}
+		return out;
+	}
+
+	static void hashMapStepSection() throws Exception {
+		// 1. tree_grow: 48 keys share bucket 5 of every table up to 64 -> resize, resize, treeify;
+		// fillers then grow the table to 128 and 256, splitting the tree into lo/hi trees;
+		// removals take the trees apart (successor swaps, rebalancing, untreeify when too small);
+		// re-puts rebuild lists into trees; more fillers grow to 512 and untreeify the halves.
+		List<HmOp> ops = new ArrayList<>();
+		List<String> b5 = bucketKeys("t", 5, 48);
+		int v = 0;
+		for (String k : b5) {
+			ops.add(new HmOp('P', k, v++));
+		}
+		for (int i = 0; i < 102; i++) {
+			ops.add(new HmOp('P', "f" + i, v++));
+		}
+		Random r = new Random(23);
+		List<String> order = new ArrayList<>(b5);
+		java.util.Collections.shuffle(order, r);
+		for (int i = 0; i < 40; i++) {
+			ops.add(new HmOp('R', order.get(i), 0));
+			if (i % 4 == 0) {
+				ops.add(new HmOp('G', order.get(r.nextInt(order.size())), 0));
+				ops.add(new HmOp('P', order.get(40 + r.nextInt(8)), v++));
+			}
+		}
+		ops.add(new HmOp('R', "nope", 0));
+		for (int i = 0; i < 30; i++) {
+			ops.add(new HmOp('P', order.get(i), v++));
+		}
+		for (int i = 102; i < 160; i++) {
+			ops.add(new HmOp('P', "f" + i, v++));
+		}
+		ops.add(new HmOp('K', null, 0));
+		for (int i = 0; i < 12; i++) {
+			ops.add(new HmOp('G', order.get(i * 4), 0));
+		}
+		hmSteps("tree_grow", "S", ops);
+
+		// 2. same_hash: 32 keys with one String.hashCode -- one bucket at every capacity, so the
+		// tree is ordered by compareTo alone. Remove in a shuffled order down to empty (gets and
+		// value replacements mixed in), refill in another order, copy, clear, refill, copy.
+		ops = new ArrayList<>();
+		String[] col = colliding(32);
+		v = 0;
+		for (String k : col) {
+			ops.add(new HmOp('P', k, v++));
+		}
+		List<String> co = new ArrayList<>(java.util.Arrays.asList(col));
+		java.util.Collections.shuffle(co, new Random(5));
+		for (int i = 0; i < co.size(); i++) {
+			ops.add(new HmOp('R', co.get(i), 0));
+			if (i % 3 == 0 && i + 1 < co.size()) {
+				ops.add(new HmOp('P', co.get(co.size() - 1), v++));
+				ops.add(new HmOp('G', co.get(i), 0));
+				ops.add(new HmOp('G', co.get(i + 1), 0));
+			}
+		}
+		java.util.Collections.shuffle(co, new Random(6));
+		for (int i = 0; i < 20; i++) {
+			ops.add(new HmOp('P', co.get(i), v++));
+		}
+		ops.add(new HmOp('K', null, 0));
+		ops.add(new HmOp('C', null, 0));
+		for (int i = 0; i < 12; i++) {
+			ops.add(new HmOp('P', co.get(31 - i), v++));
+		}
+		ops.add(new HmOp('K', null, 0));
+		hmSteps("same_hash", "S", ops);
+
+		// 3. int_keys: Integer keys, so hashCode is the value itself -- multiples of 64 collide in
+		// bucket 0 until the table outgrows them; negatives and extremes spread differently.
+		ops = new ArrayList<>();
+		v = 0;
+		for (int k = 0; k < 24; k++) {
+			ops.add(new HmOp('P', k * 64, v++));
+		}
+		for (int k : new int[] {Integer.MIN_VALUE, Integer.MAX_VALUE, -1, -64, -65536, 65536, 0x10000 * 3, 0x7fff0000, 1 << 30}) {
+			ops.add(new HmOp('P', k, v++));
+		}
+		for (int k = 0; k < 60; k++) {
+			ops.add(new HmOp('P', (k << 16) | 5, v++));
+		}
+		Random ir = new Random(77);
+		for (int i = 0; i < 40; i++) {
+			int k = ir.nextInt(3) == 0 ? (ir.nextInt(60) << 16) | 5 : ir.nextInt(24) * 64;
+			ops.add(new HmOp(ir.nextBoolean() ? 'R' : 'P', k, v++));
+		}
+		ops.add(new HmOp('K', null, 0));
+		hmSteps("int_keys", "I", ops);
+
+		// 4. split_boundary: four tree buckets of a 64 table that the resize to 128 splits by bit 6
+		// into 6|7, 7|6, 10|0 and 0|10 -- UNTREEIFY_THRESHOLD is 6, so each side lands on or just
+		// past the untreeify boundary, and 10|0 / 0|10 keep their tree without rebuilding it.
+		// Whether a rebuilt tree's root is already the bucket's head depends on insertion order,
+		// so the same buckets run in natural, reversed and four shuffled orders.
+		int[][] buckets = {{5, 6}, {69, 7}, {9, 7}, {73, 6}, {13, 10}, {81, 10}};
+		List<List<String>> groups = new ArrayList<>();
+		for (int[] bk : buckets) {
+			groups.add(spreadKeys("s", bk[0], 127, bk[1]));
+		}
+		// After the split, three more keys into each boundary bucket: a tree bin links a new node
+		// after its tree parent, a list appends it, so this is where tree-vs-list becomes visible.
+		List<String> after = new ArrayList<>();
+		for (int b : new int[] {5, 69, 9, 73, 13, 81}) {
+			after.addAll(spreadKeys("w", b, 127, 3));
+		}
+		for (int mode = 0; mode < 6; mode++) {
+			ops = new ArrayList<>();
+			v = 0;
+			for (List<String> g : groups) {
+				List<String> keys = new ArrayList<>(g);
+				if (mode == 1) {
+					java.util.Collections.reverse(keys);
+				} else if (mode >= 2) {
+					java.util.Collections.shuffle(keys, new Random(mode));
+				}
+				for (String k : keys) {
+					ops.add(new HmOp('P', k, v++));
+				}
+			}
+			for (int i = 0; i < 3; i++) {
+				ops.add(new HmOp('P', "u" + i, v++));
+			}
+			for (String k : after) {
+				ops.add(new HmOp('P', k, v++));
+			}
+			hmSteps("split_boundary_" + mode, "S", ops);
+		}
+
+		// 4. HMEQ: AbstractMap.equals / hashCode across histories that end with equal or unequal
+		// contents. Each side is an op script "P:k=v" / "R:k" joined by ','.
+		String[][] pairs = {
+			{"same_order", "P:a=1,P:b=2,P:c=3", "P:a=1,P:b=2,P:c=3"},
+			{"other_order", "P:a=1,P:b=2,P:c=3", "P:c=3,P:a=1,P:b=2"},
+			{"value_differs", "P:a=1,P:b=2", "P:a=1,P:b=3"},
+			{"size_differs", "P:a=1,P:b=2", "P:a=1"},
+			{"key_differs", "P:a=1,P:b=2", "P:a=1,P:c=2"},
+			{"both_empty", "", "P:a=1,R:a"},
+			{"replaced", "P:a=1,P:a=2", "P:a=2"},
+		};
+		for (String[] pr : pairs) {
+			HashMap<String, Integer> a = hmScript(pr[1]);
+			HashMap<String, Integer> b = hmScript(pr[2]);
+			row("HMEQ", pr[0], pr[1].isEmpty() ? "-" : pr[1], pr[2].isEmpty() ? "-" : pr[2], Boolean.toString(a.equals(b)),
+				Boolean.toString(b.equals(a)), Integer.toString(a.hashCode()), Integer.toString(b.hashCode()));
+		}
+		// The same 30 colliding keys; one map grown to a 512 table and emptied back down: equal.
+		StringBuilder big = new StringBuilder();
+		StringBuilder small = new StringBuilder();
+		for (String k : colliding(30)) {
+			big.append(big.length() == 0 ? "" : ",").append("P:").append(k).append("=1");
+			small.append(small.length() == 0 ? "" : ",").append("P:").append(k).append("=1");
+		}
+		for (int i = 0; i < 200; i++) {
+			big.append(",P:x").append(i).append("=0");
+		}
+		for (int i = 0; i < 200; i++) {
+			big.append(",R:x").append(i);
+		}
+		HashMap<String, Integer> a = hmScript(big.toString());
+		HashMap<String, Integer> b = hmScript(small.toString());
+		row("HMEQ", "tree_vs_regrown", big.toString(), small.toString(), Boolean.toString(a.equals(b)), Boolean.toString(b.equals(a)),
+			Integer.toString(a.hashCode()), Integer.toString(b.hashCode()));
+	}
+
+	static HashMap<String, Integer> hmScript(String script) {
+		HashMap<String, Integer> m = new HashMap<>();
+		if (script.isEmpty()) {
+			return m;
+		}
+		for (String op : script.split(",")) {
+			if (op.startsWith("P:")) {
+				String[] kv = op.substring(2).split("=");
+				m.put(kv[0], Integer.parseInt(kv[1]));
+			} else {
+				m.remove(op.substring(2));
+			}
+		}
+		return m;
+	}
+
 	public static void main(String[] args) throws Exception {
 		SHALLOW_COPY = CompoundTag.class.getDeclaredMethod("shallowCopy");
 		SHALLOW_COPY.setAccessible(true);
@@ -1291,6 +1542,7 @@ public class NbtProbe {
 			caseSection();
 			readSection();
 			genSection();
+			hashMapStepSection();
 			out.flush();
 		}
 		System.err.println("rows: " + rows);
