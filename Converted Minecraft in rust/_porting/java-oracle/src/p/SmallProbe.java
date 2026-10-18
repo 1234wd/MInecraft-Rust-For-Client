@@ -92,6 +92,7 @@ public class SmallProbe {
 			stateD1();
 			stateD2();
 			interfacesE();
+			apiShapes();
 		}
 		System.err.println("small_probe: " + rows + " rows -> " + target);
 	}
@@ -1570,5 +1571,61 @@ public class SmallProbe {
 			sa.visit(1L).name(), sa.visit(1.0f).name(), sa.visit(1.0).name(), sa.visit(new byte[0]).name(), sa.visit(new int[0]).name(),
 			sa.visit(new long[0]).name(), sa.visitList(tt, 3).name(), sa.visitElement(tt, 0).name(), sa.visitEntry(tt).name(),
 			sa.visitEntry(tt, "k").name(), sa.visitContainerEnd().name(), sa.visitRootEntry(tt).name());
+	}
+
+	// ------------------------------------------------------------------ sub-batch F: declaration-only interfaces (API shape)
+
+	/** Interfaces (and one abstract class) with no behaviour: their declared members ARE the port. */
+	static final String[] API_CLASSES = {
+		"com.mojang.blaze3d.pipeline.CompiledRenderPipeline", "net.minecraft.client.gui.components.ResettableOptionWidget",
+		"net.minecraft.client.gui.screens.options.HasDifficultyReaction", "net.minecraft.client.gui.screens.options.HasGamemasterPermissionReaction",
+		"net.minecraft.client.renderer.texture.TickableTexture", "net.minecraft.client.resources.sounds.AmbientSoundHandler",
+		"com.mojang.blaze3d.vulkan.Destroyable", "net.minecraft.client.gui.screens.recipebook.SlotSelectTime",
+		"net.minecraft.client.resources.model.ModelDebugName", "net.minecraft.network.codec.StreamMemberEncoder",
+		"net.minecraft.util.profiling.jfr.callback.ProfiledDuration", "net.minecraft.util.valueproviders.SampledFloat",
+		"com.mojang.blaze3d.buffers.GpuFence", "com.mojang.blaze3d.platform.WindowEventHandler", "net.minecraft.client.renderer.texture.Dumpable",
+		"net.minecraft.core.Position", "net.minecraft.gametest.framework.TestPosFinder", "net.minecraft.gizmos.GizmoProperties",
+		"net.minecraft.util.debugchart.SampleLogger", "net.minecraft.world.inventory.ContainerData",
+		"net.minecraft.world.level.entity.ChunkStatusUpdateListener", "com.mojang.blaze3d.systems.GpuQuery",
+		"net.minecraft.client.resources.model.ResolvableModel", "net.minecraft.client.resources.model.ResolvableModel$Resolver",
+		"net.minecraft.server.ServerInfo", "net.minecraft.util.debugchart.SampleStorage", "net.minecraft.world.level.block.entity.TickingBlockEntity",
+		"com.mojang.blaze3d.systems.GpuQueryPool", "net.minecraft.client.gui.components.debug.DebugScreenDisplayer",
+		"net.minecraft.commands.execution.TraceCallbacks", "net.minecraft.world.level.entity.LevelCallback", "com.mojang.blaze3d.textures.GpuSampler",
+	};
+
+	/** {@code API  class  name(genericParams)genericReturn  abstract|default|static|concrete}, sorted; {@code APISUPER  class  supertypes}. */
+	static void apiShapes() throws Exception {
+		for (String cn : API_CLASSES) {
+			Class<?> c = Class.forName(cn);
+			String simple = cn.substring(cn.lastIndexOf('.') + 1);
+			java.util.List<String> sigs = new java.util.ArrayList<>();
+			for (java.lang.reflect.Method m : c.getDeclaredMethods()) {
+				if (m.isSynthetic() || m.isBridge()) {
+					continue;
+				}
+				StringBuilder s = new StringBuilder(m.getName()).append('(');
+				java.lang.reflect.Type[] ps = m.getGenericParameterTypes();
+				for (int k = 0; k < ps.length; k++) {
+					s.append(k == 0 ? "" : ",").append(ps[k].getTypeName());
+				}
+				s.append(')').append(m.getGenericReturnType().getTypeName());
+				int mod = m.getModifiers();
+				String kind = java.lang.reflect.Modifier.isStatic(mod) ? "static"
+					: java.lang.reflect.Modifier.isAbstract(mod) ? "abstract" : m.isDefault() ? "default" : "concrete";
+				sigs.add(s + "\t" + kind);
+			}
+			java.util.Collections.sort(sigs);
+			for (String s : sigs) {
+				row("API", simple, s);
+			}
+			StringBuilder sup = new StringBuilder();
+			for (java.lang.reflect.Type t : c.getGenericInterfaces()) {
+				sup.append(sup.length() == 0 ? "" : ",").append(t.getTypeName());
+			}
+			if (c.getSuperclass() != null && c.getSuperclass() != Object.class) {
+				sup.append(sup.length() == 0 ? "" : ",").append("extends ").append(c.getSuperclass().getName());
+			}
+			row("APISUPER", simple, sup.length() == 0 ? "-" : sup.toString(), c.isInterface() ? "interface" : "class");
+		}
 	}
 }
