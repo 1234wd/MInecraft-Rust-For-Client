@@ -49,7 +49,11 @@ pub fn map_or_default<T, R>(t: Option<T>, map: impl FnOnce(T) -> R, default_valu
 }
 
 /// Port of `Optionull.mapOrElse(T t, Function<T, R> map, Supplier<R> elseSupplier)`.
-pub fn map_or_else<T, R>(t: Option<T>, map: impl FnOnce(T) -> R, else_supplier: impl FnOnce() -> R) -> R {
+pub fn map_or_else<T, R>(
+    t: Option<T>,
+    map: impl FnOnce(T) -> R,
+    else_supplier: impl FnOnce() -> R,
+) -> R {
     match t {
         Some(v) => map(v),
         None => else_supplier(),
@@ -67,7 +71,10 @@ pub fn first_or_default<I: IntoIterator>(collection: I, default_value: I::Item) 
 }
 
 /// Port of `Optionull.firstOrElse(Collection<T> collection, Supplier<T> elseSupplier)`.
-pub fn first_or_else<I: IntoIterator>(collection: I, else_supplier: impl FnOnce() -> I::Item) -> I::Item {
+pub fn first_or_else<I: IntoIterator>(
+    collection: I,
+    else_supplier: impl FnOnce() -> I::Item,
+) -> I::Item {
     match collection.into_iter().next() {
         Some(v) => v,
         None => else_supplier(),

@@ -32,7 +32,15 @@ pub struct DeviceFeatures {
 
 impl DeviceFeatures {
     /// Port of the canonical constructor.
-    pub fn new(shader_draw_parameters: bool, multi_draw_direct_interleaved: bool, multi_draw_direct_separate: bool, multi_draw_indirect: bool, draw_indirect: bool, non_zero_first_instance: bool, persistent_mapping: bool) -> Self {
+    pub fn new(
+        shader_draw_parameters: bool,
+        multi_draw_direct_interleaved: bool,
+        multi_draw_direct_separate: bool,
+        multi_draw_indirect: bool,
+        draw_indirect: bool,
+        non_zero_first_instance: bool,
+        persistent_mapping: bool,
+    ) -> Self {
         DeviceFeatures {
             shader_draw_parameters,
             multi_draw_direct_interleaved,

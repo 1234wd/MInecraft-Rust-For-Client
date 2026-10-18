@@ -47,7 +47,9 @@ impl Default for AnimationState {
 impl AnimationState {
     /// Port of the implicit constructor: stopped.
     pub const fn new() -> Self {
-        AnimationState { start_tick: STOPPED }
+        AnimationState {
+            start_tick: STOPPED,
+        }
     }
 
     /// Port of `start(int tickCount)`.
@@ -86,7 +88,9 @@ impl AnimationState {
     /// Port of `fastForward(int ticks, float timeScale)`: `startTick -= (int) (ticks * timeScale)`.
     pub fn fast_forward(&mut self, ticks: i32, time_scale: f32) {
         if self.is_started() {
-            self.start_tick = self.start_tick.wrapping_sub((ticks as f32 * time_scale) as i32);
+            self.start_tick = self
+                .start_tick
+                .wrapping_sub((ticks as f32 * time_scale) as i32);
         }
     }
 

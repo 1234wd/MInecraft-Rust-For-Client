@@ -23,7 +23,8 @@
 use crate::javacompat::throwable;
 
 /// `CowFSIllegalArgumentException.class.getName()`.
-pub const CLASS_NAME: &str = "net.minecraft.util.filefix.virtualfilesystem.exception.CowFSIllegalArgumentException";
+pub const CLASS_NAME: &str =
+    "net.minecraft.util.filefix.virtualfilesystem.exception.CowFSIllegalArgumentException";
 
 /// The direct Java superclass. Unchecked.
 pub const SUPERCLASS: &str = "java.lang.IllegalArgumentException";

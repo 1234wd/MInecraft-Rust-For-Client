@@ -24,6 +24,9 @@ pub struct MaterialDefinition {
 impl MaterialDefinition {
     /// Port of `new MaterialDefinition(int xTexSize, int yTexSize)`.
     pub const fn new(x_tex_size: i32, y_tex_size: i32) -> Self {
-        MaterialDefinition { x_tex_size, y_tex_size }
+        MaterialDefinition {
+            x_tex_size,
+            y_tex_size,
+        }
     }
 }

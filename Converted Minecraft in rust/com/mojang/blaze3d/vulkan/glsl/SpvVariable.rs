@@ -64,6 +64,10 @@ impl SpvVariable {
 impl std::fmt::Display for SpvVariable {
     /// Port of the record's generated `toString()`.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "SpvVariable[name={}, locationOffset={}]", self.name, self.location_offset)
+        write!(
+            f,
+            "SpvVariable[name={}, locationOffset={}]",
+            self.name, self.location_offset
+        )
     }
 }

@@ -66,7 +66,10 @@ impl std::fmt::Display for Empty {
 pub static EMPTY: LazyLock<Arc<dyn CommandResultCallback>> = LazyLock::new(|| Arc::new(Empty));
 
 /// The lambda `chain` builds for two real callbacks.
-struct Chained(Arc<dyn CommandResultCallback>, Arc<dyn CommandResultCallback>);
+struct Chained(
+    Arc<dyn CommandResultCallback>,
+    Arc<dyn CommandResultCallback>,
+);
 
 impl CommandResultCallback for Chained {
     fn on_result(&self, success: bool, result: i32) {
@@ -76,7 +79,10 @@ impl CommandResultCallback for Chained {
 }
 
 /// Port of `static CommandResultCallback chain(CommandResultCallback first, CommandResultCallback second)`.
-pub fn chain(first: Arc<dyn CommandResultCallback>, second: Arc<dyn CommandResultCallback>) -> Arc<dyn CommandResultCallback> {
+pub fn chain(
+    first: Arc<dyn CommandResultCallback>,
+    second: Arc<dyn CommandResultCallback>,
+) -> Arc<dyn CommandResultCallback> {
     if Arc::ptr_eq(&first, &EMPTY) {
         second
     } else if Arc::ptr_eq(&second, &EMPTY) {

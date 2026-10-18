@@ -56,7 +56,24 @@ pub enum ComponentType {
 
 impl ComponentType {
     /// Java: `ComponentType.values()`.
-    pub const VALUES: [ComponentType; 16] = [ComponentType::Unorm8, ComponentType::Snorm8, ComponentType::Uint8, ComponentType::Sint8, ComponentType::Unorm16, ComponentType::Snorm16, ComponentType::Uint16, ComponentType::Sint16, ComponentType::Float16, ComponentType::Uint32, ComponentType::Sint32, ComponentType::Float32, ComponentType::Opaque8, ComponentType::Opaque16, ComponentType::Opaque32, ComponentType::Opaque64];
+    pub const VALUES: [ComponentType; 16] = [
+        ComponentType::Unorm8,
+        ComponentType::Snorm8,
+        ComponentType::Uint8,
+        ComponentType::Sint8,
+        ComponentType::Unorm16,
+        ComponentType::Snorm16,
+        ComponentType::Uint16,
+        ComponentType::Sint16,
+        ComponentType::Float16,
+        ComponentType::Uint32,
+        ComponentType::Sint32,
+        ComponentType::Float32,
+        ComponentType::Opaque8,
+        ComponentType::Opaque16,
+        ComponentType::Opaque32,
+        ComponentType::Opaque64,
+    ];
 
     /// Java: `ordinal()`.
     pub const fn ordinal(&self) -> i32 {
@@ -494,12 +511,21 @@ impl GpuFormat {
 
     /// Port of `hasDepthAspect()`.
     pub const fn has_depth_aspect(&self) -> bool {
-        matches!(self, GpuFormat::D32Float | GpuFormat::D32FloatS8Uint | GpuFormat::D24UnormS8Uint | GpuFormat::D16Unorm)
+        matches!(
+            self,
+            GpuFormat::D32Float
+                | GpuFormat::D32FloatS8Uint
+                | GpuFormat::D24UnormS8Uint
+                | GpuFormat::D16Unorm
+        )
     }
 
     /// Port of `hasStencilAspect()`.
     pub const fn has_stencil_aspect(&self) -> bool {
-        matches!(self, GpuFormat::S8Uint | GpuFormat::D32FloatS8Uint | GpuFormat::D24UnormS8Uint)
+        matches!(
+            self,
+            GpuFormat::S8Uint | GpuFormat::D32FloatS8Uint | GpuFormat::D24UnormS8Uint
+        )
     }
 }
 

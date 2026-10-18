@@ -123,7 +123,10 @@ impl<T> ChunkResult<T> {
 }
 
 /// Port of `static <R> R orElse(ChunkResult<? extends R> chunkResult, R orElse)`.
-pub fn or_else_of<'a, R>(chunk_result: &'a ChunkResult<R>, or_else: Option<&'a R>) -> Option<&'a R> {
+pub fn or_else_of<'a, R>(
+    chunk_result: &'a ChunkResult<R>,
+    or_else: Option<&'a R>,
+) -> Option<&'a R> {
     chunk_result.or_else(None).or(or_else)
 }
 

@@ -41,7 +41,10 @@ impl TextureSlot {
 
     /// Port of `private static TextureSlot create(String id, TextureSlot parent)`.
     const fn create_with_parent(id: &'static str, parent: &'static TextureSlot) -> TextureSlot {
-        TextureSlot { id, parent: Some(parent) }
+        TextureSlot {
+            id,
+            parent: Some(parent),
+        }
     }
 
     /// Port of `getId()`.

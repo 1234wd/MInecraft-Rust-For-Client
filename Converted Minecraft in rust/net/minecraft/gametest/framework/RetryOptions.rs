@@ -82,7 +82,10 @@ impl RetryOptions {
 
     /// Port of the record's generated `hashCode()`.
     pub fn java_hash_code(&self) -> i32 {
-        java_object::record_hash(&[self.number_of_tries, java_object::hash_bool(self.halt_on_failure)])
+        java_object::record_hash(&[
+            self.number_of_tries,
+            java_object::hash_bool(self.halt_on_failure),
+        ])
     }
 }
 

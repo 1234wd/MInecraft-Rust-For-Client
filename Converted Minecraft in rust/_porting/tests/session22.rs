@@ -66,9 +66,16 @@ fn every_probe_group_is_claimed() {
     }
     // `rows("...")` in this function's own doc text is not a claim.
     claimed.remove("...");
-    let present: std::collections::BTreeSet<String> = kinds().into_iter().map(str::to_string).collect();
+    let present: std::collections::BTreeSet<String> =
+        kinds().into_iter().map(str::to_string).collect();
     let unread: Vec<&String> = present.difference(&claimed).collect();
     let missing: Vec<&String> = claimed.difference(&present).collect();
-    assert!(unread.is_empty(), "small_probe.txt groups that no session22 test reads: {unread:?}");
-    assert!(missing.is_empty(), "session22 reads groups small_probe.txt does not have: {missing:?}");
+    assert!(
+        unread.is_empty(),
+        "small_probe.txt groups that no session22 test reads: {unread:?}"
+    );
+    assert!(
+        missing.is_empty(),
+        "session22 reads groups small_probe.txt does not have: {missing:?}"
+    );
 }

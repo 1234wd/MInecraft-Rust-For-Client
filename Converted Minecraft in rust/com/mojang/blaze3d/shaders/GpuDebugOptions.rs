@@ -29,7 +29,12 @@ pub struct GpuDebugOptions {
 
 impl GpuDebugOptions {
     /// Port of the canonical constructor.
-    pub fn new(log_level: i32, synchronous_logs: bool, use_labels: bool, use_validation_layers: bool) -> Self {
+    pub fn new(
+        log_level: i32,
+        synchronous_logs: bool,
+        use_labels: bool,
+        use_validation_layers: bool,
+    ) -> Self {
         GpuDebugOptions {
             log_level,
             synchronous_logs,

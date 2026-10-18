@@ -33,7 +33,8 @@ impl ParticleRenderType {
     /// Port of `ParticleRenderType.ITEM_PICKUP`.
     pub const ITEM_PICKUP: ParticleRenderType = ParticleRenderType::constant("ITEM_PICKUP", "IP");
     /// Port of `ParticleRenderType.ELDER_GUARDIANS`.
-    pub const ELDER_GUARDIANS: ParticleRenderType = ParticleRenderType::constant("ELDER_GUARDIANS", "EG");
+    pub const ELDER_GUARDIANS: ParticleRenderType =
+        ParticleRenderType::constant("ELDER_GUARDIANS", "EG");
     /// Port of `ParticleRenderType.NO_RENDER`.
     pub const NO_RENDER: ParticleRenderType = ParticleRenderType::constant("NO_RENDER", "NR");
 
@@ -64,13 +65,20 @@ impl ParticleRenderType {
 
     /// Port of the record's generated `hashCode()`.
     pub fn java_hash_code(&self) -> i32 {
-        java_object::record_hash(&[java_lang::string_hash_code(&self.name), java_lang::string_hash_code(&self.shorthand)])
+        java_object::record_hash(&[
+            java_lang::string_hash_code(&self.name),
+            java_lang::string_hash_code(&self.shorthand),
+        ])
     }
 }
 
 impl std::fmt::Display for ParticleRenderType {
     /// Port of the record's generated `toString()`.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "ParticleRenderType[name={}, shorthand={}]", self.name, self.shorthand)
+        write!(
+            f,
+            "ParticleRenderType[name={}, shorthand={}]",
+            self.name, self.shorthand
+        )
     }
 }

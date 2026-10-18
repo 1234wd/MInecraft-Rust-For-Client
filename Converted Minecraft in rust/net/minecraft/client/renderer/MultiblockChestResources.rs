@@ -33,7 +33,11 @@ pub struct MultiblockChestResources<T> {
 impl<T> MultiblockChestResources<T> {
     /// Port of the canonical constructor.
     pub const fn new(single: T, left: T, right: T) -> Self {
-        MultiblockChestResources { single, left, right }
+        MultiblockChestResources {
+            single,
+            left,
+            right,
+        }
     }
 
     /// Port of the accessor `single()`.
@@ -77,6 +81,10 @@ impl<T> MultiblockChestResources<T> {
 impl<T: std::fmt::Display> std::fmt::Display for MultiblockChestResources<T> {
     /// Port of the record's generated `toString()`.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "MultiblockChestResources[single={}, left={}, right={}]", self.single, self.left, self.right)
+        write!(
+            f,
+            "MultiblockChestResources[single={}, left={}, right={}]",
+            self.single, self.left, self.right
+        )
     }
 }

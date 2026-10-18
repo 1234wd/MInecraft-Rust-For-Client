@@ -35,7 +35,9 @@ pub struct FileResourceType<T> {
 impl<T> FileResourceType<T> {
     /// Port of `new FileResourceType(FileResourceType.AccessFactory<T> factory)`.
     pub fn new(factory: impl AccessFactory<T> + 'static) -> Self {
-        FileResourceType { factory: Box::new(factory) }
+        FileResourceType {
+            factory: Box::new(factory),
+        }
     }
 
     /// Port of `create(Path path, int dataVersion)`: `factory.create(path, dataVersion)`.

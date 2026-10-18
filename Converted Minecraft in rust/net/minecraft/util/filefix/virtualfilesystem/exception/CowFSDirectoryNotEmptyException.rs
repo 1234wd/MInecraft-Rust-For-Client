@@ -27,7 +27,8 @@
 use crate::javacompat::throwable;
 
 /// `CowFSDirectoryNotEmptyException.class.getName()`.
-pub const CLASS_NAME: &str = "net.minecraft.util.filefix.virtualfilesystem.exception.CowFSDirectoryNotEmptyException";
+pub const CLASS_NAME: &str =
+    "net.minecraft.util.filefix.virtualfilesystem.exception.CowFSDirectoryNotEmptyException";
 
 /// The direct Java superclass. Checked: an `IOException`.
 pub const SUPERCLASS: &str = "java.nio.file.DirectoryNotEmptyException";

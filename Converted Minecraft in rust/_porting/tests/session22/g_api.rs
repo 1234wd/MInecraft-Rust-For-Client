@@ -134,15 +134,25 @@ const EXPECTED: &[(&str, &[&str], &str, &str)] = &[
 fn declaration_only_interfaces_have_the_jars_methods() {
     let api = rows("API");
     let sup = rows("APISUPER");
-    assert_eq!(sup.len(), EXPECTED.len(), "the probe and the test cover different classes");
+    assert_eq!(
+        sup.len(),
+        EXPECTED.len(),
+        "the probe and the test cover different classes"
+    );
     for (class, sigs, supers, kind) in EXPECTED {
-        let mut got: Vec<String> =
-            api.iter().filter(|r| r[1] == *class).map(|r| format!("{}\t{}", r[2], r[3])).collect();
+        let mut got: Vec<String> = api
+            .iter()
+            .filter(|r| r[1] == *class)
+            .map(|r| format!("{}\t{}", r[2], r[3]))
+            .collect();
         got.sort();
         let mut want: Vec<String> = sigs.iter().map(|s| format!("{s}\tabstract")).collect();
         want.sort();
         assert_eq!(got, want, "{class}: declared methods");
-        let s = sup.iter().find(|r| r[1] == *class).unwrap_or_else(|| panic!("no APISUPER row for {class}"));
+        let s = sup
+            .iter()
+            .find(|r| r[1] == *class)
+            .unwrap_or_else(|| panic!("no APISUPER row for {class}"));
         assert_eq!((s[2], s[3]), (*supers, *kind), "{class}: supertypes");
     }
 }
@@ -249,7 +259,11 @@ mod implementations {
         fn cursor_entered(&mut self) {}
     }
     impl Dumpable for X {
-        fn dump_contents(&self, _self_id: &Identifier, _dir: &std::path::Path) -> std::io::Result<()> {
+        fn dump_contents(
+            &self,
+            _self_id: &Identifier,
+            _dir: &std::path::Path,
+        ) -> std::io::Result<()> {
             Ok(())
         }
     }

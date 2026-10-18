@@ -98,6 +98,11 @@ impl std::hash::Hash for UVPair {
 impl std::fmt::Display for UVPair {
     /// Port of the `toString()` override: `"(" + u + "," + v + ")"`.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "({},{})", float_to_string(self.u), float_to_string(self.v))
+        write!(
+            f,
+            "({},{})",
+            float_to_string(self.u),
+            float_to_string(self.v)
+        )
     }
 }

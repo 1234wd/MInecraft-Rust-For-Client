@@ -109,7 +109,11 @@ impl GizmoStyle {
 
     /// Port of the record's generated `hashCode()`.
     pub fn java_hash_code(&self) -> i32 {
-        java_object::record_hash(&[self.stroke, java_object::hash_f32(self.stroke_width), self.fill])
+        java_object::record_hash(&[
+            self.stroke,
+            java_object::hash_f32(self.stroke_width),
+            self.fill,
+        ])
     }
 }
 

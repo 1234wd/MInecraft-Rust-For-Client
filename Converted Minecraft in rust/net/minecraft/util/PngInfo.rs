@@ -74,15 +74,23 @@ impl PngInfo {
         let mut stream = DataInputStream::new(input_stream);
         let magic = stream.read_long()?;
         if magic != PNG_HEADER {
-            return Err(java_io::io_exception(format!("Bad PNG Signature: {:016X}", magic)));
+            return Err(java_io::io_exception(format!(
+                "Bad PNG Signature: {:016X}",
+                magic
+            )));
         }
         let header_size = stream.read_int()?;
         if header_size != IHDR_SIZE {
-            return Err(java_io::io_exception(format!("Bad length for IHDR chunk: {header_size}")));
+            return Err(java_io::io_exception(format!(
+                "Bad length for IHDR chunk: {header_size}"
+            )));
         }
         let header_type = stream.read_int()?;
         if header_type != IHDR_TYPE {
-            return Err(java_io::io_exception(format!("Bad type for IHDR chunk: {:08X}", header_type)));
+            return Err(java_io::io_exception(format!(
+                "Bad type for IHDR chunk: {:08X}",
+                header_type
+            )));
         }
         let width = stream.read_int()?;
         let height = stream.read_int()?;

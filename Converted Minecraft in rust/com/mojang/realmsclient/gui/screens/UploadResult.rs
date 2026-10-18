@@ -74,7 +74,9 @@ impl UploadResult {
     pub fn java_hash_code(&self) -> i32 {
         java_object::record_hash(&[
             self.status_code,
-            java_object::hash_opt(self.error_message.as_ref(), |s| java_lang::string_hash_code(s)),
+            java_object::hash_opt(self.error_message.as_ref(), |s| {
+                java_lang::string_hash_code(s)
+            }),
         ])
     }
 }

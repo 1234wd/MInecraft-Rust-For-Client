@@ -48,7 +48,10 @@ impl ModelLayerLocation {
 
     /// Port of the record's generated `hashCode()`.
     pub fn java_hash_code(&self) -> i32 {
-        java_object::record_hash(&[self.model.java_hash_code(), java_lang::string_hash_code(&self.layer)])
+        java_object::record_hash(&[
+            self.model.java_hash_code(),
+            java_lang::string_hash_code(&self.layer),
+        ])
     }
 }
 

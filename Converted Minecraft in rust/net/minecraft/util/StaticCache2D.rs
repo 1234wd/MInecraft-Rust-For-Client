@@ -60,7 +60,12 @@ pub struct StaticCache2D<T> {
 
 impl<T> StaticCache2D<T> {
     /// Port of `static <T> StaticCache2D<T> create(int centerX, int centerZ, int range, Initializer<T> initializer)`.
-    pub fn create(center_x: i32, center_z: i32, range: i32, initializer: impl Initializer<T>) -> StaticCache2D<T> {
+    pub fn create(
+        center_x: i32,
+        center_z: i32,
+        range: i32,
+        initializer: impl Initializer<T>,
+    ) -> StaticCache2D<T> {
         let min_x = center_x.wrapping_sub(range);
         let min_z = center_z.wrapping_sub(range);
         let size = 2i32.wrapping_mul(range).wrapping_add(1);
@@ -68,7 +73,13 @@ impl<T> StaticCache2D<T> {
     }
 
     /// Port of the private constructor.
-    fn new(min_x: i32, min_z: i32, size_x: i32, size_z: i32, mut initializer: impl Initializer<T>) -> StaticCache2D<T> {
+    fn new(
+        min_x: i32,
+        min_z: i32,
+        size_x: i32,
+        size_z: i32,
+        mut initializer: impl Initializer<T>,
+    ) -> StaticCache2D<T> {
         let len = size_x.wrapping_mul(size_z);
         if len < 0 {
             panic!("java.lang.NegativeArraySizeException: {len}");

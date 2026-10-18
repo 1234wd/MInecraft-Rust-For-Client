@@ -90,12 +90,24 @@ impl DisplayData {
 
     /// Port of `withSize(int width, int height)`.
     pub const fn with_size(&self, width: i32, height: i32) -> DisplayData {
-        DisplayData::new(width, height, self.fullscreen_width, self.fullscreen_height, self.is_fullscreen)
+        DisplayData::new(
+            width,
+            height,
+            self.fullscreen_width,
+            self.fullscreen_height,
+            self.is_fullscreen,
+        )
     }
 
     /// Port of `withFullscreen(boolean isFullscreen)`.
     pub const fn with_fullscreen(&self, is_fullscreen: bool) -> DisplayData {
-        DisplayData::new(self.width, self.height, self.fullscreen_width, self.fullscreen_height, is_fullscreen)
+        DisplayData::new(
+            self.width,
+            self.height,
+            self.fullscreen_width,
+            self.fullscreen_height,
+            is_fullscreen,
+        )
     }
 
     /// Port of the record's generated `hashCode()`.

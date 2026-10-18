@@ -36,7 +36,8 @@ pub struct LevelResource {
 
 impl LevelResource {
     /// Port of `LevelResource.PLAYER_ADVANCEMENTS_DIR`.
-    pub const PLAYER_ADVANCEMENTS_DIR: LevelResource = LevelResource::constant("players/advancements");
+    pub const PLAYER_ADVANCEMENTS_DIR: LevelResource =
+        LevelResource::constant("players/advancements");
     /// Port of `LevelResource.PLAYER_STATS_DIR`.
     pub const PLAYER_STATS_DIR: LevelResource = LevelResource::constant("players/stats");
     /// Port of `LevelResource.PLAYER_DATA_DIR`.
@@ -56,14 +57,17 @@ impl LevelResource {
     /// Port of `LevelResource.DATAPACK_DIR`.
     pub const DATAPACK_DIR: LevelResource = LevelResource::constant("datapacks");
     /// Port of `LevelResource.MAP_RESOURCE_FILE`.
-    pub const MAP_RESOURCE_FILE: LevelResource = LevelResource::constant("resourcepacks/resources.zip");
+    pub const MAP_RESOURCE_FILE: LevelResource =
+        LevelResource::constant("resourcepacks/resources.zip");
     /// Port of `LevelResource.DATA`.
     pub const DATA: LevelResource = LevelResource::constant("data");
     /// Port of `LevelResource.ROOT`.
     pub const ROOT: LevelResource = LevelResource::constant(".");
 
     const fn constant(id: &'static str) -> Self {
-        LevelResource { id: Cow::Borrowed(id) }
+        LevelResource {
+            id: Cow::Borrowed(id),
+        }
     }
 
     /// Port of the canonical constructor.

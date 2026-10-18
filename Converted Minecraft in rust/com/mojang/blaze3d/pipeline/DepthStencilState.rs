@@ -39,7 +39,8 @@ pub struct DepthStencilState {
 
 impl DepthStencilState {
     /// Port of `DepthStencilState.DEFAULT` = `new DepthStencilState(GREATER_THAN_OR_EQUAL, true)`.
-    pub const DEFAULT: DepthStencilState = DepthStencilState::new_without_bias(CompareOp::GreaterThanOrEqual, true);
+    pub const DEFAULT: DepthStencilState =
+        DepthStencilState::new_without_bias(CompareOp::GreaterThanOrEqual, true);
 
     /// Port of the canonical constructor.
     pub const fn new(

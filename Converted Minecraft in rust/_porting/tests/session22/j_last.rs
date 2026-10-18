@@ -34,9 +34,17 @@ fn resource_descriptor_defaults_match_the_jar() {
     let (a1, a1b, a2, b1) = (DescA(1), DescA(1), DescA(2), DescB(1));
     a1.prepare(&"x".to_string());
     assert_eq!(a1.can_use_physical_resource(&a1), boolf(r[1]));
-    assert_eq!(a1.can_use_physical_resource(&a1b), boolf(r[2]), "equal records");
+    assert_eq!(
+        a1.can_use_physical_resource(&a1b),
+        boolf(r[2]),
+        "equal records"
+    );
     assert_eq!(a1.can_use_physical_resource(&a2), boolf(r[3]));
-    assert_eq!(a1.can_use_physical_resource(&b1), boolf(r[4]), "a different descriptor type is never equal");
+    assert_eq!(
+        a1.can_use_physical_resource(&b1),
+        boolf(r[4]),
+        "a different descriptor type is never equal"
+    );
     assert_eq!(a1.allocate(), r[5]);
 }
 

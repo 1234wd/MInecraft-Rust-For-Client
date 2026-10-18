@@ -72,5 +72,8 @@ impl std::error::Error for RunningOnDifferentThreadException {}
 #[cold]
 #[inline(never)]
 pub fn throw() -> ! {
-    panic!("{}", RunningOnDifferentThreadException::RUNNING_ON_DIFFERENT_THREAD)
+    panic!(
+        "{}",
+        RunningOnDifferentThreadException::RUNNING_ON_DIFFERENT_THREAD
+    )
 }

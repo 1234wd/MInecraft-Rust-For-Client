@@ -78,7 +78,10 @@ impl WalkAnimationState {
 
     /// Port of `speed(float partialTicks)`.
     pub fn speed_f32(&self, partial_ticks: f32) -> f32 {
-        java_lang::min_f32(Mth::lerp_f32(partial_ticks, self.speed_old, self.speed), 1.0)
+        java_lang::min_f32(
+            Mth::lerp_f32(partial_ticks, self.speed_old, self.speed),
+            1.0,
+        )
     }
 
     /// Port of `position()`.

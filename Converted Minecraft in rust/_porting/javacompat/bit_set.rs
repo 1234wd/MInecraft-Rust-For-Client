@@ -41,7 +41,9 @@ impl BitSet {
         if nbits < 0 {
             panic!("java.lang.NegativeArraySizeException: nbits < 0: {nbits}");
         }
-        BitSet { words: Vec::with_capacity((nbits as usize).div_ceil(64)) }
+        BitSet {
+            words: Vec::with_capacity((nbits as usize).div_ceil(64)),
+        }
     }
 
     /// Port of `BitSet.valueOf(long[] longs)`: a copy, with trailing zero words dropped.
@@ -73,7 +75,9 @@ impl BitSet {
     /// Port of `stream()`: the set bits, ascending.
     pub fn stream(&self) -> impl Iterator<Item = i32> + '_ {
         self.words.iter().enumerate().flat_map(|(w, &bits)| {
-            (0..64).filter(move |b| (bits >> b) & 1 != 0).map(move |b| (w as i32) * 64 + b)
+            (0..64)
+                .filter(move |b| (bits >> b) & 1 != 0)
+                .map(move |b| (w as i32) * 64 + b)
         })
     }
 

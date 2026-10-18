@@ -105,7 +105,11 @@ impl CarvingMask {
             let x = i & 15;
             let z = (i >> 4) & 15;
             let y = i >> 8;
-            BlockPos::new(pos.get_block_x(x), y.wrapping_add(self.min_y), pos.get_block_z(z))
+            BlockPos::new(
+                pos.get_block_x(x),
+                y.wrapping_add(self.min_y),
+                pos.get_block_z(z),
+            )
         })
     }
 
@@ -117,6 +121,9 @@ impl CarvingMask {
 
 impl std::fmt::Debug for CarvingMask {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("CarvingMask").field("min_y", &self.min_y).field("mask", &self.mask).finish_non_exhaustive()
+        f.debug_struct("CarvingMask")
+            .field("min_y", &self.min_y)
+            .field("mask", &self.mask)
+            .finish_non_exhaustive()
     }
 }

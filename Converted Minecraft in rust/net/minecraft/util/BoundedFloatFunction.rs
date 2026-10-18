@@ -95,7 +95,9 @@ pub struct Comap<B, F, C> {
     _input: PhantomData<fn(C)>,
 }
 
-impl<C, C2, B: BoundedFloatFunction<C>, F: Fn(C2) -> C> BoundedFloatFunction<C2> for Comap<B, F, C> {
+impl<C, C2, B: BoundedFloatFunction<C>, F: Fn(C2) -> C> BoundedFloatFunction<C2>
+    for Comap<B, F, C>
+{
     fn apply(&self, c2: C2) -> f32 {
         self.outer.apply((self.function)(c2))
     }

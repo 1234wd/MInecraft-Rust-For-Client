@@ -39,25 +39,62 @@ use minecraft_rust::net::minecraft::Optionull;
 
 /// The probe's `CMP_STRINGS`.
 const CMP_STRINGS: [&str; 16] = [
-    "", "a", "b", "ab", "abc", "A", "\u{e9}", "\u{ff}", "\u{ffff}", "\u{1F600}", "zz", "aa", "a\u{0}", "\u{4e2d}\u{6587}", "Aa", "BB",
+    "",
+    "a",
+    "b",
+    "ab",
+    "abc",
+    "A",
+    "\u{e9}",
+    "\u{ff}",
+    "\u{ffff}",
+    "\u{1F600}",
+    "zz",
+    "aa",
+    "a\u{0}",
+    "\u{4e2d}\u{6587}",
+    "Aa",
+    "BB",
 ];
 
 #[test]
 fn java_lang_signum_compare_to_and_round_match_the_jdk() {
     for r in rows("JSIGNUM") {
         match r[1] {
-            "d" => assert_eq!(hex64(java_lang::signum_f64(f64f(r[2]))), r[3], "Math.signum({}d)", r[2]),
-            _ => assert_eq!(hex32(java_lang::signum_f32(f32f(r[2]))), r[3], "Math.signum({}f)", r[2]),
+            "d" => assert_eq!(
+                hex64(java_lang::signum_f64(f64f(r[2]))),
+                r[3],
+                "Math.signum({}d)",
+                r[2]
+            ),
+            _ => assert_eq!(
+                hex32(java_lang::signum_f32(f32f(r[2]))),
+                r[3],
+                "Math.signum({}f)",
+                r[2]
+            ),
         }
     }
     for r in rows("JCMP") {
-        let (a, b) = (CMP_STRINGS[i32f(r[1]) as usize], CMP_STRINGS[i32f(r[2]) as usize]);
-        assert_eq!(java_lang::string_compare_to(a, b), i32f(r[3]), "{a:?}.compareTo({b:?})");
+        let (a, b) = (
+            CMP_STRINGS[i32f(r[1]) as usize],
+            CMP_STRINGS[i32f(r[2]) as usize],
+        );
+        assert_eq!(
+            java_lang::string_compare_to(a, b),
+            i32f(r[3]),
+            "{a:?}.compareTo({b:?})"
+        );
     }
     let rounds = rows("JROUND");
     assert!(rounds.len() > 5000, "the round corpus shrank");
     for r in rounds {
-        assert_eq!(java_lang::round_f32(f32f(r[1])), i32f(r[2]), "Math.round({}f)", r[1]);
+        assert_eq!(
+            java_lang::round_f32(f32f(r[1])),
+            i32f(r[2]),
+            "Math.round({}f)",
+            r[1]
+        );
     }
 }
 
@@ -83,12 +120,21 @@ fn smooth_double_replays_the_jar_scripts() {
 #[test]
 fn result_field_matches_the_jar() {
     let rows = rows("RESULTFIELD");
-    let fields: Vec<ResultField> =
-        rows.iter().map(|r| ResultField::new(&s(r[2]), f64f(r[3]), f64f(r[4]), i64f(r[5]))).collect();
+    let fields: Vec<ResultField> = rows
+        .iter()
+        .map(|r| ResultField::new(&s(r[2]), f64f(r[3]), f64f(r[4]), i64f(r[5])))
+        .collect();
     assert_eq!(fields.len(), 9);
     for (a, r) in rows.iter().enumerate() {
         let f = &fields[a];
-        assert_eq!((f.percentage.to_bits(), f.global_percentage.to_bits(), f.count), (f64bits(r[3]), f64bits(r[4]), i64f(r[5])));
+        assert_eq!(
+            (
+                f.percentage.to_bits(),
+                f.global_percentage.to_bits(),
+                f.count
+            ),
+            (f64bits(r[3]), f64bits(r[4]), i64f(r[5]))
+        );
         assert_eq!(f.get_color(), i32f(r[6]), "{}.getColor()", f.name);
         let cmp: Vec<String> = fields.iter().map(|o| f.compare_to(o).to_string()).collect();
         assert_eq!(cmp.join(","), r[7], "compareTo row for {:?}", f.name);
@@ -100,7 +146,11 @@ fn segmented_angle_precision_matches_the_jar() {
     for r in rows("SEGCTOR") {
         let bits = i32f(r[1]);
         if let Some(ex) = r[2].strip_prefix("EX:") {
-            assert_eq!(Some(panic_text(move || SegmentedAnglePrecision::new(bits))), unesc(ex), "new({bits})");
+            assert_eq!(
+                Some(panic_text(move || SegmentedAnglePrecision::new(bits))),
+                unesc(ex),
+                "new({bits})"
+            );
         } else {
             let _ = SegmentedAnglePrecision::new(bits);
         }
@@ -108,23 +158,68 @@ fn segmented_angle_precision_matches_the_jar() {
     for r in rows("SEGDIR") {
         let sp = SegmentedAnglePrecision::new(i32f(r[1]));
         assert_eq!(sp.get_mask(), i32f(r[2]));
-        let dirs: Vec<String> = direction::VALUES.iter().map(|d| sp.from_direction(*d).to_string()).collect();
+        let dirs: Vec<String> = direction::VALUES
+            .iter()
+            .map(|d| sp.from_direction(*d).to_string())
+            .collect();
         assert_eq!(dirs.join(","), r[3], "fromDirection for precision {}", r[1]);
     }
     for r in rows("SEGDEG") {
         let sp = SegmentedAnglePrecision::new(i32f(r[1]));
         let deg = f32f(r[2]);
-        assert_eq!(sp.from_degrees_with_turns(deg), i32f(r[3]), "[{}].fromDegreesWithTurns({})", r[1], r[2]);
-        assert_eq!(sp.from_degrees(deg), i32f(r[4]), "[{}].fromDegrees({})", r[1], r[2]);
+        assert_eq!(
+            sp.from_degrees_with_turns(deg),
+            i32f(r[3]),
+            "[{}].fromDegreesWithTurns({})",
+            r[1],
+            r[2]
+        );
+        assert_eq!(
+            sp.from_degrees(deg),
+            i32f(r[4]),
+            "[{}].fromDegrees({})",
+            r[1],
+            r[2]
+        );
     }
-    let angles = [0, 1, -1, 2, 3, 4, 7, 8, 15, 16, 31, 64, 128, 255, 256, 1023, 1024, 65535, 65536, i32::MAX, i32::MIN];
+    let angles = [
+        0,
+        1,
+        -1,
+        2,
+        3,
+        4,
+        7,
+        8,
+        15,
+        16,
+        31,
+        64,
+        128,
+        255,
+        256,
+        1023,
+        1024,
+        65535,
+        65536,
+        i32::MAX,
+        i32::MIN,
+    ];
     for r in rows("SEGANG") {
         let sp = SegmentedAnglePrecision::new(i32f(r[1]));
         let an = i32f(r[2]);
         assert_eq!(sp.normalize(an), i32f(r[3]));
-        assert_eq!(hex32(sp.to_degrees_with_turns(an)), r[4], "[{}].toDegreesWithTurns({an})", r[1]);
+        assert_eq!(
+            hex32(sp.to_degrees_with_turns(an)),
+            r[4],
+            "[{}].toDegreesWithTurns({an})",
+            r[1]
+        );
         assert_eq!(hex32(sp.to_degrees(an)), r[5], "[{}].toDegrees({an})", r[1]);
-        let axis: String = angles.iter().map(|&o| if sp.is_same_axis(an, o) { '1' } else { '0' }).collect();
+        let axis: String = angles
+            .iter()
+            .map(|&o| if sp.is_same_axis(an, o) { '1' } else { '0' })
+            .collect();
         assert_eq!(axis, r[6], "[{}].isSameAxis({an}, *)", r[1]);
     }
 }
@@ -141,8 +236,18 @@ fn piston_movement_area_matches_the_jar() {
     for r in rows {
         let dir = Direction::by_name(r[2]).expect("direction");
         let got = PistonMath::get_movement_area(&boxes[i32f(r[1]) as usize], dir, f64f(r[3]));
-        let corners = [got.min_x, got.min_y, got.min_z, got.max_x, got.max_y, got.max_z].map(hex64);
-        assert_eq!(corners.to_vec(), r[4..10].to_vec(), "box {} {} {}", r[1], r[2], r[3]);
+        let corners = [
+            got.min_x, got.min_y, got.min_z, got.max_x, got.max_y, got.max_z,
+        ]
+        .map(hex64);
+        assert_eq!(
+            corners.to_vec(),
+            r[4..10].to_vec(),
+            "box {} {} {}",
+            r[1],
+            r[2],
+            r[3]
+        );
     }
 }
 
@@ -159,7 +264,11 @@ fn translucency_point_of_view_matches_the_jar() {
         let node = i64f(r[1]);
         let cam = Vec3::new(f64f(r[2]), f64f(r[3]), f64f(r[4]));
         let p = TranslucencyPointOfView::of(&cam, node);
-        assert_eq!(pov_xyz(&p), (i32f(r[5]), i32f(r[6]), i32f(r[7])), "of({cam}, {node})");
+        assert_eq!(
+            pov_xyz(&p),
+            (i32f(r[5]), i32f(r[6]), i32f(r[7])),
+            "of({cam}, {node})"
+        );
         assert_eq!(p.is_axis_aligned(), boolf(r[8]));
         assert_eq!(p.java_hash_code(), i32f(r[9]));
         povs.push(p);
@@ -174,10 +283,16 @@ fn translucency_point_of_view_matches_the_jar() {
     assert_eq!(fresh.java_hash_code(), i32f(r[5]));
     assert_eq!(fresh == povs[0], boolf(r[6]));
     let p: *const TranslucencyPointOfView = &fresh;
-    assert_eq!(std::ptr::eq(fresh.set(&Vec3::new(20.0, 20.0, 20.0), 0), p), boolf(r[7]), "set returns this");
+    assert_eq!(
+        std::ptr::eq(fresh.set(&Vec3::new(20.0, 20.0, 20.0), 0), p),
+        boolf(r[7]),
+        "set returns this"
+    );
     for r in rows("TRANSPOVEQ") {
         let a = i32f(r[1]) as usize;
-        let eq: String = (0..8).map(|c| if povs[a] == povs[c] { '1' } else { '0' }).collect();
+        let eq: String = (0..8)
+            .map(|c| if povs[a] == povs[c] { '1' } else { '0' })
+            .collect();
         assert_eq!(eq, r[2], "equals row {a}");
     }
 }
@@ -191,7 +306,10 @@ fn client_avatar_state_replays_the_jar_script() {
         let p: Vec<&str> = op.split(':').collect();
         let num = |s: &str| -> f64 { s.parse().expect("double") };
         match p[0] {
-            "T" => av.tick(&Vec3::new(num(p[1]), num(p[2]), num(p[3])), &Vec3::new(0.25, 0.0, 0.0)),
+            "T" => av.tick(
+                &Vec3::new(num(p[1]), num(p[2]), num(p[3])),
+                &Vec3::new(0.25, 0.0, 0.0),
+            ),
             "W" => av.add_walk_distance(jfloat(p[1])),
             "B" => av.update_bob(jfloat(p[1])),
             _ => av.reset_bob(),
@@ -222,17 +340,28 @@ fn visibility_set_replays_the_jar_scripts() {
             let p: Vec<&str> = op.split(':').collect();
             match p[0] {
                 "A" => {
-                    let set: Vec<Direction> =
-                        p[1].split(',').filter(|n| !n.is_empty()).map(|n| Direction::by_name(n).expect("direction")).collect();
+                    let set: Vec<Direction> = p[1]
+                        .split(',')
+                        .filter(|n| !n.is_empty())
+                        .map(|n| Direction::by_name(n).expect("direction"))
+                        .collect();
                     vs.add(&set);
                 }
-                "S" => vs.set(Direction::by_name(p[1]).unwrap(), Direction::by_name(p[2]).unwrap(), p[3] == "1"),
+                "S" => vs.set(
+                    Direction::by_name(p[1]).unwrap(),
+                    Direction::by_name(p[2]).unwrap(),
+                    p[3] == "1",
+                ),
                 _ => vs.set_all(p[1] == "1"),
             }
             let mut m = String::new();
             for a in direction::VALUES {
                 for c in direction::VALUES {
-                    m.push(if vs.visibility_between(a, c) { '1' } else { '0' });
+                    m.push(if vs.visibility_between(a, c) {
+                        '1'
+                    } else {
+                        '0'
+                    });
                 }
             }
             out.push(format!("{m}|{}", esc_like_probe(&vs.to_string())));
@@ -316,17 +445,28 @@ fn context_keys_and_identifier_constants_match_the_jar() {
         ("AtlasIds", "SHIELD_PATTERNS", &AtlasIds::SHIELD_PATTERNS),
         ("AtlasIds", "SHULKER_BOXES", &AtlasIds::SHULKER_BOXES),
         ("AtlasIds", "CELESTIALS", &AtlasIds::CELESTIALS),
-        ("TemperatureVariants", "TEMPERATE", &TemperatureVariants::TEMPERATE),
+        (
+            "TemperatureVariants",
+            "TEMPERATE",
+            &TemperatureVariants::TEMPERATE,
+        ),
         ("TemperatureVariants", "WARM", &TemperatureVariants::WARM),
         ("TemperatureVariants", "COLD", &TemperatureVariants::COLD),
     ];
-    let mut got: Vec<(String, String, String)> =
-        consts.iter().map(|(c, n, v)| (c.to_string(), n.to_string(), v.to_string())).collect();
-    let mut want: Vec<(String, String, String)> =
-        rows("IDCONST").iter().map(|r| (r[1].to_string(), r[2].to_string(), r[3].to_string())).collect();
+    let mut got: Vec<(String, String, String)> = consts
+        .iter()
+        .map(|(c, n, v)| (c.to_string(), n.to_string(), v.to_string()))
+        .collect();
+    let mut want: Vec<(String, String, String)> = rows("IDCONST")
+        .iter()
+        .map(|r| (r[1].to_string(), r[2].to_string(), r[3].to_string()))
+        .collect();
     got.sort();
     want.sort();
-    assert_eq!(got, want, "the jar's static Identifier fields, by reflection");
+    assert_eq!(
+        got, want,
+        "the jar's static Identifier fields, by reflection"
+    );
 }
 
 #[test]
@@ -340,7 +480,11 @@ fn tick_task_and_game_test_event_match_the_jar() {
         task.run();
         task.run();
         assert_eq!(task.get_tick(), i32f(r[2]));
-        assert_eq!(calls.load(Ordering::SeqCst), i32f(r[3]), "run() runs the runnable once per call");
+        assert_eq!(
+            calls.load(Ordering::SeqCst),
+            i32f(r[3]),
+            "run() runs the runnable once per call"
+        );
     }
     let rows = rows("GAMETEST");
     let calls = Arc::new(AtomicI32::new(0));
@@ -353,12 +497,23 @@ fn tick_task_and_game_test_event_match_the_jar() {
     let mut events = [
         ("create", GameTestEvent::create(make(&calls))),
         ("create-long", GameTestEvent::create_i64(-5, make(&calls))),
-        ("createWithMinimumDelay", GameTestEvent::create_with_minimum_delay(i64::MAX, make(&calls))),
+        (
+            "createWithMinimumDelay",
+            GameTestEvent::create_with_minimum_delay(i64::MAX, make(&calls)),
+        ),
     ];
     for (name, ev) in events.iter_mut() {
         let r = rows.iter().find(|r| r[1] == *name).expect("GAMETEST row");
-        assert_eq!(ev.expected_delay.map(|v| v.to_string()), unesc(r[2]), "{name}: expectedDelay");
-        assert_eq!(ev.minimum_delay.map(|v| v.to_string()), unesc(r[3]), "{name}: minimumDelay");
+        assert_eq!(
+            ev.expected_delay.map(|v| v.to_string()),
+            unesc(r[2]),
+            "{name}: expectedDelay"
+        );
+        assert_eq!(
+            ev.minimum_delay.map(|v| v.to_string()),
+            unesc(r[3]),
+            "{name}: minimumDelay"
+        );
         // Java: the stored assertion IS the runnable passed in. Here: running it runs ours.
         let before = calls.load(Ordering::SeqCst);
         (ev.assertion)();
@@ -377,7 +532,9 @@ fn network_data_output_stream_replays_the_jar_script() {
         let (k, v) = op.split_once(':').unwrap_or((op, ""));
         match k {
             "b" => {
-                let bytes: Vec<u8> = (0..v.len() / 2).map(|i| u8::from_str_radix(&v[2 * i..2 * i + 2], 16).unwrap()).collect();
+                let bytes: Vec<u8> = (0..v.len() / 2)
+                    .map(|i| u8::from_str_radix(&v[2 * i..2 * i + 2], 16).unwrap())
+                    .collect();
                 nd.write_bytes(&bytes);
             }
             "i" => nd.write_int(v.parse().unwrap()),
@@ -389,7 +546,11 @@ fn network_data_output_stream_replays_the_jar_script() {
             "S" => nd.write_string(v),
             _ => nd.reset(),
         }
-        let hex: String = nd.to_byte_array().iter().map(|b| format!("{b:02x}")).collect();
+        let hex: String = nd
+            .to_byte_array()
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect();
         out.push(if hex.is_empty() { "-".to_string() } else { hex });
     }
     assert_eq!(out.join(","), r[2]);
@@ -398,74 +559,156 @@ fn network_data_output_stream_replays_the_jar_script() {
 #[test]
 fn texture_slots_match_the_jar() {
     let all: Vec<(&str, &TextureSlot)> = vec![
-        ("ALL", &texture_slot::ALL), ("TEXTURE", &texture_slot::TEXTURE), ("PARTICLE", &texture_slot::PARTICLE),
-        ("END", &texture_slot::END), ("BOTTOM", &texture_slot::BOTTOM), ("TOP", &texture_slot::TOP),
-        ("FRONT", &texture_slot::FRONT), ("BACK", &texture_slot::BACK), ("SIDE", &texture_slot::SIDE),
-        ("NORTH", &texture_slot::NORTH), ("SOUTH", &texture_slot::SOUTH), ("EAST", &texture_slot::EAST),
-        ("WEST", &texture_slot::WEST), ("UP", &texture_slot::UP), ("DOWN", &texture_slot::DOWN),
-        ("CROSS", &texture_slot::CROSS), ("CROSS_EMISSIVE", &texture_slot::CROSS_EMISSIVE), ("PLANT", &texture_slot::PLANT),
-        ("WALL", &texture_slot::WALL), ("RAIL", &texture_slot::RAIL), ("WOOL", &texture_slot::WOOL),
-        ("PATTERN", &texture_slot::PATTERN), ("PANE", &texture_slot::PANE), ("EDGE", &texture_slot::EDGE),
-        ("FAN", &texture_slot::FAN), ("STEM", &texture_slot::STEM), ("UPPER_STEM", &texture_slot::UPPER_STEM),
-        ("CROP", &texture_slot::CROP), ("DIRT", &texture_slot::DIRT), ("FIRE", &texture_slot::FIRE),
-        ("LANTERN", &texture_slot::LANTERN), ("PLATFORM", &texture_slot::PLATFORM), ("UNSTICKY", &texture_slot::UNSTICKY),
-        ("TORCH", &texture_slot::TORCH), ("LAYER0", &texture_slot::LAYER0), ("LAYER1", &texture_slot::LAYER1),
-        ("LAYER2", &texture_slot::LAYER2), ("LIT_LOG", &texture_slot::LIT_LOG), ("CANDLE", &texture_slot::CANDLE),
-        ("INSIDE", &texture_slot::INSIDE), ("CONTENT", &texture_slot::CONTENT), ("INNER_TOP", &texture_slot::INNER_TOP),
-        ("FLOWERBED", &texture_slot::FLOWERBED), ("TENTACLES", &texture_slot::TENTACLES), ("BARS", &texture_slot::BARS),
+        ("ALL", &texture_slot::ALL),
+        ("TEXTURE", &texture_slot::TEXTURE),
+        ("PARTICLE", &texture_slot::PARTICLE),
+        ("END", &texture_slot::END),
+        ("BOTTOM", &texture_slot::BOTTOM),
+        ("TOP", &texture_slot::TOP),
+        ("FRONT", &texture_slot::FRONT),
+        ("BACK", &texture_slot::BACK),
+        ("SIDE", &texture_slot::SIDE),
+        ("NORTH", &texture_slot::NORTH),
+        ("SOUTH", &texture_slot::SOUTH),
+        ("EAST", &texture_slot::EAST),
+        ("WEST", &texture_slot::WEST),
+        ("UP", &texture_slot::UP),
+        ("DOWN", &texture_slot::DOWN),
+        ("CROSS", &texture_slot::CROSS),
+        ("CROSS_EMISSIVE", &texture_slot::CROSS_EMISSIVE),
+        ("PLANT", &texture_slot::PLANT),
+        ("WALL", &texture_slot::WALL),
+        ("RAIL", &texture_slot::RAIL),
+        ("WOOL", &texture_slot::WOOL),
+        ("PATTERN", &texture_slot::PATTERN),
+        ("PANE", &texture_slot::PANE),
+        ("EDGE", &texture_slot::EDGE),
+        ("FAN", &texture_slot::FAN),
+        ("STEM", &texture_slot::STEM),
+        ("UPPER_STEM", &texture_slot::UPPER_STEM),
+        ("CROP", &texture_slot::CROP),
+        ("DIRT", &texture_slot::DIRT),
+        ("FIRE", &texture_slot::FIRE),
+        ("LANTERN", &texture_slot::LANTERN),
+        ("PLATFORM", &texture_slot::PLATFORM),
+        ("UNSTICKY", &texture_slot::UNSTICKY),
+        ("TORCH", &texture_slot::TORCH),
+        ("LAYER0", &texture_slot::LAYER0),
+        ("LAYER1", &texture_slot::LAYER1),
+        ("LAYER2", &texture_slot::LAYER2),
+        ("LIT_LOG", &texture_slot::LIT_LOG),
+        ("CANDLE", &texture_slot::CANDLE),
+        ("INSIDE", &texture_slot::INSIDE),
+        ("CONTENT", &texture_slot::CONTENT),
+        ("INNER_TOP", &texture_slot::INNER_TOP),
+        ("FLOWERBED", &texture_slot::FLOWERBED),
+        ("TENTACLES", &texture_slot::TENTACLES),
+        ("BARS", &texture_slot::BARS),
     ];
     let rows_t = rows("TEXSLOT");
-    assert_eq!(rows_t.len(), all.len(), "the jar has a different number of TextureSlot constants");
+    assert_eq!(
+        rows_t.len(),
+        all.len(),
+        "the jar has a different number of TextureSlot constants"
+    );
     for (r, (name, slot)) in rows_t.iter().zip(all.iter()) {
         assert_eq!(r[1], *name);
         assert_eq!(slot.get_id(), r[2], "{name}.getId()");
-        assert_eq!(slot.get_parent().map(|p| p.get_id().to_string()), unesc(r[3]), "{name}.getParent()");
+        assert_eq!(
+            slot.get_parent().map(|p| p.get_id().to_string()),
+            unesc(r[3]),
+            "{name}.getParent()"
+        );
         assert_eq!(slot.to_string(), r[4], "{name}.toString()");
     }
     // The parent is the very constant, not a copy: NORTH's parent IS SIDE.
-    assert!(std::ptr::eq(texture_slot::NORTH.get_parent().unwrap(), &texture_slot::SIDE));
+    assert!(std::ptr::eq(
+        texture_slot::NORTH.get_parent().unwrap(),
+        &texture_slot::SIDE
+    ));
     let r = &rows("TEXSLOTNEW")[0];
     assert_eq!(r[1], "#all");
-    assert!(!boolf(r[2]) && !boolf(r[3]), "a fresh create(\"all\") is neither == nor equals ALL");
+    assert!(
+        !boolf(r[2]) && !boolf(r[3]),
+        "a fresh create(\"all\") is neither == nor equals ALL"
+    );
     assert_eq!(r[4], "side");
-    assert_eq!((r[5], r[6]), ("private static", "private static"), "create is private in the jar");
+    assert_eq!(
+        (r[5], r[6]),
+        ("private static", "private static"),
+        "create is private in the jar"
+    );
 }
 
 #[test]
 #[allow(deprecated)]
 fn optionull_matches_the_jar() {
     let opt = rows("OPTIONULL");
-    let find = |k: &str| opt.iter().find(|r| r[1] == k).unwrap_or_else(|| panic!("no OPTIONULL {k}"));
+    let find = |k: &str| {
+        opt.iter()
+            .find(|r| r[1] == k)
+            .unwrap_or_else(|| panic!("no OPTIONULL {k}"))
+    };
     let some = vec!["first", "second"];
     let none: Vec<&str> = vec![];
     let null_str = |v: Option<String>| v.unwrap_or_else(|| "null".to_string());
 
     let r = find("orElse");
-    assert_eq!((Optionull::or_else(None, "d"), Optionull::or_else(Some("v"), "d")), (r[2], r[3]));
+    assert_eq!(
+        (
+            Optionull::or_else(None, "d"),
+            Optionull::or_else(Some("v"), "d")
+        ),
+        (r[2], r[3])
+    );
     let r = find("map");
     assert_eq!(
-        (null_str(Optionull::map(None::<&str>, |s| s.len().to_string())), null_str(Optionull::map(Some("abc"), |s| s.len().to_string()))),
+        (
+            null_str(Optionull::map(None::<&str>, |s| s.len().to_string())),
+            null_str(Optionull::map(Some("abc"), |s| s.len().to_string()))
+        ),
         (r[2].to_string(), r[3].to_string())
     );
     let r = find("mapOrDefault");
     assert_eq!(
-        (Optionull::map_or_default(None::<&str>, |s| s.len() as i32, -1), Optionull::map_or_default(Some("abcd"), |s| s.len() as i32, -1)),
+        (
+            Optionull::map_or_default(None::<&str>, |s| s.len() as i32, -1),
+            Optionull::map_or_default(Some("abcd"), |s| s.len() as i32, -1)
+        ),
         (i32f(r[2]), i32f(r[3]))
     );
     let r = find("mapOrElse");
     assert_eq!(
-        (Optionull::map_or_else(None::<&str>, |s| s.len() as i32, || -2), Optionull::map_or_else(Some("ab"), |s| s.len() as i32, || -2)),
+        (
+            Optionull::map_or_else(None::<&str>, |s| s.len() as i32, || -2),
+            Optionull::map_or_else(Some("ab"), |s| s.len() as i32, || -2)
+        ),
         (i32f(r[2]), i32f(r[3]))
     );
     let r = find("first");
     assert_eq!(
-        (null_str(Optionull::first(none.iter()).map(|s| s.to_string())), null_str(Optionull::first(some.iter()).map(|s| s.to_string()))),
+        (
+            null_str(Optionull::first(none.iter()).map(|s| s.to_string())),
+            null_str(Optionull::first(some.iter()).map(|s| s.to_string()))
+        ),
         (r[2].to_string(), r[3].to_string())
     );
     let r = find("firstOrDefault");
-    assert_eq!((Optionull::first_or_default(none.clone(), "d"), Optionull::first_or_default(some.clone(), "d")), (r[2], r[3]));
+    assert_eq!(
+        (
+            Optionull::first_or_default(none.clone(), "d"),
+            Optionull::first_or_default(some.clone(), "d")
+        ),
+        (r[2], r[3])
+    );
     let r = find("firstOrElse");
-    assert_eq!((Optionull::first_or_else(none.clone(), || "e"), Optionull::first_or_else(some.clone(), || "e")), (r[2], r[3]));
+    assert_eq!(
+        (
+            Optionull::first_or_else(none.clone(), || "e"),
+            Optionull::first_or_else(some.clone(), || "e")
+        ),
+        (r[2], r[3])
+    );
     let r = find("isNullOrEmpty");
     assert_eq!(
         [
@@ -478,7 +721,10 @@ fn optionull_matches_the_jar() {
         .to_vec(),
         r[2..7].iter().map(|v| boolf(v)).collect::<Vec<bool>>()
     );
-    assert_eq!(rows("OPTIONULLNPE")[0][1], "java.lang.NullPointerException: defaultObj");
+    assert_eq!(
+        rows("OPTIONULLNPE")[0][1],
+        "java.lang.NullPointerException: defaultObj"
+    );
 }
 
 #[test]
@@ -487,7 +733,10 @@ fn chunk_entities_match_the_jar() {
     let ce = ChunkEntities::new(ChunkPos::new(3, -4), vec!["a", "b"]);
     let empty: ChunkEntities<&str> = ChunkEntities::new(ChunkPos::new(0, 0), vec![]);
     assert_eq!(ce.get_pos().to_string(), r[1]);
-    assert_eq!(ce.get_entities().copied().collect::<Vec<&str>>().join(","), r[2]);
+    assert_eq!(
+        ce.get_entities().copied().collect::<Vec<&str>>().join(","),
+        r[2]
+    );
     assert_eq!(ce.is_empty(), boolf(r[3]));
     assert_eq!(empty.is_empty(), boolf(r[4]));
 }

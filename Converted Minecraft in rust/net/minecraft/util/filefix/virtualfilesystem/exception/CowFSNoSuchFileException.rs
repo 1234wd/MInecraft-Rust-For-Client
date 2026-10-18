@@ -27,7 +27,8 @@
 use crate::javacompat::throwable;
 
 /// `CowFSNoSuchFileException.class.getName()`.
-pub const CLASS_NAME: &str = "net.minecraft.util.filefix.virtualfilesystem.exception.CowFSNoSuchFileException";
+pub const CLASS_NAME: &str =
+    "net.minecraft.util.filefix.virtualfilesystem.exception.CowFSNoSuchFileException";
 
 /// The direct Java superclass. Checked: an `IOException`.
 pub const SUPERCLASS: &str = "java.nio.file.NoSuchFileException";

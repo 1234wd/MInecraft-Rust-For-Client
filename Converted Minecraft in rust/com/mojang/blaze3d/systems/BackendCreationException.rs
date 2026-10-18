@@ -88,7 +88,10 @@ impl std::error::Error for BackendCreationException {}
 #[cold]
 #[inline(never)]
 pub fn throw(message: &str, reason: Reason, missing_capabilities: &[String]) -> ! {
-    panic!("{}", BackendCreationException::new(Some(message), reason, missing_capabilities))
+    panic!(
+        "{}",
+        BackendCreationException::new(Some(message), reason, missing_capabilities)
+    )
 }
 
 /// Port of `BackendCreationException.Reason`. Declaration order is the ordinal order.

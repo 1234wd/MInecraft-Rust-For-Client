@@ -63,7 +63,8 @@ impl TranslucencyPointOfView {
 
     /// Port of `private static int getCoordinate(double cameraCoordinate, int section)`.
     fn get_coordinate(camera_coordinate: f64, section: i32) -> i32 {
-        let relative_section = SectionPos::block_to_section_coord_f64(camera_coordinate).wrapping_sub(section);
+        let relative_section =
+            SectionPos::block_to_section_coord_f64(camera_coordinate).wrapping_sub(section);
         Mth::clamp_i32(relative_section, -1, 1)
     }
 

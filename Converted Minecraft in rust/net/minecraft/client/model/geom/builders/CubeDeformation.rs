@@ -34,7 +34,11 @@ impl CubeDeformation {
 
     /// Port of `new CubeDeformation(float growX, float growY, float growZ)`.
     pub const fn new(grow_x: f32, grow_y: f32, grow_z: f32) -> Self {
-        CubeDeformation { grow_x, grow_y, grow_z }
+        CubeDeformation {
+            grow_x,
+            grow_y,
+            grow_z,
+        }
     }
 
     /// Port of `new CubeDeformation(float grow)`: the same growth on every axis.
@@ -44,11 +48,24 @@ impl CubeDeformation {
 
     /// Port of `extend(float factor)`.
     pub fn extend_f32(&self, factor: f32) -> CubeDeformation {
-        CubeDeformation::new(self.grow_x + factor, self.grow_y + factor, self.grow_z + factor)
+        CubeDeformation::new(
+            self.grow_x + factor,
+            self.grow_y + factor,
+            self.grow_z + factor,
+        )
     }
 
     /// Port of `extend(float factorX, float factorY, float factorZ)`.
-    pub fn extend_f32_f32_f32(&self, factor_x: f32, factor_y: f32, factor_z: f32) -> CubeDeformation {
-        CubeDeformation::new(self.grow_x + factor_x, self.grow_y + factor_y, self.grow_z + factor_z)
+    pub fn extend_f32_f32_f32(
+        &self,
+        factor_x: f32,
+        factor_y: f32,
+        factor_z: f32,
+    ) -> CubeDeformation {
+        CubeDeformation::new(
+            self.grow_x + factor_x,
+            self.grow_y + factor_y,
+            self.grow_z + factor_z,
+        )
     }
 }

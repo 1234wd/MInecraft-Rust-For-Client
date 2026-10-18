@@ -56,7 +56,10 @@ impl VisibilitySet {
 
     /// Port of `set(Direction direction1, Direction direction2, boolean value)`: both orders.
     pub fn set(&mut self, direction1: Direction, direction2: Direction, value: bool) {
-        for bit in [Self::bit(direction1, direction2), Self::bit(direction2, direction1)] {
+        for bit in [
+            Self::bit(direction1, direction2),
+            Self::bit(direction2, direction1),
+        ] {
             if value {
                 self.data |= 1u64 << bit;
             } else {
@@ -80,7 +83,13 @@ impl VisibilitySet {
 impl std::fmt::Display for VisibilitySet {
     /// Port of `toString()`.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let initial = |d: Direction| d.name().chars().next().map(|c| c.to_ascii_uppercase()).unwrap_or(' ');
+        let initial = |d: Direction| {
+            d.name()
+                .chars()
+                .next()
+                .map(|c| c.to_ascii_uppercase())
+                .unwrap_or(' ')
+        };
         let mut builder = String::new();
         builder.push(' ');
         for d in direction::VALUES {
@@ -95,7 +104,11 @@ impl std::fmt::Display for VisibilitySet {
                     builder.push_str("  ");
                 } else {
                     builder.push(' ');
-                    builder.push(if self.visibility_between(d1, d2) { 'Y' } else { 'n' });
+                    builder.push(if self.visibility_between(d1, d2) {
+                        'Y'
+                    } else {
+                        'n'
+                    });
                 }
             }
             builder.push('\n');

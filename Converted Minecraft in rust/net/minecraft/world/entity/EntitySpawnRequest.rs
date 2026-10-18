@@ -28,7 +28,10 @@ pub struct EntitySpawnRequest {
 impl EntitySpawnRequest {
     /// Port of the canonical constructor.
     pub const fn new(reason: EntitySpawnReason, ignore_checks: bool) -> Self {
-        EntitySpawnRequest { reason, ignore_checks }
+        EntitySpawnRequest {
+            reason,
+            ignore_checks,
+        }
     }
 
     /// Port of the accessor `reason()`.

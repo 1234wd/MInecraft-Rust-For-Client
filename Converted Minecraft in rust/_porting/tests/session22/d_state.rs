@@ -30,7 +30,9 @@ use minecraft_rust::net::minecraft::world::level::saveddata::SavedData::SavedDat
 
 /// The text of a panic raised by `f`, for comparing with a Java exception's `class: message`.
 pub fn panic_text<R>(f: impl FnOnce() -> R + std::panic::UnwindSafe) -> String {
-    let err = std::panic::catch_unwind(f).err().expect("expected the call to panic, as Java throws");
+    let err = std::panic::catch_unwind(f)
+        .err()
+        .expect("expected the call to panic, as Java throws");
     if let Some(s) = err.downcast_ref::<String>() {
         s.clone()
     } else if let Some(s) = err.downcast_ref::<&str>() {
@@ -43,9 +45,16 @@ pub fn panic_text<R>(f: impl FnOnce() -> R + std::panic::UnwindSafe) -> String {
 /// `field: <int>` out of a derived `Debug` string.
 pub fn debug_int(debug: &str, field: &str) -> i32 {
     let key = format!("{field}: ");
-    let at = debug.find(&key).unwrap_or_else(|| panic!("no `{field}` in {debug}")) + key.len();
-    let end = debug[at..].find(|c: char| c != '-' && !c.is_ascii_digit()).map_or(debug.len(), |e| at + e);
-    debug[at..end].parse().unwrap_or_else(|_| panic!("`{field}` is not an int in {debug}"))
+    let at = debug
+        .find(&key)
+        .unwrap_or_else(|| panic!("no `{field}` in {debug}"))
+        + key.len();
+    let end = debug[at..]
+        .find(|c: char| c != '-' && !c.is_ascii_digit())
+        .map_or(debug.len(), |e| at + e);
+    debug[at..end]
+        .parse()
+        .unwrap_or_else(|_| panic!("`{field}` is not an int in {debug}"))
 }
 
 /// Java's `Float.parseFloat` for the spellings the scripts use (`NaN`, `Infinity`, `1.0E9` ...),
@@ -59,9 +68,17 @@ fn loading_dots_text_matches_the_jar_including_its_negative_index() {
     for r in rows("DOTS") {
         let t = i64f(r[1]);
         if let Some(ex) = r[2].strip_prefix("EX:") {
-            assert_eq!(Some(panic_text(move || LoadingDotsText::get(t))), unesc(ex), "get({t})");
+            assert_eq!(
+                Some(panic_text(move || LoadingDotsText::get(t))),
+                unesc(ex),
+                "get({t})"
+            );
         } else {
-            assert_eq!(Some(LoadingDotsText::get(t).to_string()), unesc(r[2]), "get({t})");
+            assert_eq!(
+                Some(LoadingDotsText::get(t).to_string()),
+                unesc(r[2]),
+                "get({t})"
+            );
         }
     }
 }
@@ -84,7 +101,12 @@ fn material_definition_and_cube_deformation_fields_match_the_jar() {
     let rows = rows("CUBEDEF");
     assert_eq!(rows.len(), cds.len());
     for (r, c) in rows.iter().zip(cds.iter()) {
-        assert_eq!((hex32(c.grow_x), hex32(c.grow_y), hex32(c.grow_z)), (r[2].to_string(), r[3].to_string(), r[4].to_string()), "deformation[{}]", r[1]);
+        assert_eq!(
+            (hex32(c.grow_x), hex32(c.grow_y), hex32(c.grow_z)),
+            (r[2].to_string(), r[3].to_string(), r[4].to_string()),
+            "deformation[{}]",
+            r[1]
+        );
     }
 }
 
@@ -130,7 +152,12 @@ fn feature_flag_universe_prints_its_id_and_compares_by_identity() {
 #[test]
 fn spvc_image_dimension_names_match_the_jar() {
     for r in rows("SPVCDIM") {
-        assert_eq!(Some(SpvcUtil::image_dimension_to_string(i32f(r[1]))), unesc(r[2]), "dimension {}", r[1]);
+        assert_eq!(
+            Some(SpvcUtil::image_dimension_to_string(i32f(r[1]))),
+            unesc(r[2]),
+            "dimension {}",
+            r[1]
+        );
     }
 }
 
@@ -140,7 +167,13 @@ fn tick_throttler_replays_the_jar_script() {
     assert_eq!(rows.len(), 8);
     for r in rows {
         let mut th = TickThrottler::new(i32f(r[1]), i32f(r[2]));
-        let sample = |th: &TickThrottler| format!("{}:{}", if th.is_under_threshold() { 1 } else { 0 }, debug_int(&format!("{th:?}"), "count"));
+        let sample = |th: &TickThrottler| {
+            format!(
+                "{}:{}",
+                if th.is_under_threshold() { 1 } else { 0 },
+                debug_int(&format!("{th:?}"), "count")
+            )
+        };
         let mut out = vec![sample(&th)];
         for op in r[3].split(' ') {
             if op == "I" {
@@ -156,9 +189,23 @@ fn tick_throttler_replays_the_jar_script() {
 
 #[test]
 fn scissor_state_matches_the_jar() {
-    let show = |s: &ScissorState| format!("{},{},{},{},{}", s.enabled(), s.x(), s.y(), s.width(), s.height());
+    let show = |s: &ScissorState| {
+        format!(
+            "{},{},{},{},{}",
+            s.enabled(),
+            s.x(),
+            s.y(),
+            s.width(),
+            s.height()
+        )
+    };
     let rows = rows("SCISSOR");
-    let find = |k: &str| rows.iter().find(|r| r[1] == k).unwrap_or_else(|| panic!("no SCISSOR {k}"))[2].to_string();
+    let find = |k: &str| {
+        rows.iter()
+            .find(|r| r[1] == k)
+            .unwrap_or_else(|| panic!("no SCISSOR {k}"))[2]
+            .to_string()
+    };
     let mut sc = ScissorState::new();
     assert_eq!(show(&sc), find("new"));
     sc.enable(1, -2, 300, i32::MAX);
@@ -199,7 +246,10 @@ fn block_destruction_progress_matches_the_jar() {
         assert_eq!(x.get_progress(), i32f(r[4]));
         assert_eq!(x.get_updated_render_tick(), i64f(r[5]));
         assert_eq!(x.java_hash_code(), i32f(r[6]), "hashCode of [{a}]");
-        let eq: String = bdps.iter().map(|y| if x == y { '1' } else { '0' }).collect();
+        let eq: String = bdps
+            .iter()
+            .map(|y| if x == y { '1' } else { '0' })
+            .collect();
         assert_eq!(eq, r[7], "equals row [{a}]");
         let cmp: Vec<String> = bdps.iter().map(|y| x.compare_to(y).to_string()).collect();
         assert_eq!(cmp.join(","), r[8], "compareTo row [{a}]");
@@ -277,9 +327,18 @@ fn walk_animation_state_replays_the_jar_scripts() {
                 "p" => w.set_speed(jfloat(p[1])),
                 _ => w.stop(),
             }
-            let mut s = format!("{},{},{}", hex32(w.speed()), hex32(w.position()), if w.is_moving() { 1 } else { 0 });
+            let mut s = format!(
+                "{},{},{}",
+                hex32(w.speed()),
+                hex32(w.position()),
+                if w.is_moving() { 1 } else { 0 }
+            );
             for &pt in &partials {
-                s.push_str(&format!(",{},{}", hex32(w.speed_f32(pt)), hex32(w.position_f32(pt))));
+                s.push_str(&format!(
+                    ",{},{}",
+                    hex32(w.speed_f32(pt)),
+                    hex32(w.position_f32(pt))
+                ));
             }
             out.push(s);
         }

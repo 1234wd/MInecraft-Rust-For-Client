@@ -55,7 +55,10 @@ fn gizmo_style_matches_the_jar() {
     );
     for r in rows("GIZMO") {
         let g = GizmoStyle::stroke_and_fill(i32f(r[1]), f32f(r[2]), i32f(r[3]));
-        assert_eq!((g.stroke(), g.stroke_width().to_bits(), g.fill()), (i32f(r[1]), f32bits(r[2]), i32f(r[3])));
+        assert_eq!(
+            (g.stroke(), g.stroke_width().to_bits(), g.fill()),
+            (i32f(r[1]), f32bits(r[2]), i32f(r[3]))
+        );
         assert_eq!(g.has_fill(), boolf(r[4]), "{g}.hasFill");
         assert_eq!(g.has_stroke(), boolf(r[5]), "{g}.hasStroke");
     }
@@ -63,10 +66,24 @@ fn gizmo_style_matches_the_jar() {
         let c = i32f(r[1]);
         let g = GizmoStyle::stroke_and_fill(c, 1.0, !c);
         let a = f32f(r[2]);
-        assert_eq!(g.multiplied_stroke(a), i32f(r[3]), "multipliedStroke({c:#x}, {})", r[2]);
-        assert_eq!(g.multiplied_fill(a), i32f(r[4]), "multipliedFill({:#x}, {})", !c, r[2]);
+        assert_eq!(
+            g.multiplied_stroke(a),
+            i32f(r[3]),
+            "multipliedStroke({c:#x}, {})",
+            r[2]
+        );
+        assert_eq!(
+            g.multiplied_fill(a),
+            i32f(r[4]),
+            "multipliedFill({:#x}, {})",
+            !c,
+            r[2]
+        );
     }
-    assert_eq!(GizmoStyle::stroke_i32(1).stroke_width().to_bits(), f32bits(rows("GIZMODEF")[0][1]));
+    assert_eq!(
+        GizmoStyle::stroke_i32(1).stroke_width().to_bits(),
+        f32bits(rows("GIZMODEF")[0][1])
+    );
 }
 
 /// The probe's `UVS`.
@@ -85,20 +102,37 @@ const UVS: [f32; 10] = [
 
 #[test]
 fn uv_pair_matches_the_jar() {
-    let mut xs: Vec<UVPair> = (0..UVS.len()).map(|k| UVPair::new(UVS[k], UVS[(k + 1) % UVS.len()])).collect();
+    let mut xs: Vec<UVPair> = (0..UVS.len())
+        .map(|k| UVPair::new(UVS[k], UVS[(k + 1) % UVS.len()]))
+        .collect();
     xs.push(UVPair::new(UVS[0], UVS[1]));
     check_records("UVPair", &xs, &|x| x.java_hash_code());
     // Accessors hand back the exact bits stored, NaN payload included.
     let probe_pair = UVPair::new(f32::from_bits(0x7f80_0001), -0.0);
-    assert_eq!((probe_pair.u().to_bits(), probe_pair.v().to_bits()), (0x7f80_0001, 0x8000_0000));
+    assert_eq!(
+        (probe_pair.u().to_bits(), probe_pair.v().to_bits()),
+        (0x7f80_0001, 0x8000_0000)
+    );
     let rows_pack = rows("UVPACK");
     assert_eq!(rows_pack.len(), UVS.len() * UVS.len());
     for r in rows_pack {
         let (u, v) = (f32f(r[1]), f32f(r[2]));
         let p = UVPair::pack(u, v);
         assert_eq!(p, i64f(r[3]), "pack({}, {})", r[1], r[2]);
-        assert_eq!(hex32(UVPair::unpack_u(p)), r[4], "unpackU(pack({}, {}))", r[1], r[2]);
-        assert_eq!(hex32(UVPair::unpack_v(p)), r[5], "unpackV(pack({}, {}))", r[1], r[2]);
+        assert_eq!(
+            hex32(UVPair::unpack_u(p)),
+            r[4],
+            "unpackU(pack({}, {}))",
+            r[1],
+            r[2]
+        );
+        assert_eq!(
+            hex32(UVPair::unpack_v(p)),
+            r[5],
+            "unpackV(pack({}, {}))",
+            r[1],
+            r[2]
+        );
     }
     for r in rows("UVUNPACK") {
         let raw = i64f(r[1]);
@@ -115,7 +149,17 @@ fn poses() -> [PartPose; 7] {
         PartPose::rotation(0.5, -0.5, f32::NAN),
         PartPose::offset_and_rotation(-0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
         PartPose::new(1.1, -2.2, 3.3, 0.1, 0.2, 0.3, 2.0, 0.5, -1.0),
-        PartPose::new(f32::MAX, f32::from_bits(1), f32::NEG_INFINITY, 1e-30, 1e30, 7.0, f32::NAN, 0.0, -0.0),
+        PartPose::new(
+            f32::MAX,
+            f32::from_bits(1),
+            f32::NEG_INFINITY,
+            1e-30,
+            1e30,
+            7.0,
+            f32::NAN,
+            0.0,
+            -0.0,
+        ),
     ]
 }
 
@@ -135,7 +179,13 @@ fn part_pose_matches_the_jar() {
                 // Java's `s == p` is IDENTITY: true exactly when `factor == 1.0F` took the
                 // `return this` branch. The port returns an equal copy there, so the row pins the
                 // branch condition, and the copy must be unchanged.
-                assert_eq!(factor == 1.0, boolf(r[4]), "pose[{}].scaled({}): which branch", r[1], arg);
+                assert_eq!(
+                    factor == 1.0,
+                    boolf(r[4]),
+                    "pose[{}].scaled({}): which branch",
+                    r[1],
+                    arg
+                );
                 let s = p.scaled_f32(factor);
                 if factor == 1.0 {
                     assert!(s == p, "pose[{}].scaled(1.0) must be unchanged", r[1]);
@@ -146,19 +196,45 @@ fn part_pose_matches_the_jar() {
             "scaled3" => p.scaled_f32_f32_f32(f32f(arg), 0.5, f32f(arg)),
             other => panic!("unknown PPOSE op {other}"),
         };
-        assert_eq!(Some(got.to_string()), unesc(r[3]), "pose[{}].{}", r[1], r[2]);
+        assert_eq!(
+            Some(got.to_string()),
+            unesc(r[3]),
+            "pose[{}].{}",
+            r[1],
+            r[2]
+        );
     }
     let make = rows("PPOSEMAKE");
-    let find = |k: &str| make.iter().find(|r| r[1] == k).unwrap_or_else(|| panic!("no PPOSEMAKE {k}"));
-    assert_eq!(Some(PartPose::offset(1.5, -0.0, f32::NAN).to_string()), unesc(find("offset")[2]));
-    assert_eq!(Some(PartPose::rotation(1.5, -0.0, f32::NAN).to_string()), unesc(find("rotation")[2]));
+    let find = |k: &str| {
+        make.iter()
+            .find(|r| r[1] == k)
+            .unwrap_or_else(|| panic!("no PPOSEMAKE {k}"))
+    };
+    assert_eq!(
+        Some(PartPose::offset(1.5, -0.0, f32::NAN).to_string()),
+        unesc(find("offset")[2])
+    );
+    assert_eq!(
+        Some(PartPose::rotation(1.5, -0.0, f32::NAN).to_string()),
+        unesc(find("rotation")[2])
+    );
     assert_eq!(
         Some(PartPose::offset_and_rotation(1.0, 2.0, 3.0, 4.0, 5.0, 6.0).to_string()),
         unesc(find("offsetAndRotation")[2])
     );
     let p = ps[5];
     assert_eq!(
-        [p.x(), p.y(), p.z(), p.x_rot(), p.y_rot(), p.z_rot(), p.x_scale(), p.y_scale(), p.z_scale()],
+        [
+            p.x(),
+            p.y(),
+            p.z(),
+            p.x_rot(),
+            p.y_rot(),
+            p.z_rot(),
+            p.x_scale(),
+            p.y_scale(),
+            p.z_scale()
+        ],
         [1.1, -2.2, 3.3, 0.1, 0.2, 0.3, 2.0, 0.5, -1.0]
     );
 }
@@ -200,9 +276,21 @@ fn hitbox_render_state_matches_the_jar() {
     ];
     check_records("HitboxRenderState", &xs, &|x| x.java_hash_code());
     let h = xs[3];
-    assert_eq!((h.x0(), h.y0(), h.z0(), h.y1()), (0.1, -2.5, 1e300, f64::from_bits(1)));
+    assert_eq!(
+        (h.x0(), h.y0(), h.z0(), h.y1()),
+        (0.1, -2.5, 1e300, f64::from_bits(1))
+    );
     assert!(h.x1().is_nan() && h.z1() == f64::NEG_INFINITY);
-    assert_eq!((h.offset_x(), h.offset_y().to_bits(), h.red(), h.green(), h.blue()), (0.25, 0x8000_0000, 0.1, 1e-40, f32::MAX));
+    assert_eq!(
+        (
+            h.offset_x(),
+            h.offset_y().to_bits(),
+            h.red(),
+            h.green(),
+            h.blue()
+        ),
+        (0.25, 0x8000_0000, 0.1, 1e-40, f32::MAX)
+    );
     assert!(h.offset_z().is_nan());
 }
 
@@ -217,7 +305,9 @@ fn depth_stencil_state_matches_the_jar() {
         DepthStencilState::new(ops[0], false, nan_payload(0x7fc0_0001), 1.5),
         DepthStencilState::new(ops[7], true, -2.0, f32::MAX),
     ];
-    check_records("DepthStencilState", &xs, &|_| unreachable!("enum component: hash not portable"));
+    check_records("DepthStencilState", &xs, &|_| {
+        unreachable!("enum component: hash not portable")
+    });
     let r = &rows("DSDEFAULT")[0];
     let d = DepthStencilState::DEFAULT;
     assert_eq!(d.depth_test().name(), r[1]);
@@ -236,7 +326,9 @@ fn enum_component_records_match_the_jar() {
         EntitySpawnRequest::new(reasons[2], false),
         EntitySpawnRequest::new(reasons[reasons.len() - 1], true),
     ];
-    check_records("EntitySpawnRequest", &xs, &|_| unreachable!("enum component: hash not portable"));
+    check_records("EntitySpawnRequest", &xs, &|_| {
+        unreachable!("enum component: hash not portable")
+    });
     assert_eq!((xs[3].reason(), xs[3].ignore_checks()), (reasons[2], false));
 
     let bf = BlendFactor::VALUES;
@@ -248,8 +340,13 @@ fn enum_component_records_match_the_jar() {
         BlendEquation::new(bf[9], bf[4], bo[4]),
         BlendEquation::new(bf[0], bf[14], bo[2]),
     ];
-    check_records("BlendEquation", &xs, &|_| unreachable!("enum components: hash not portable"));
-    assert_eq!((xs[4].source_factor(), xs[4].dest_factor(), xs[4].op()), (bf[0], bf[14], bo[2]));
+    check_records("BlendEquation", &xs, &|_| {
+        unreachable!("enum components: hash not portable")
+    });
+    assert_eq!(
+        (xs[4].source_factor(), xs[4].dest_factor(), xs[4].op()),
+        (bf[0], bf[14], bo[2])
+    );
 }
 
 #[test]
@@ -271,7 +368,10 @@ fn identifier_records_match_the_jar() {
         ModelLayerLocation::new(identifier::from_namespace_and_path("mod", "x"), ""),
     ];
     check_records("ModelLayerLocation", &layers, &|x| x.java_hash_code());
-    assert_eq!((layers[2].model().to_string(), layers[2].layer()), ("minecraft:player".to_string(), "outer"));
+    assert_eq!(
+        (layers[2].model().to_string(), layers[2].layer()),
+        ("minecraft:player".to_string(), "outer")
+    );
 
     let (a, b, c, d) = (id("a"), id("b"), id("c"), id("d"));
     let ws = [
@@ -286,19 +386,37 @@ fn identifier_records_match_the_jar() {
     assert_eq!(rows_w.len(), ws.len() * 4);
     for r in rows_w {
         let w = &ws[i32f(r[1]) as usize];
-        assert_eq!(w.get(boolf(r[2]), boolf(r[3])).to_string(), r[4], "ws[{}].get({}, {})", r[1], r[2], r[3]);
+        assert_eq!(
+            w.get(boolf(r[2]), boolf(r[3])).to_string(),
+            r[4],
+            "ws[{}].get({}, {})",
+            r[1],
+            r[2],
+            r[3]
+        );
     }
     let w = &ws[3];
     assert_eq!(
-        [w.enabled(), w.disabled(), w.enabled_focused(), w.disabled_focused()].map(|i| i.to_string()),
+        [
+            w.enabled(),
+            w.disabled(),
+            w.enabled_focused(),
+            w.disabled_focused()
+        ]
+        .map(|i| i.to_string()),
         ["minecraft:a", "minecraft:b", "minecraft:c", "minecraft:d"]
     );
 }
 
 #[test]
 fn string_records_match_the_jar() {
-    let atoms: [Atom<i32>; 5] =
-        [Atom::of("a"), Atom::new("a"), Atom::of(""), Atom::of("\u{e9} \u{4e2d}"), Atom::of("b")];
+    let atoms: [Atom<i32>; 5] = [
+        Atom::of("a"),
+        Atom::new("a"),
+        Atom::of(""),
+        Atom::of("\u{e9} \u{4e2d}"),
+        Atom::of("b"),
+    ];
     check_records("Atom", &atoms, &|x| x.java_hash_code());
     assert_eq!(atoms[3].name(), "\u{e9} \u{4e2d}");
 
@@ -334,7 +452,10 @@ fn string_records_match_the_jar() {
         ParticleRenderType::new("SINGLE_QUADS", "SQ"),
     ];
     check_records("ParticleRenderType", &prts, &|x| x.java_hash_code());
-    assert_eq!((prts[2].name(), prts[2].shorthand()), ("ELDER_GUARDIANS", "EG"));
+    assert_eq!(
+        (prts[2].name(), prts[2].shorthand()),
+        ("ELDER_GUARDIANS", "EG")
+    );
 }
 
 #[test]
@@ -350,9 +471,25 @@ fn display_data_matches_the_jar() {
     let shown = rows("DISPLAY");
     assert_eq!(shown.len(), dd.len());
     for (r, d) in shown.iter().zip(dd.iter()) {
-        assert_eq!(Some(d.with_size(-5, 7).to_string()), unesc(r[2]), "{d}.withSize(-5, 7)");
-        assert_eq!(Some(d.with_fullscreen(!d.is_fullscreen()).to_string()), unesc(r[3]), "{d}.withFullscreen(!)");
+        assert_eq!(
+            Some(d.with_size(-5, 7).to_string()),
+            unesc(r[2]),
+            "{d}.withSize(-5, 7)"
+        );
+        assert_eq!(
+            Some(d.with_fullscreen(!d.is_fullscreen()).to_string()),
+            unesc(r[3]),
+            "{d}.withFullscreen(!)"
+        );
     }
     let d = dd[4];
-    assert_eq!((d.width(), d.height(), d.fullscreen_width(), d.fullscreen_height()), (MIN, i32::MAX, Some(MIN), Some(-1)));
+    assert_eq!(
+        (
+            d.width(),
+            d.height(),
+            d.fullscreen_width(),
+            d.fullscreen_height()
+        ),
+        (MIN, i32::MAX, Some(MIN), Some(-1))
+    );
 }

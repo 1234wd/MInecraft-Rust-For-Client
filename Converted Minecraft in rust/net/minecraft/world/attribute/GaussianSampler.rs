@@ -51,7 +51,11 @@ impl<V, F: FnMut(i32, i32, i32) -> V> Sampler<V> for F {
 }
 
 /// Port of `static <V> void sample(Vec3 position, Sampler<V> sampler, Accumulator<V> accumulator)`.
-pub fn sample<V>(position: &Vec3, mut sampler: impl Sampler<V>, mut accumulator: impl Accumulator<V>) {
+pub fn sample<V>(
+    position: &Vec3,
+    mut sampler: impl Sampler<V>,
+    mut accumulator: impl Accumulator<V>,
+) {
     let position = position.subtract(0.5, 0.5, 0.5);
     let integral_x = Mth::floor_f64(position.x);
     let integral_y = Mth::floor_f64(position.y);
@@ -60,13 +64,25 @@ pub fn sample<V>(position: &Vec3, mut sampler: impl Sampler<V>, mut accumulator:
     let relative_y = position.y - integral_y as f64;
     let relative_z = position.z - integral_z as f64;
     for z in 0..6usize {
-        let weight_z = Mth::lerp_f64(relative_z, GAUSSIAN_SAMPLE_KERNEL[z + 1], GAUSSIAN_SAMPLE_KERNEL[z]);
+        let weight_z = Mth::lerp_f64(
+            relative_z,
+            GAUSSIAN_SAMPLE_KERNEL[z + 1],
+            GAUSSIAN_SAMPLE_KERNEL[z],
+        );
         let sample_z = integral_z.wrapping_sub(2).wrapping_add(z as i32);
         for x in 0..6usize {
-            let weight_x = Mth::lerp_f64(relative_x, GAUSSIAN_SAMPLE_KERNEL[x + 1], GAUSSIAN_SAMPLE_KERNEL[x]);
+            let weight_x = Mth::lerp_f64(
+                relative_x,
+                GAUSSIAN_SAMPLE_KERNEL[x + 1],
+                GAUSSIAN_SAMPLE_KERNEL[x],
+            );
             let sample_x = integral_x.wrapping_sub(2).wrapping_add(x as i32);
             for y in 0..6usize {
-                let weight_y = Mth::lerp_f64(relative_y, GAUSSIAN_SAMPLE_KERNEL[y + 1], GAUSSIAN_SAMPLE_KERNEL[y]);
+                let weight_y = Mth::lerp_f64(
+                    relative_y,
+                    GAUSSIAN_SAMPLE_KERNEL[y + 1],
+                    GAUSSIAN_SAMPLE_KERNEL[y],
+                );
                 let sample_y = integral_y.wrapping_sub(2).wrapping_add(y as i32);
                 let sample_weight = weight_x * weight_y * weight_z;
                 let value = sampler.get(sample_x, sample_y, sample_z);

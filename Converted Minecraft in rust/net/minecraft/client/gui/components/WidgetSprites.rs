@@ -43,7 +43,12 @@ pub struct WidgetSprites {
 
 impl WidgetSprites {
     /// Port of the canonical constructor.
-    pub fn new(enabled: Identifier, disabled: Identifier, enabled_focused: Identifier, disabled_focused: Identifier) -> Self {
+    pub fn new(
+        enabled: Identifier,
+        disabled: Identifier,
+        enabled_focused: Identifier,
+        disabled_focused: Identifier,
+    ) -> Self {
         WidgetSprites {
             enabled,
             disabled,
@@ -54,18 +59,37 @@ impl WidgetSprites {
 
     /// Port of `WidgetSprites(Identifier sprite)`: the same sprite in all four slots.
     pub fn from_sprite(sprite: &Identifier) -> Self {
-        WidgetSprites::new(sprite.clone(), sprite.clone(), sprite.clone(), sprite.clone())
+        WidgetSprites::new(
+            sprite.clone(),
+            sprite.clone(),
+            sprite.clone(),
+            sprite.clone(),
+        )
     }
 
     /// Port of `WidgetSprites(Identifier sprite, Identifier focused)`.
     pub fn from_sprite_and_focused(sprite: &Identifier, focused: &Identifier) -> Self {
-        WidgetSprites::new(sprite.clone(), sprite.clone(), focused.clone(), focused.clone())
+        WidgetSprites::new(
+            sprite.clone(),
+            sprite.clone(),
+            focused.clone(),
+            focused.clone(),
+        )
     }
 
     /// Port of `WidgetSprites(Identifier enabled, Identifier disabled, Identifier focused)`:
     /// note `disabledFocused` is `disabled`, not `focused`.
-    pub fn from_enabled_disabled_focused(enabled: &Identifier, disabled: &Identifier, focused: &Identifier) -> Self {
-        WidgetSprites::new(enabled.clone(), disabled.clone(), focused.clone(), disabled.clone())
+    pub fn from_enabled_disabled_focused(
+        enabled: &Identifier,
+        disabled: &Identifier,
+        focused: &Identifier,
+    ) -> Self {
+        WidgetSprites::new(
+            enabled.clone(),
+            disabled.clone(),
+            focused.clone(),
+            disabled.clone(),
+        )
     }
 
     /// Port of the accessor `enabled()`.

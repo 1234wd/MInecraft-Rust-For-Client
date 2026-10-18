@@ -54,7 +54,12 @@ impl FieldSelector {
     }
 
     /// Port of `FieldSelector(String grandparent, String parent, TagType<?> type, String name)`.
-    pub fn in_grandparent(grandparent: &str, parent: &str, tag_type: TagTypeRef, name: &str) -> Self {
+    pub fn in_grandparent(
+        grandparent: &str,
+        parent: &str,
+        tag_type: TagTypeRef,
+        name: &str,
+    ) -> Self {
         FieldSelector::new(&[grandparent, parent], tag_type, name)
     }
 

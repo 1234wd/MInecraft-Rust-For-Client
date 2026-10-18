@@ -152,7 +152,14 @@ impl HitboxRenderState {
     }
 
     fn floats(&self) -> [f32; 6] {
-        [self.offset_x, self.offset_y, self.offset_z, self.red, self.green, self.blue]
+        [
+            self.offset_x,
+            self.offset_y,
+            self.offset_z,
+            self.red,
+            self.green,
+            self.blue,
+        ]
     }
 
     /// Port of the record's generated `hashCode()`.
@@ -167,8 +174,15 @@ impl HitboxRenderState {
 impl PartialEq for HitboxRenderState {
     /// Port of the record's generated `equals`: `Double.compare` / `Float.compare` per component.
     fn eq(&self, other: &Self) -> bool {
-        self.doubles().iter().zip(other.doubles().iter()).all(|(a, b)| java_object::equals_f64(*a, *b))
-            && self.floats().iter().zip(other.floats().iter()).all(|(a, b)| java_object::equals_f32(*a, *b))
+        self.doubles()
+            .iter()
+            .zip(other.doubles().iter())
+            .all(|(a, b)| java_object::equals_f64(*a, *b))
+            && self
+                .floats()
+                .iter()
+                .zip(other.floats().iter())
+                .all(|(a, b)| java_object::equals_f32(*a, *b))
     }
 }
 

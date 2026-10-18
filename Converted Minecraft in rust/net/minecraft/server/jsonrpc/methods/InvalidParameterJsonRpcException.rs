@@ -23,7 +23,8 @@
 use crate::javacompat::throwable;
 
 /// `InvalidParameterJsonRpcException.class.getName()`.
-pub const CLASS_NAME: &str = "net.minecraft.server.jsonrpc.methods.InvalidParameterJsonRpcException";
+pub const CLASS_NAME: &str =
+    "net.minecraft.server.jsonrpc.methods.InvalidParameterJsonRpcException";
 
 /// The direct Java superclass. Unchecked.
 pub const SUPERCLASS: &str = "java.lang.RuntimeException";

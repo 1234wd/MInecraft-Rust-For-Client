@@ -33,7 +33,11 @@ pub struct GameTestEvent {
 
 impl GameTestEvent {
     /// Port of the private constructor.
-    fn new(expected_delay: Option<i64>, minimum_delay: Option<i64>, assertion: Box<dyn FnMut() + Send>) -> Self {
+    fn new(
+        expected_delay: Option<i64>,
+        minimum_delay: Option<i64>,
+        assertion: Box<dyn FnMut() + Send>,
+    ) -> Self {
         GameTestEvent {
             expected_delay,
             minimum_delay,
@@ -47,12 +51,18 @@ impl GameTestEvent {
     }
 
     /// Port of `create(long expectedTick, Runnable runnable)`.
-    pub fn create_i64(expected_tick: i64, runnable: impl FnMut() + Send + 'static) -> GameTestEvent {
+    pub fn create_i64(
+        expected_tick: i64,
+        runnable: impl FnMut() + Send + 'static,
+    ) -> GameTestEvent {
         GameTestEvent::new(Some(expected_tick), None, Box::new(runnable))
     }
 
     /// Port of `createWithMinimumDelay(long minimumDelay, Runnable runnable)`.
-    pub fn create_with_minimum_delay(minimum_delay: i64, runnable: impl FnMut() + Send + 'static) -> GameTestEvent {
+    pub fn create_with_minimum_delay(
+        minimum_delay: i64,
+        runnable: impl FnMut() + Send + 'static,
+    ) -> GameTestEvent {
         GameTestEvent::new(None, Some(minimum_delay), Box::new(runnable))
     }
 }

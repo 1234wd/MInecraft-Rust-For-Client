@@ -116,6 +116,10 @@ impl std::hash::Hash for RenderableBox {
 impl std::fmt::Display for RenderableBox {
     /// Port of the record's generated `toString()`.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "RenderableBox[localPos={}, size={}]", self.local_pos, self.size)
+        write!(
+            f,
+            "RenderableBox[localPos={}, size={}]",
+            self.local_pos, self.size
+        )
     }
 }

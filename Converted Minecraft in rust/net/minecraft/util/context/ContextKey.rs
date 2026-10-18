@@ -48,7 +48,9 @@ impl<T> ContextKey<T> {
 
 impl<T> std::fmt::Debug for ContextKey<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ContextKey").field("name", &self.name).finish()
+        f.debug_struct("ContextKey")
+            .field("name", &self.name)
+            .finish()
     }
 }
 

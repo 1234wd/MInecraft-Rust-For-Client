@@ -21,23 +21,48 @@ use minecraft_rust::net::minecraft::nbt::TagType::TagTypeRef;
 use minecraft_rust::net::minecraft::util::filefix::access::FileResourceType::FileResourceType;
 use minecraft_rust::net::minecraft::util::PngInfo::PngInfo;
 use minecraft_rust::net::minecraft::util::SingleKeyCache::SingleKeyCache;
-use minecraft_rust::net::minecraft::world::level::block::entity::BoundingBoxRenderable::{Mode, RenderableBox};
-use minecraft_rust::net::minecraft::world::level::block::state::properties::ChestType::{self as chest_type};
+use minecraft_rust::net::minecraft::world::level::block::entity::BoundingBoxRenderable::{
+    Mode, RenderableBox,
+};
+use minecraft_rust::net::minecraft::world::level::block::state::properties::ChestType::{
+    self as chest_type,
+};
 
 #[test]
 fn gpu_format_and_component_type_match_the_jar() {
     let comps = rows("GPUCOMP");
-    assert_eq!(comps.len(), ComponentType::VALUES.len(), "ComponentType constants");
+    assert_eq!(
+        comps.len(),
+        ComponentType::VALUES.len(),
+        "ComponentType constants"
+    );
     for (r, c) in comps.iter().zip(ComponentType::VALUES.iter()) {
-        assert_eq!((c.name(), c.ordinal(), c.byte_size()), (r[1], i32f(r[2]), i32f(r[3])));
+        assert_eq!(
+            (c.name(), c.ordinal(), c.byte_size()),
+            (r[1], i32f(r[2]), i32f(r[3]))
+        );
     }
     let fmts = rows("GPUFMT");
     assert_eq!(fmts.len(), GpuFormat::VALUES.len(), "GpuFormat constants");
     for (r, g) in fmts.iter().zip(GpuFormat::VALUES.iter()) {
-        assert_eq!((g.name(), g.ordinal(), g.component_type().name()), (r[1], i32f(r[2]), r[3]), "{}", r[1]);
-        assert_eq!((g.component_count(), g.block_size(), g.byte_alignment()), (i32f(r[4]), i32f(r[5]), i32f(r[6])), "{}", r[1]);
         assert_eq!(
-            (g.has_color_aspect(), g.has_depth_aspect(), g.has_stencil_aspect()),
+            (g.name(), g.ordinal(), g.component_type().name()),
+            (r[1], i32f(r[2]), r[3]),
+            "{}",
+            r[1]
+        );
+        assert_eq!(
+            (g.component_count(), g.block_size(), g.byte_alignment()),
+            (i32f(r[4]), i32f(r[5]), i32f(r[6])),
+            "{}",
+            r[1]
+        );
+        assert_eq!(
+            (
+                g.has_color_aspect(),
+                g.has_depth_aspect(),
+                g.has_stencil_aspect()
+            ),
             (boolf(r[7]), boolf(r[8]), boolf(r[9])),
             "{} aspects",
             r[1]
@@ -61,15 +86,21 @@ fn block_display_context_is_a_fresh_object_per_create() {
 fn multiblock_chest_resources_match_the_jar() {
     let m = MultiblockChestResources::new(1, -2, 300);
     let r = &rows("MULTICHEST")[0];
-    let sel: Vec<String> =
-        chest_type::VALUES.iter().map(|t| format!("{}={}", t.name(), m.select(*t))).collect();
+    let sel: Vec<String> = chest_type::VALUES
+        .iter()
+        .map(|t| format!("{}={}", t.name(), m.select(*t)))
+        .collect();
     assert_eq!(sel.join(","), r[1]);
     let calls = RefCell::new(Vec::new());
     let mapped = m.map(|v| {
         calls.borrow_mut().push(v.to_string());
         format!("#{v}")
     });
-    assert_eq!(calls.borrow().join(","), r[2], "map evaluates single, left, right in order");
+    assert_eq!(
+        calls.borrow().join(","),
+        r[2],
+        "map evaluates single, left, right in order"
+    );
     assert_eq!(Some(mapped.to_string()), unesc(r[3]));
     assert_eq!((*m.single(), *m.left(), *m.right()), (1, -2, 300));
     check_records(
@@ -98,8 +129,14 @@ fn bounding_box_renderable_matches_the_jar() {
         [7, 7, 7, 7, 7, 7],
         [-1, -2, -3, -4, -5, -6],
     ];
-    let mut boxes: Vec<RenderableBox> = corners.iter().map(|c| RenderableBox::from_corners(c[0], c[1], c[2], c[3], c[4], c[5])).collect();
-    boxes.push(RenderableBox::new(BlockPos::new(0, 0, 0), Vec3i::new(1, 2, 3)));
+    let mut boxes: Vec<RenderableBox> = corners
+        .iter()
+        .map(|c| RenderableBox::from_corners(c[0], c[1], c[2], c[3], c[4], c[5]))
+        .collect();
+    boxes.push(RenderableBox::new(
+        BlockPos::new(0, 0, 0),
+        Vec3i::new(1, 2, 3),
+    ));
     check_records("RenderableBox", &boxes, &|x| x.java_hash_code());
     assert_eq!(boxes[2].size(), Vec3i::new(-1, 0, 0), "MAX - MIN wraps");
     assert_eq!(boxes[4].local_pos(), BlockPos::new(-4, -5, -6));
@@ -121,7 +158,12 @@ fn field_selector_matches_the_jar() {
     assert_eq!(rows.len(), fs.len());
     for (r, f) in rows.iter().zip(fs.iter()) {
         assert_eq!(f.path().join("/"), r[2], "path of [{}]", r[1]);
-        assert_eq!(f.tag_type(), TagTypeRef::of_id(i32f(r[3]) as i8), "type of [{}]", r[1]);
+        assert_eq!(
+            f.tag_type(),
+            TagTypeRef::of_id(i32f(r[3]) as i8),
+            "type of [{}]",
+            r[1]
+        );
         assert_eq!(f.name(), r[4]);
         let eq: String = fs.iter().map(|o| if f == o { '1' } else { '0' }).collect();
         assert_eq!(eq, r[5], "equals row [{}]", r[1]);
@@ -160,7 +202,9 @@ fn file_resource_type_forwards_to_its_factory() {
 }
 
 fn unhex(h: &str) -> Vec<u8> {
-    (0..h.len() / 2).map(|i| u8::from_str_radix(&h[2 * i..2 * i + 2], 16).unwrap()).collect()
+    (0..h.len() / 2)
+        .map(|i| u8::from_str_radix(&h[2 * i..2 * i + 2], 16).unwrap())
+        .collect()
 }
 
 #[test]
@@ -173,9 +217,16 @@ fn png_info_matches_the_jar() {
                 assert_eq!(pi.java_hash_code(), i32f(r[3]));
             }
             Err(e) => {
-                let class = r[2].strip_prefix("EX:").unwrap_or_else(|| panic!("Java succeeded on {} but the port failed: {e}", r[1]));
+                let class = r[2].strip_prefix("EX:").unwrap_or_else(|| {
+                    panic!("Java succeeded on {} but the port failed: {e}", r[1])
+                });
                 assert_eq!(java_io::java_class_name(&e), class, "fromBytes({})", r[1]);
-                assert_eq!(java_io::java_message(&e), unesc(r[3]), "fromBytes({})", r[1]);
+                assert_eq!(
+                    java_io::java_message(&e),
+                    unesc(r[3]),
+                    "fromBytes({})",
+                    r[1]
+                );
             }
         }
     }
@@ -185,8 +236,16 @@ fn png_info_matches_the_jar() {
             assert!(result.is_ok(), "validateHeader({})", r[1]);
         } else {
             let e = result.expect_err("Java threw");
-            assert_eq!(java_io::java_class_name(&e), r[2].strip_prefix("EX:").unwrap());
-            assert_eq!(java_io::java_message(&e), unesc(r[3]), "validateHeader({})", r[1]);
+            assert_eq!(
+                java_io::java_class_name(&e),
+                r[2].strip_prefix("EX:").unwrap()
+            );
+            assert_eq!(
+                java_io::java_message(&e),
+                unesc(r[3]),
+                "validateHeader({})",
+                r[1]
+            );
         }
     }
     let p = PngInfo::new(16, 32);

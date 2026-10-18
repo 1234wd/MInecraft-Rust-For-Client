@@ -58,7 +58,8 @@ impl Stopwatch {
     /// Port of `elapsedMilliseconds(long currentTime)`.
     pub const fn elapsed_milliseconds(&self, current_time: i64) -> i64 {
         let time_since_instance_creation = current_time.wrapping_sub(self.creation_time);
-        self.accumulated_elapsed_time.wrapping_add(time_since_instance_creation)
+        self.accumulated_elapsed_time
+            .wrapping_add(time_since_instance_creation)
     }
 
     /// Port of `elapsedSeconds(long currentTime)`: `elapsedMilliseconds(currentTime) / 1000.0`.

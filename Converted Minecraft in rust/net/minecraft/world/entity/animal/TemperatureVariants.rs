@@ -20,8 +20,11 @@ use crate::net::minecraft::resources::Identifier::{self as identifier, Identifie
 pub trait TemperatureVariants {}
 
 /// Port of `TemperatureVariants.TEMPERATE`.
-pub static TEMPERATE: LazyLock<Identifier> = LazyLock::new(|| identifier::with_default_namespace("temperate"));
+pub static TEMPERATE: LazyLock<Identifier> =
+    LazyLock::new(|| identifier::with_default_namespace("temperate"));
 /// Port of `TemperatureVariants.WARM`.
-pub static WARM: LazyLock<Identifier> = LazyLock::new(|| identifier::with_default_namespace("warm"));
+pub static WARM: LazyLock<Identifier> =
+    LazyLock::new(|| identifier::with_default_namespace("warm"));
 /// Port of `TemperatureVariants.COLD`.
-pub static COLD: LazyLock<Identifier> = LazyLock::new(|| identifier::with_default_namespace("cold"));
+pub static COLD: LazyLock<Identifier> =
+    LazyLock::new(|| identifier::with_default_namespace("cold"));

@@ -27,7 +27,8 @@
 use crate::javacompat::throwable;
 
 /// `CowFSFileAlreadyExistsException.class.getName()`.
-pub const CLASS_NAME: &str = "net.minecraft.util.filefix.virtualfilesystem.exception.CowFSFileAlreadyExistsException";
+pub const CLASS_NAME: &str =
+    "net.minecraft.util.filefix.virtualfilesystem.exception.CowFSFileAlreadyExistsException";
 
 /// The direct Java superclass. Checked: an `IOException`.
 pub const SUPERCLASS: &str = "java.nio.file.FileAlreadyExistsException";

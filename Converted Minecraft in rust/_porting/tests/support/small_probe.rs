@@ -84,11 +84,15 @@ pub fn s(field: &str) -> String {
 }
 
 pub fn i32f(field: &str) -> i32 {
-    field.parse().unwrap_or_else(|_| panic!("not an int: {field:?}"))
+    field
+        .parse()
+        .unwrap_or_else(|_| panic!("not an int: {field:?}"))
 }
 
 pub fn i64f(field: &str) -> i64 {
-    field.parse().unwrap_or_else(|_| panic!("not a long: {field:?}"))
+    field
+        .parse()
+        .unwrap_or_else(|_| panic!("not a long: {field:?}"))
 }
 
 pub fn boolf(field: &str) -> bool {

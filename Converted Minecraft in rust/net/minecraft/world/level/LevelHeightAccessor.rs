@@ -33,12 +33,16 @@ pub trait LevelHeightAccessor {
 
     /// Port of `default int getMaxY()`: `getMinY() + getHeight() - 1`.
     fn get_max_y(&self) -> i32 {
-        self.get_min_y().wrapping_add(self.get_height()).wrapping_sub(1)
+        self.get_min_y()
+            .wrapping_add(self.get_height())
+            .wrapping_sub(1)
     }
 
     /// Port of `default int getSectionsCount()`.
     fn get_sections_count(&self) -> i32 {
-        self.get_max_section_y().wrapping_sub(self.get_min_section_y()).wrapping_add(1)
+        self.get_max_section_y()
+            .wrapping_sub(self.get_min_section_y())
+            .wrapping_add(1)
     }
 
     /// Port of `default int getMinSectionY()`.

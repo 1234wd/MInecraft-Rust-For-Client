@@ -28,10 +28,7 @@ pub struct FrameSize {
 impl FrameSize {
     /// Port of the canonical constructor.
     pub fn new(width: i32, height: i32) -> Self {
-        FrameSize {
-            width,
-            height,
-        }
+        FrameSize { width, height }
     }
 
     /// Port of the accessor `width()`.
@@ -46,10 +43,7 @@ impl FrameSize {
 
     /// Port of the record's generated `hashCode()`.
     pub fn java_hash_code(&self) -> i32 {
-        java_object::record_hash(&[
-            self.width,
-            self.height,
-        ])
+        java_object::record_hash(&[self.width, self.height])
     }
 }
 

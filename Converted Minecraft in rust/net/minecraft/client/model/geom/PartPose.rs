@@ -143,7 +143,9 @@ impl PartPose {
         rotation_y: f32,
         rotation_z: f32,
     ) -> PartPose {
-        PartPose::new(offset_x, offset_y, offset_z, rotation_x, rotation_y, rotation_z, 1.0, 1.0, 1.0)
+        PartPose::new(
+            offset_x, offset_y, offset_z, rotation_x, rotation_y, rotation_z, 1.0, 1.0, 1.0,
+        )
     }
 
     /// Port of `translated(float x, float y, float z)`: adds to the offset only.
@@ -163,7 +165,9 @@ impl PartPose {
 
     /// Port of `withScale(float scale)`: replaces all three scales.
     pub fn with_scale(&self, scale: f32) -> PartPose {
-        PartPose::new(self.x, self.y, self.z, self.x_rot, self.y_rot, self.z_rot, scale, scale, scale)
+        PartPose::new(
+            self.x, self.y, self.z, self.x_rot, self.y_rot, self.z_rot, scale, scale, scale,
+        )
     }
 
     /// Port of `scaled(float factor)`: `factor == 1.0F ? this : scaled(factor, factor, factor)`.

@@ -71,7 +71,11 @@ impl NetworkDataOutputStream {
 
     /// Port of `writeFloat(float data)`: `floatToIntBits` (canonical NaN), little-endian.
     pub fn write_float(&mut self, data: f32) {
-        let bits = if data.is_nan() { 0x7fc0_0000u32 } else { data.to_bits() };
+        let bits = if data.is_nan() {
+            0x7fc0_0000u32
+        } else {
+            data.to_bits()
+        };
         self.output_stream.extend_from_slice(&bits.to_le_bytes());
     }
 
