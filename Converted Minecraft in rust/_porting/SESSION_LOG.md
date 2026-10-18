@@ -1461,3 +1461,136 @@ sub-batch J. The other 39 reasons were then re-checked against their sources, an
 
 `e2849953` changed only `tests/session22/f_interfaces.rs`. After it, `session22` passed 90/90 in
 debug and in release, and clippy was re-run.
+
+# Session 23 - the JDK-order HashMap, CompoundTag and ListTag (+ the nbt visitors)
+
+Baseline `fe301975` (session 22), clean tree, `main` level with `origin/main`. The brief: a
+Java-compatible `HashMap` in `javacompat`, then `CompoundTag`, then `ListTag` -- verified, not
+just written -- and, if capacity remained, the next dependency-ready NBT file.
+
+## What landed
+
+| sub-batch | commit | what | status |
+|---|---|---|---|
+| A | `a7d5d1e8` | `javacompat/java_hash_map.rs`: JDK 25 `java.util.HashMap`, tree bins included | VERIFIED |
+| B | `d7c30c9f` | `ListTag`; `CompoundTag`; `Tag`, `TagType`, `TagVisitor`, `StringTagVisitor` completed; FloatTag/DoubleTag equality fixed | ListTag VERIFIED, CompoundTag PARTIAL, the rest VERIFIED |
+| C | `57a8d34d` | `visitors/`: `CollectToTag`, `CollectFields`, `SkipFields`, `FieldTree` | VERIFIED |
+| - | (the commit after `57a8d34d`) | these records | - |
+
+Two commit messages carry stale counts, left as they are rather than rewriting history:
+`a7d5d1e8` says the `HMSTEP` group has 768 steps (it has 980), and `d7c30c9f` says `CTOPS` has 65
+steps (it has 68 -- three were added in the same commit, after the message was drafted).
+
+## The map
+
+`CompoundTag.write` serialises in `HashMap` iteration order, and `copy()` re-inserts in it, so the
+bytes of a saved compound depend on its insertion/removal history and its table size. The port
+is the JDK 25 algorithm, operation for operation: `h ^ (h >>> 16)`, the lazy table, 0.75 load
+factor, the order-preserving lo/hi split on resize, `putVal`/`getNode`/`removeNode`, `clear()`
+keeping the table, the JDK 19+ copy-constructor presize (`ceil(s / 0.75)`), and the tree bins in
+full -- because inside a bucket of 9+ colliding keys in a 64+ table, iteration order follows the
+red-black tree's shape (`putTreeVal` links a node after its tree parent, `moveRootToFront` moves
+the root to the head). Ported from `java.base/java/util/HashMap.java` out of the JDK's own
+`src.zip`, as an index arena.
+
+## The containers
+
+* **ListTag** (VERIFIED): heterogeneous in memory, homogeneous on disk -- `identifyRawElementType`
+  (first non-zero id, `10` once two differ), `{"": x}` wrapping on write and unwrapping on load,
+  `ArrayList`'s exact index-error texts, and `TYPE` with its `NbtFormatException` checks.
+  `[END, 5L]` is written as a long list whose first element writes nothing.
+* **CompoundTag** (PARTIAL): every method except the ten codec methods and `CODEC` (DataFixerUpper
+  + `NbtOps`), and with `readNamedTagData` raising `ReportedNbtException` / "Loading NBT data" /
+  the IOException as cause but building no `CrashReport` (not ported).
+* **Tag**: the last two variants; `copy()` now dispatches (a container's `copy()` re-inserts and is
+  not `Clone`); `java_hash_code()` returns `None` where Java folds in `EndTag`'s identity hash.
+
+Method accounting: `CompoundTag.java` declares 80 members (70 methods, 2 constructors, the 8
+methods of its anonymous `TYPE`); 70 are ported (one, `readNamedTagData`, without its crash
+report) and 10 are blocked. `ListTag.java` declares 56; all 56 are ported, plus the inherited
+`AbstractList.add(Tag)`; the rest of the inherited `List` API is reachable as `as_slice()`/`iter()`.
+
+## Java behaviour worth recording
+
+* **`CompoundTag.parseCompound` ignores a child's `BREAK`.** After a value's `parse` answers
+  `BREAK`, the loop goes on to the next entry; only `HALT` stops it. Checked in the bytecode with
+  `javap`, not just the decompiled source. `ListTag.parseList` does the opposite: an element's
+  `BREAK` skips the rest of the list. Both are reproduced and probed (`GEN`/`CASE` `TP` rows).
+* **`FloatTag`/`DoubleTag` are records**, so `equals` is `Float.compare == 0`: NaN equals NaN and
+  `0.0` does not equal `-0.0`. The session-21 ports derived `PartialEq` on the float, which has both
+  backwards -- invisible until containers compared tags. Fixed; pinned by `TEQ`.
+* **`StringTagVisitor.visitCompound` sorts keys by `String.compareTo`**, UTF-16 order, which is not
+  Rust's `str` order once a key mixes U+E000+ with supplementary characters.
+* **`CollectFields` with one name selected under two types** keeps only the last type in its
+  `FieldTree` but counts both: an `INT` field of that name is entered and then skipped (`CFX`).
+* **`HashMap.computeIfAbsent` links a new node at the bucket HEAD**, unlike `put`. Only
+  `FieldTree` uses it, and nothing iterates those maps portably, so it is not ported.
+
+## The oracle
+
+`_porting/test-data/nbt_probe.txt` (session 19's NbtProbe) went from 5,026 to 6,298 rows. The new
+groups: `HMSTEP` (980: the whole map state after every op -- return value, table length, size,
+hashCode, order -- over colliding keys, tree splits, tree removals down to untreeify, clears,
+copies, Integer keys), `HMEQ` (8), `TEQ` (31: equals matrix + hashCode), `CTOPS` (68) and `LTOPS`
+(60: op scripts with the full state after each op), `TACC` (21: accept traces), `TLOAD` (69:
+`TYPE.load`/`skip`/`parse` of crafted payloads under three accounter limits), `FTREE` (7), `CFX`
+(16), `CFXRAW` (12). Every row that existed before is unchanged, and the file regenerates
+byte-identical. Tags cross between the probe and the tests as a small literal (`lit`) that both
+sides print and parse.
+
+The new test target `tests/session23.rs` (20 tests, five modules) reads `HM*`, `GEN`, `CASE`,
+`CASEW`, `CASED`, `IDENT`, `LGET`, `CGET` and all the session-23 groups; the `GEN` generator is
+mirrored call for call against `java.util.Random`, so the 120 trees are the probe's trees. Every
+sub-row of every `GEN`/`CASE` tree is now checked, the visitor rows (`PW`/`PU`/`CF<n>`/`SF<n>`)
+included. `session19_g`'s group guard records each of those groups as covered in session 23 and
+checks that session 23's sources really read it; it also now checks `IDX`'s `list_*` rows and
+`OTHER` entries 7-8. Only `READ` (`NbtIo` over crafted streams) is still declared blocked.
+
+## Planted faults
+
+61 planted: **59 caught, 2 equivalent** (no test can tell them apart from the original).
+
+* HashMap: 19, all caught. Two survived their first run -- `split`'s untreeify boundary (`lc <= 6`)
+  and its "already treeified" re-treeify guard -- and were caught once the probe had
+  `split_boundary` buckets in six insertion orders plus puts AFTER the split: a 6-node tree bin and
+  a 6-node list iterate alike until the next insertion.
+* Containers: 28. Four survived the first run: merge never recursing, `Tag::copy` cloning nested
+  compounds, and `ListTag.accept` visiting the raw element type were caught after the probe
+  gained a merge into non-empty compounds, a nested copy of a grown compound, and accept traces
+  over lists holding `END`; `getBooleanOr` via `getBoolean` is the same function (equivalent).
+* Visitors: 14. `CollectFields` not answering `BREAK` and not `HALT`ing on a list root were caught
+  after `CFXRAW` added hand-written streams; popping frames on `<=` instead of `==` is equivalent
+  (the base depth can never be below the top frame's).
+
+## Gates
+
+| Gate | Result |
+|---|---|
+| `cargo check --all-targets --locked` | clean, 0 warnings |
+| `cargo test --locked --no-fail-fast` | **739 passed, 0 failed, 2 ignored** (was 717/0/2: +20 `session23`, +2 `java_hash_map` unit tests) |
+| `cargo test --locked --release --no-fail-fast` | **739 passed, 0 failed, 2 ignored** |
+| `cargo clippy --all-targets --locked` | exit 0, nothing in session-23 code; 15 warnings, all in older test files (`parity_batch2` 6, `session19_a` 5, `parity_mth` 2, `parity_jvm_math` 1, `session19_h` 1) |
+| host-transcendental guard | pass, debug and release |
+| `python _porting/tools/mirror.py --check` | OK, 7055 java files |
+| `python _porting/tools/check_mirror.py` | OK, 1:1, baseline MATCHES |
+| `nbt_probe.txt` regenerated | byte-identical |
+| rustfmt | every `.rs` file this session added is clean, and every file it changed except `tests/session19_g.rs`, which was not rustfmt-clean before this session either and was left that way rather than reformatted. `cargo fmt --check` still fails repo-wide (pre-existing; not a CI step) |
+| macOS ARM64 CI | pre-existing `cargo test (debug)` failure, non-gating; not run locally and not claimed |
+
+## Next, exactly
+
+The rest of `net/minecraft/nbt` is not dependency-ready, for these reasons:
+
+* `NbtIo` imports `FastBufferedInputStream` (a session-22 blocker: `InputStream` with
+  `available`/`skip`), `DelegateDataOutput` and `Util` (both SKELETON), GZIP streams
+  (`java.util.zip`), `Path`/`Files`, and `CrashReport` for its `ReportedNbtException`. With those,
+  its oracle -- the `READ` group, 240 rows -- is already in the probe.
+* `ReportedNbtException` needs `ReportedException` and `CrashReport` (both SKELETON) -- the same
+  dependency would complete `CompoundTag.readNamedTagData` (OPEN_QUESTIONS #35).
+* `NbtOps`, `NbtUtils`, and `CompoundTag`'s codec methods need DataFixerUpper
+  (`DESIGN_DECISIONS.md#dfu-proposal`).
+* `TagParser`, `SnbtOperations`, `SnbtGrammar` (SNBT parsing) need Brigadier, DataFixerUpper and
+  the `util.parsing.packrat` grammar. `SnbtPrinterTagVisitor` (an SNBT printer) imports
+  `net.minecraft.util.Util` (SKELETON, 1,248 lines) for nothing but `Util.make`, so it is one small
+  `Util` method away from ready; `TextComponentTagVisitor` needs `network.chat`.
+* Before porting heavy NBT callers, decide the aliasing model (OPEN_QUESTIONS #34).

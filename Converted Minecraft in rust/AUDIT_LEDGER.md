@@ -668,3 +668,122 @@ warnings in `session22` test code, was followed by `session22` passing 90/90 in 
 | Identity-hash `hashCode`/`toString` | not ported | Not reproducible across JVM runs (#30). |
 | whole crate | `cargo fmt --check` fails | Pre-existing, and not a CI step. Only this session's files were formatted. |
 | macOS ARM64 CI | `cargo test (debug)` failing before this session | Pre-existing and non-gating. Not claimed to pass. |
+
+# Audit Ledger — Session 23
+
+**Baseline:** `fe301975` (session 22) · **Branch:** `main`, level with `origin/main` at the start
+**Scope:** the `HashMap` → `CompoundTag` → `ListTag` dependency chain, then the dependency-ready
+`nbt/visitors` package.
+**Audit method:** each Java source read in full (and `java.util.HashMap`/`AbstractMap` from the
+JDK 25 `src.zip`); where the decompiled control flow looked wrong it was checked against the jar's
+bytecode with `javap`. Every expectation comes from `_porting/test-data/nbt_probe.txt`, written by
+`_porting/java-oracle/src/p/NbtProbe.java` against the 26.2 jar on JDK 25.0.4.1. Planted faults
+after each sub-batch.
+
+---
+
+## Summary
+
+| Component | Status | Members | Tests |
+|---|---|---|---|
+| `javacompat/java_hash_map.rs` (`java.util.HashMap`, the subset `CompoundTag` uses) | VERIFIED | putVal/getNode/removeNode/resize/clear/copy constructor, the full tree-bin code, `AbstractMap.equals`/`hashCode` | 4 session23 + 2 unit |
+| `nbt/ListTag` | VERIFIED | 56 of 56 declared (46 methods, 2 constructors, 8 in `TYPE`) + inherited `add(Tag)` | session23, session19_g |
+| `nbt/CompoundTag` | PARTIAL | 70 of 80 declared; 10 codec methods + `CODEC` blocked on DataFixerUpper; `readNamedTagData` without its `CrashReport` | session23, session19_g |
+| `nbt/Tag`, `nbt/TagType`, `nbt/TagVisitor`, `nbt/StringTagVisitor` | PARTIAL → VERIFIED | the List/Compound arms and methods they were missing | as above |
+| `nbt/visitors/CollectToTag`, `CollectFields`, `SkipFields`, `FieldTree` | SKELETON → VERIFIED | all; `FieldTree`'s record `hashCode`/`toString` not ported (identity hashes, #30) | session23 |
+| `nbt/FloatTag`, `nbt/DoubleTag` | VERIFIED (defect fixed) | record `equals` | `TEQ`, `GEN`/`CASE` `RE` |
+
+**Test count:** 717 → **739 passed**, 0 failed, 2 ignored, in debug and in release.
+**Probe:** `nbt_probe.txt` 5,026 → 6,298 rows; every pre-existing row unchanged; regenerates
+byte-identical.
+**Open questions added:** #34, #35.
+
+---
+
+## Files ported
+
+| Sub-batch | Commit | Files |
+|---|---|---|
+| A | `a7d5d1e8` | `_porting/javacompat/java_hash_map.rs` (new) |
+| B | `d7c30c9f` | `nbt/ListTag`, `nbt/CompoundTag`; completed `nbt/Tag`, `nbt/TagType`, `nbt/TagVisitor`, `nbt/StringTagVisitor`; fixed `nbt/FloatTag`, `nbt/DoubleTag` |
+| C | `57a8d34d` | `nbt/visitors/CollectToTag`, `nbt/visitors/CollectFields`, `nbt/visitors/SkipFields`, `nbt/visitors/FieldTree` |
+
+Nothing was stubbed. The session removed the two `todo!()` arms `TagType` carried for the
+containers and added none; no file is marked VERIFIED with a blocked member it does not name.
+
+---
+
+## Defects found and fixed
+
+### 1. `FloatTag` / `DoubleTag` equality had both IEEE cases backwards · FIXED (`d7c30c9f`)
+
+Both are Java records, so `equals` is `Float.compare(a, b) == 0` / `Double.compare`: every NaN
+equals every NaN, and `0.0` does not equal `-0.0`. The session-21 ports derived `PartialEq` on the
+`f32`/`f64`, which gives the opposite on both. Nothing compared these tags until `CompoundTag` and
+`ListTag` equality arrived. The `TEQ` matrix and the `RE` (read-back equals) rows of the
+`neg_zero_nan` tree pin it; planting the old `==` back fails them.
+
+### 2. Two probe groups' guard bookkeeping · FIXED
+
+`session19_g`'s `unstarted_groups_are_declared` listed 13 groups as blocked on the containers.
+They are now recorded as covered in session 23, and the guard checks that session 23's sources
+really read each one (`rows("<group>")`), so the list cannot claim coverage that does not exist.
+`IDX`'s `list_*` rows and `OTHER` entries 7-8, previously skipped by name, are checked.
+
+---
+
+## Java behaviour pinned (reviewed, reproduced, probed)
+
+| Item | Finding |
+|---|---|
+| `HashMap` tree bins | iteration order inside a 9+-key bucket follows the red-black tree's shape; ported in full (`HMSTEP`, 980 steps) |
+| `HashMap(Map)` | JDK 19+ presize `tableSizeFor(ceil(s / 0.75))`; the older `s / 0.75 + 1` gives other capacities (planted, caught) |
+| `CompoundTag.copy()` | a NEW map re-inserted in iteration order: a grown-then-shrunk compound iterates differently after `copy()` (`CTOPS grown`) |
+| `CompoundTag.parseCompound` | a child's `BREAK` does NOT stop the compound (bytecode-checked with `javap`); `ListTag.parseList`'s does |
+| `ListTag` element type | the first non-zero id, `10` once two differ; `[END, 5L]` writes as a long list; `accept` visits an END element as `END` (`TACC`) |
+| `ListTag` index errors | `ArrayList`'s texts: `Index 3 out of bounds for length 3` and `Index: 4, Size: 3` (`IDX`) |
+| `StringTagVisitor.visitCompound` | sorts by `String.compareTo` (UTF-16), not Rust `str` order (planted, caught) |
+| `CollectToTag` | rebuilds through `valueOf`, so `-0.0` comes back `+0.0`; lists unwrap `{"": x}` |
+| `CollectFields` | `HALT` on a non-compound root; `BREAK` once all fields are found; a name selected under two types keeps the last type but counts both (`CFX`, `CFXRAW`) |
+| `HashMap.computeIfAbsent` | links at the bucket head, unlike `put`; used only by `FieldTree`, whose maps nothing iterates portably -- not ported, documented |
+
+---
+
+## Planted faults
+
+| Area | Planted | Caught | Equivalent | Caught only after the probe was strengthened |
+|---|---|---|---|---|
+| HashMap | 19 | 19 | 0 | 2 (`split`'s untreeify boundary and re-treeify guard: `split_boundary` in six insertion orders + post-split puts) |
+| Containers | 28 | 27 | 1 (`getBooleanOr` via `getBoolean`) | 3 (merge recursion, nested `Tag::copy`, `accept` element type) |
+| Visitors | 14 | 13 | 1 (frame pop on `<=` vs `==`) | 2 (no `BREAK`, no root `HALT`: `CFXRAW`) |
+| **Total** | **61** | **59** | **2** | **7** |
+
+---
+
+## Test Results
+
+| Mode | Passed | Failed | Ignored |
+|---|---|---|---|
+| Debug | 739 | 0 | 2 |
+| Release | 739 | 0 | 2 |
+
+The 2 ignored are the same as in sessions 21-22 (`blockpos_clamp_location_within`,
+`session19_j`'s `batch_is_unstarted`). `cargo clippy --all-targets` reports nothing in session-23
+code; its 15 warnings are all in older test files.
+
+---
+
+## Known Remaining Gaps
+
+| File(s) | Gap | Reason |
+|---|---|---|
+| `nbt/CompoundTag` | `CODEC`, `store`/`storeNullable`/`read` (10 methods) | DataFixerUpper + `NbtOps` (`DESIGN_DECISIONS.md#dfu-proposal`) |
+| `nbt/CompoundTag` | `readNamedTagData` builds no `CrashReport` | `CrashReport`, `CrashReportCategory`, `ReportedException` are SKELETON (#35) |
+| `nbt/NbtIo` and the `READ` group (240 rows) | SKELETON / declared blocked | `FastBufferedInputStream`, `DelegateDataOutput`, `Util`, GZIP, `Path`/`Files`, `CrashReport` |
+| `nbt/ReportedNbtException` | SKELETON | `CrashReport` (#35) |
+| `nbt/NbtOps`, `nbt/NbtUtils` | SKELETON | DataFixerUpper |
+| `nbt/TagParser`, `SnbtOperations`, `SnbtGrammar` (rest), `SnbtPrinterTagVisitor`, `TextComponentTagVisitor` | SKELETON / PARTIAL | Brigadier, DFU, `util.parsing.packrat`; `Util.make`; `network.chat` |
+| `nbt/CollectionTag` | PARTIAL (unchanged) | `stream()`; `ListTag` exposes `iter()` |
+| aliasing | owned tags vs Java's shared references | design decision before porting NBT callers (#34) |
+| `tests/session19_g.rs` | not rustfmt-clean | pre-existing; this session edited it without reformatting the file |
+| macOS ARM64 CI | `cargo test (debug)` failing before this session | pre-existing, non-gating; not claimed to pass |

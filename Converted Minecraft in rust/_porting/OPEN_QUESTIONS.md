@@ -792,3 +792,39 @@ tests, both test-design errors rather than port errors against Java:
 Both were fixed before session 22 was pushed. The lesson for later sessions: run `--release` before
 calling a sub-batch verified, and do not assert raw NaN bits for a value that went through
 arithmetic.
+
+## Logged during session 23 (HashMap, CompoundTag, ListTag)
+
+### #34 NEW - NBT tags are owned values here; Java code aliases them
+
+Java NBT code keeps references to tags after handing them over and mutates through them:
+
+* `outer.put("x", inner); inner.putInt("a", 1);` -- `outer` sees the int;
+* `tag.getCompound("k").ifPresent(c -> c.putInt(...))` edits the stored child in place, while
+  `getCompoundOrEmpty("k")` returns a NEW, unstored compound when the key is absent, so the same
+  edit silently goes nowhere;
+* `shallowCopy()` shares every child between the two compounds.
+
+The port's `Tag` is an owned enum (session 21's design, kept): `put` moves the value, getters
+borrow it, `get_compound_mut`/`get_list_mut`/`get_mut` edit in place, and `shallow_copy()` clones the
+children. Every probed behaviour matches, because every probe reads the result through the
+container it was stored in. What differs is code that RELIES on the sharing: mutating a child
+after inserting it and expecting the parent to change, or mutating a shallow copy's child and
+expecting the original to change.
+
+**Decision needed before porting the heavy NBT callers** (chunk, entity and block-entity
+serialisation): keep owned values and restructure each caller -- the recommendation, and the
+current state -- or switch container children to `Rc<RefCell<Tag>>` to reproduce aliasing
+exactly. Under either, a caller's port should be reviewed for post-insertion mutation.
+
+### #35 NEW - `CrashReport` blocks the last part of `CompoundTag` and all of `ReportedNbtException`
+
+`CompoundTag.readNamedTagData` turns a child's `IOException` into
+`new ReportedNbtException(CrashReport.forThrowable(e, "Loading NBT data"))`, with an "NBT Tag"
+category holding "Tag name" and "Tag type". `NbtIo.readTagSafe` does the same with "Tag type"
+only. `CrashReport`, `CrashReportCategory` and `ReportedException` are SKELETON. The port panics
+with Java's observable text -- `net.minecraft.nbt.ReportedNbtException: Loading NBT data`, and the
+IOException as the cause, which is what `getMessage`/`getCause` return (probed: `TLOAD
+c_invalid_child`) -- but carries no report, so nothing can ask it for `getReport()`. Porting
+`CrashReport` (and `CrashReportCategory`, `ReportedException`) would complete `CompoundTag` apart
+from its codec methods, unblock `ReportedNbtException`, and is one of `NbtIo`'s dependencies.
