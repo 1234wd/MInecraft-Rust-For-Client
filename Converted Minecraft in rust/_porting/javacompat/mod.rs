@@ -20,6 +20,7 @@
 //! | [`golden`] | the golden-data reader used by the parity tests | n/a |
 //! | [`throwable`] | `Throwable#toString` and the `Throwable(Throwable)` message rule | JDK 25 |
 //! | [`java_object`] | boxed `hashCode`s, `Objects.hash`, record `hashCode`/`equals` | JDK 25 |
+//! | [`time_unit`] | `java.util.concurrent.TimeUnit` (conversion from nanoseconds) | JDK 25 |
 //!
 //! Every "pinned to" version is read from the Fabric Loom / Gradle cache, i.e. what
 //! Minecraft 26.2 actually resolves -- see `java-oracle/fetch_libs.ps1`.
@@ -38,3 +39,4 @@ pub mod joml;
 pub mod md5;
 pub mod nan_policy;
 pub mod throwable;
+pub mod time_unit;

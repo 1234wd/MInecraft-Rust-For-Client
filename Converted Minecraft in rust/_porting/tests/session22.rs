@@ -26,6 +26,8 @@ mod c_records;
 mod d_state;
 #[path = "session22/e_state2.rs"]
 mod e_state2;
+#[path = "session22/f_interfaces.rs"]
+mod f_interfaces;
 
 /// The source of every module in this target, for the guard's `rows("...")` scan.
 const SOURCES: &[&str] = &[
@@ -35,6 +37,7 @@ const SOURCES: &[&str] = &[
     include_str!("session22/c_records.rs"),
     include_str!("session22/d_state.rs"),
     include_str!("session22/e_state2.rs"),
+    include_str!("session22/f_interfaces.rs"),
 ];
 
 #[test]

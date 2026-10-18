@@ -91,6 +91,7 @@ public class SmallProbe {
 			recordsC();
 			stateD1();
 			stateD2();
+			interfacesE();
 		}
 		System.err.println("small_probe: " + rows + " rows -> " + target);
 	}
@@ -1335,5 +1336,239 @@ public class SmallProbe {
 		return "" + (st.canParsePositiveElement() ? 1 : 0) + (st.canParseNegativeElement() ? 1 : 0) + (st.canParseAnyTag() ? 1 : 0)
 			+ (st.canParseAny() ? 1 : 0) + (st.canParseElement(false) ? 1 : 0) + (st.canParseElement(true) ? 1 : 0)
 			+ (st.canParseTag(id("a")) ? 1 : 0) + (st.canParseTag(id("b")) ? 1 : 0);
+	}
+
+	// ------------------------------------------------------------------ sub-batch E: interfaces with default methods, constants, factories
+
+	static final float[] ANGLES_F = {0.0f, -0.0f, 10.0f, -10.0f, 90.0f, 179.0f, 180.0f, 181.0f, 359.0f, 360.0f, 540.0f, -540.0f, 1e9f, Float.NaN,
+		Float.POSITIVE_INFINITY, 0.5f, 33.3f};
+
+	static void interfacesE() throws Exception {
+		// TabOrderedElement: default 0
+		row("TABORDER", i(new net.minecraft.client.gui.components.TabOrderedElement() {}.getTabOrderGroup()));
+
+		// HolderOwner: canSerializeIn is identity
+		net.minecraft.core.HolderOwner<Object> ownerA = new net.minecraft.core.HolderOwner<>() {};
+		net.minecraft.core.HolderOwner<Object> ownerB = new net.minecraft.core.HolderOwner<>() {};
+		row("HOLDEROWNER", b(ownerA.canSerializeIn(ownerA)), b(ownerA.canSerializeIn(ownerB)), b(ownerB.canSerializeIn(ownerA)));
+
+		// ai.control.Control.rotateTowards
+		net.minecraft.world.entity.ai.control.Control ctl = new net.minecraft.world.entity.ai.control.Control() {};
+		float[] maxRots = {0.0f, 1.0f, 10.0f, 30.0f, 180.0f, -5.0f, Float.NaN};
+		for (float from : ANGLES_F) {
+			for (float to : ANGLES_F) {
+				StringBuilder out = new StringBuilder();
+				for (float mr : maxRots) {
+					out.append(out.length() == 0 ? "" : ",").append(f(ctl.rotateTowards(from, to, mr)));
+				}
+				row("ROTTOWARDS", f(from), f(to), out.toString());
+			}
+		}
+
+		// PaletteResize.noResizeExpected: always throws IAE with the value's toString
+		net.minecraft.world.level.chunk.PaletteResize<Object> nre = net.minecraft.world.level.chunk.PaletteResize.noResizeExpected();
+		Object[] added = {5, "stone", null, -1.5};
+		int[] bitsList = {0, 4, -1, MAX};
+		for (int k = 0; k < added.length; k++) {
+			String r;
+			try {
+				nre.onResize(bitsList[k], added[k]);
+				r = "none";
+			} catch (IllegalArgumentException e) {
+				r = exText(e);
+			}
+			row("PALRESIZE", i(bitsList[k]), esc(String.valueOf(added[k])), esc(r));
+		}
+
+		// ResourceHandle.invalid()
+		String rh;
+		try {
+			com.mojang.blaze3d.resource.ResourceHandle.invalid().get();
+			rh = "none";
+		} catch (IllegalStateException e) {
+			rh = exText(e);
+		}
+		row("RESHANDLE", esc(rh), b(com.mojang.blaze3d.resource.ResourceHandle.invalid() == com.mojang.blaze3d.resource.ResourceHandle.INVALID_HANDLE));
+
+		// GlyphInfo: simple(advance) and the defaults
+		for (float adv : new float[]{0.0f, 4.0f, -1.0f, 5.5f, Float.NaN, Float.MAX_VALUE, -0.0f}) {
+			com.mojang.blaze3d.font.GlyphInfo g = com.mojang.blaze3d.font.GlyphInfo.simple(adv);
+			row("GLYPH", f(adv), f(g.getAdvance()), f(g.getAdvance(false)), f(g.getAdvance(true)), f(g.getBoldOffset()), f(g.getShadowOffset()));
+		}
+
+		// CharPredicate: and/or/negate over two base predicates, every char 0..0x2FF plus a surrogate sample
+		net.minecraft.CharPredicate p = c -> c < 'm';
+		net.minecraft.CharPredicate q = c -> c % 2 == 0;
+		StringBuilder cpAnd = new StringBuilder(), cpOr = new StringBuilder(), cpNeg = new StringBuilder(), cpMix = new StringBuilder();
+		for (int c = 0; c < 0x300; c++) {
+			cpAnd.append(p.and(q).test((char) c) ? '1' : '0');
+			cpOr.append(p.or(q).test((char) c) ? '1' : '0');
+			cpNeg.append(p.negate().test((char) c) ? '1' : '0');
+			cpMix.append(p.negate().or(q.and(p)).negate().test((char) c) ? '1' : '0');
+		}
+		row("CHARPRED", cpAnd.toString(), cpOr.toString(), cpNeg.toString(), cpMix.toString());
+		row("CHARPREDSURR", b(q.test('\ud800')), b(p.negate().test('\udfff')), b(p.and(q).test('￿')));
+
+		// BooleanOp: the truth table of every constant, in declaration order (by reflection over the fields)
+		for (java.lang.reflect.Field fl : net.minecraft.world.phys.shapes.BooleanOp.class.getDeclaredFields()) {
+			if (fl.getType() == net.minecraft.world.phys.shapes.BooleanOp.class) {
+				net.minecraft.world.phys.shapes.BooleanOp op = (net.minecraft.world.phys.shapes.BooleanOp) fl.get(null);
+				row("BOOLOP", fl.getName(), b(op.apply(false, false)), b(op.apply(false, true)), b(op.apply(true, false)), b(op.apply(true, true)));
+			}
+		}
+
+		// LightEventListener: the BlockPos overload of updateSectionStatus forwards SectionPos.of(pos)
+		java.util.List<String> lightCalls = new java.util.ArrayList<>();
+		net.minecraft.world.level.lighting.LightEventListener lel = new net.minecraft.world.level.lighting.LightEventListener() {
+			@Override public void checkBlock(net.minecraft.core.BlockPos pos) {}
+			@Override public boolean hasLightWork() { return false; }
+			@Override public int runLightUpdates() { return 0; }
+			@Override public void updateSectionStatus(net.minecraft.core.SectionPos pos, boolean sectionEmpty) {
+				lightCalls.add(pos.x() + "," + pos.y() + "," + pos.z() + ":" + sectionEmpty);
+			}
+			@Override public void setLightEnabled(net.minecraft.world.level.ChunkPos pos, boolean enable) {}
+			@Override public void propagateLightSources(net.minecraft.world.level.ChunkPos pos) {}
+		};
+		int[][] lightPos = {{0, 0, 0}, {15, 16, -1}, {-16, -17, 31}, {MAX, MIN, 7}};
+		for (int[] lp : lightPos) {
+			lel.updateSectionStatus(new net.minecraft.core.BlockPos(lp[0], lp[1], lp[2]), lp[0] % 2 == 0);
+		}
+		row("LIGHTEVT", String.join(";", lightCalls));
+
+		// PlayerRideableJumping defaults
+		net.minecraft.world.entity.PlayerRideableJumping prj = new net.minecraft.world.entity.PlayerRideableJumping() {
+			@Override public void onPlayerJump(int jumpAmount) {}
+			@Override public boolean canJump() { return true; }
+			@Override public void handleStartJump(int jumpScale) {}
+			@Override public void handleStopJump() {}
+		};
+		StringBuilder jumps = new StringBuilder();
+		for (int ja : new int[]{MIN, -100, -1, 0, 1, 45, 89, 90, 91, 100, MAX}) {
+			jumps.append(jumps.length() == 0 ? "" : ",").append(ja).append('=').append(f(prj.getPlayerJumpPendingScale(ja)));
+		}
+		row("RIDEJUMP", i(prj.getJumpCooldown()), jumps.toString());
+
+		// LevelHeightAccessor: create(minY, height) and every default
+		int[][] heights = {{-64, 384}, {0, 256}, {0, 16}, {-2032, 4064}, {5, 0}, {7, -16}, {MIN, MAX}, {MAX, 1}};
+		int[] ys = {-2048, -65, -64, -1, 0, 1, 15, 16, 255, 256, 319, 320, MIN, MAX};
+		for (int[] hv : heights) {
+			net.minecraft.world.level.LevelHeightAccessor la = net.minecraft.world.level.LevelHeightAccessor.create(hv[0], hv[1]);
+			StringBuilder inside = new StringBuilder(), outside = new StringBuilder(), idx = new StringBuilder(), insidePos = new StringBuilder();
+			for (int y : ys) {
+				inside.append(la.isInsideBuildHeight(y) ? '1' : '0');
+				outside.append(la.isOutsideBuildHeight(y) ? '1' : '0');
+				insidePos.append(la.isInsideBuildHeight(new net.minecraft.core.BlockPos(3, y, -3)) ? '1' : '0')
+					.append(la.isOutsideBuildHeight(new net.minecraft.core.BlockPos(3, y, -3)) ? '1' : '0');
+				idx.append(idx.length() == 0 ? "" : ",").append(la.getSectionIndex(y)).append('/').append(la.getSectionIndexFromSectionY(y))
+					.append('/').append(la.getSectionYFromSectionIndex(y));
+			}
+			row("HEIGHTACC", i(hv[0]), i(hv[1]), i(la.getHeight()), i(la.getMinY()), i(la.getMaxY()), i(la.getSectionsCount()),
+				i(la.getMinSectionY()), i(la.getMaxSectionY()), inside.toString(), outside.toString(), insidePos.toString(), idx.toString());
+		}
+
+		// SelectableEntry: seven default predicates over a grid
+		net.minecraft.client.gui.components.SelectableEntry se = new net.minecraft.client.gui.components.SelectableEntry() {};
+		int[] rel = {-1, 0, 1, 7, 8, 15, 16, 17, MIN, MAX};
+		for (int size : new int[]{16, 15, 0, 1, -16, MAX}) {
+			StringBuilder out = new StringBuilder();
+			for (int x : rel) {
+				for (int y : rel) {
+					out.append(se.mouseOverIcon(x, y, size) ? '1' : '0').append(se.mouseOverLeftHalf(x, y, size) ? '1' : '0')
+						.append(se.mouseOverRightHalf(x, y, size) ? '1' : '0').append(se.mouseOverTopRightQuarter(x, y, size) ? '1' : '0')
+						.append(se.mouseOverBottomRightQuarter(x, y, size) ? '1' : '0').append(se.mouseOverTopLeftQuarter(x, y, size) ? '1' : '0')
+						.append(se.mouseOverBottomLeftQuarter(x, y, size) ? '1' : '0').append(' ');
+				}
+			}
+			row("SELENTRY", i(size), out.toString().trim());
+		}
+
+		// CommandResultCallback: EMPTY, onSuccess/onFailure, chain
+		row("CRCEMPTY", esc(net.minecraft.commands.CommandResultCallback.EMPTY.toString()));
+		java.util.List<String> crc = new java.util.ArrayList<>();
+		net.minecraft.commands.CommandResultCallback a = (s, r) -> crc.add("a:" + s + ":" + r);
+		net.minecraft.commands.CommandResultCallback bb = (s, r) -> crc.add("b:" + s + ":" + r);
+		net.minecraft.commands.CommandResultCallback e = net.minecraft.commands.CommandResultCallback.EMPTY;
+		row("CRCCHAIN", b(net.minecraft.commands.CommandResultCallback.chain(e, a) == a), b(net.minecraft.commands.CommandResultCallback.chain(a, e) == a),
+			b(net.minecraft.commands.CommandResultCallback.chain(e, e) == e));
+		net.minecraft.commands.CommandResultCallback ab = net.minecraft.commands.CommandResultCallback.chain(a, bb);
+		ab.onSuccess(7);
+		ab.onFailure();
+		a.onResult(true, -3);
+		e.onSuccess(1);
+		row("CRCCALLS", String.join(";", crc));
+
+		// LerpFunction: every factory over a grid
+		float[] alphas = {0.0f, 0.25f, 0.5f, 0.99f, 1.0f, 1.5f, -0.5f, Float.NaN};
+		float[][] ft = {{0.0f, 10.0f}, {-5.0f, 5.0f}, {350.0f, 10.0f}, {10.0f, 350.0f}, {0.0f, 180.0f}, {1e9f, -1e9f}, {Float.NaN, 1.0f},
+			{0.0f, 30.0f}, {15.0f, -15.0f}};
+		for (float al : alphas) {
+			for (float[] pair : ft) {
+				row("LERPF", f(al), f(pair[0]), f(pair[1]),
+					f(net.minecraft.world.attribute.LerpFunction.ofFloat().apply(al, pair[0], pair[1])),
+					f(net.minecraft.world.attribute.LerpFunction.ofDegrees(30.0f).apply(al, pair[0], pair[1])),
+					f(net.minecraft.world.attribute.LerpFunction.ofDegrees(181.0f).apply(al, pair[0], pair[1])),
+					f(net.minecraft.world.attribute.LerpFunction.<Float>ofStep(0.5f).apply(al, pair[0], pair[1])),
+					f(net.minecraft.world.attribute.LerpFunction.<Float>ofConstant().apply(al, pair[0], pair[1])));
+			}
+			int[][] it = {{0, 10}, {-5, 5}, {MIN, MAX}, {100, -100}, {0xFF000000, 0xFFFFFFFF}, {0x80FF0000, 0x400000FF}};
+			for (int[] pair : it) {
+				row("LERPI", f(al), i(pair[0]), i(pair[1]),
+					i(net.minecraft.world.attribute.LerpFunction.ofInteger().apply(al, pair[0], pair[1])),
+					i(net.minecraft.world.attribute.LerpFunction.ofColor().apply(al, pair[0], pair[1])));
+			}
+		}
+		row("LERPCONST", b(net.minecraft.world.attribute.LerpFunction.ofConstant() == net.minecraft.world.attribute.LerpFunction.CONSTANT));
+
+		// BoundedFloatFunction
+		net.minecraft.util.BoundedFloatFunction<Float> ident = net.minecraft.util.BoundedFloatFunction.IDENTITY;
+		StringBuilder bff = new StringBuilder();
+		for (float v : new float[]{0.0f, -0.0f, 1.5f, Float.NaN, Float.NEGATIVE_INFINITY}) {
+			bff.append(bff.length() == 0 ? "" : ",").append(f(ident.apply(v)));
+		}
+		net.minecraft.util.BoundedFloatFunction<String> cst = net.minecraft.util.BoundedFloatFunction.constant(2.5f);
+		net.minecraft.util.BoundedFloatFunction<String> com = ident.comap(Float::parseFloat);
+		row("BOUNDEDF", f(ident.minValue()), f(ident.maxValue()), bff.toString(), f(cst.apply("x")), f(cst.minValue()), f(cst.maxValue()),
+			f(com.apply("-3.25")), f(com.minValue()), f(com.maxValue()));
+
+		// AbortableIterationConsumer.Continuation and forConsumer
+		for (net.minecraft.util.AbortableIterationConsumer.Continuation c : net.minecraft.util.AbortableIterationConsumer.Continuation.values()) {
+			row("ABORTCONT", c.name(), i(c.ordinal()), b(c.shouldAbort()));
+		}
+		java.util.List<String> seen = new java.util.ArrayList<>();
+		net.minecraft.util.AbortableIterationConsumer<String> fc = net.minecraft.util.AbortableIterationConsumer.forConsumer(seen::add);
+		row("ABORTFOR", fc.accept("x").name(), fc.accept("y").name(), String.join(",", seen));
+
+		// ReputationEventType: each constant's toString, and that they are distinct objects
+		for (java.lang.reflect.Field fl : net.minecraft.world.entity.ai.village.ReputationEventType.class.getDeclaredFields()) {
+			if (fl.getType() == net.minecraft.world.entity.ai.village.ReputationEventType.class) {
+				row("REPEVENT", fl.getName(), esc(fl.get(null).toString()));
+			}
+		}
+		row("REPEVENTSAME", b(net.minecraft.world.entity.ai.village.ReputationEventType.TRADE == net.minecraft.world.entity.ai.village.ReputationEventType.TRADE),
+			b(net.minecraft.world.entity.ai.village.ReputationEventType.TRADE.equals(net.minecraft.world.entity.ai.village.ReputationEventType.GOLEM_KILLED)));
+
+		// packrat.Control.UNBOUND
+		net.minecraft.util.parsing.packrat.Control unb = net.minecraft.util.parsing.packrat.Control.UNBOUND;
+		boolean before = unb.hasCut();
+		unb.cut();
+		row("PACKRATCTL", b(before), b(unb.hasCut()));
+
+		// TimeSource.constant(v).get(unit) for every TimeUnit
+		for (long v : new long[]{0L, 1L, 999L, 1000L, 1500000L, -1L, -1500L, 86400000000000L, Long.MAX_VALUE, Long.MIN_VALUE}) {
+			net.minecraft.util.TimeSource.NanoTimeSource ts = net.minecraft.util.TimeSource.constant(v);
+			StringBuilder out = new StringBuilder();
+			for (java.util.concurrent.TimeUnit u : java.util.concurrent.TimeUnit.values()) {
+				out.append(out.length() == 0 ? "" : ",").append(u.name()).append('=').append(ts.get(u));
+			}
+			row("TIMESRC", l(v), l(ts.getAsLong()), out.toString());
+		}
+
+		// SkipAll.INSTANCE: every default answer
+		net.minecraft.nbt.visitors.SkipAll sa = net.minecraft.nbt.visitors.SkipAll.INSTANCE;
+		net.minecraft.nbt.TagType<?> tt = net.minecraft.nbt.ByteTag.TYPE;
+		row("SKIPALL", sa.visitEnd().name(), sa.visit("s").name(), sa.visit((byte) 1).name(), sa.visit((short) 1).name(), sa.visit(1).name(),
+			sa.visit(1L).name(), sa.visit(1.0f).name(), sa.visit(1.0).name(), sa.visit(new byte[0]).name(), sa.visit(new int[0]).name(),
+			sa.visit(new long[0]).name(), sa.visitList(tt, 3).name(), sa.visitElement(tt, 0).name(), sa.visitEntry(tt).name(),
+			sa.visitEntry(tt, "k").name(), sa.visitContainerEnd().name(), sa.visitRootEntry(tt).name());
 	}
 }
