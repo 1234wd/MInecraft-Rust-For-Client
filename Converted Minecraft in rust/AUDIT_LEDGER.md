@@ -515,3 +515,156 @@ marker. `session19_g`'s marker was deleted -- that batch is no longer unstarted.
 | `AABB.rs` module docs | the `todo!` counts disagree | The header says eight, the PORT-BLOCKED section says three, and the file has two. Noticed in session 21 and flagged in the file rather than re-counted. |
 | whole crate | `cargo fmt --check` fails repo-wide | Pre-existing; not a CI step. Untouched by policy. |
 | macOS ARM64 CI | `cargo test (debug)` fails | Pre-existing, non-gating, explicitly out of scope this session. Job logs need an authenticated `gh`. |
+
+# Audit Ledger — Session 22
+
+**Baseline:** `c36b0227` (session 21 CI repair) · **Branch:** `main`, level with `origin/main`
+at the start
+**Scope:** the small-file sweep. Every small, dependency-ready, simple file that could be
+converted safely, in verified sub-batches, with no fixed cap.
+**Audit method:** each Java source was read in full. Every expectation was taken from
+`_porting/test-data/small_probe.txt`, written by the new `_porting/java-oracle/src/p/SmallProbe.java`
+against the real 26.2 jar on JDK 25.0.4.1. Each sub-batch then got planted faults before the
+next one started.
+
+---
+
+## Summary
+
+| Category | Files | Status | Tests added |
+|---|---|---|---|
+| Behaviour ported and checked against the jar | 113 | VERIFIED | |
+| Declaration-only interfaces, API shape checked against the jar | 31 | VERIFIED | |
+| Ported except one documented side effect | 1 | PARTIAL (`PngInfo`) | |
+| **Converted** | **145** (3,378 Java lines) | | **+90** (`session22`) **+4** (`javacompat` unit) |
+| Candidates left SKELETON, each with a reason | 39 | SKELETON | |
+
+**Test count:** 623 → **717 passed**, 0 failed, 2 ignored, in debug and in release (at `9037fe23`).
+The first release run, at `11aae2f6`, had 2 failures: defect 1.
+**Open questions added:** #29, #30, #31, #32, #33.
+
+---
+
+## Files ported
+
+| Sub-batch | Files | Names |
+|---|---|---|
+| A | 19 | `GpuDeviceLossException` `GpuOutOfMemoryException` `BackendCreationException` `SurfaceException` `ShaderCompileException` `RealmsHttpException` `SilentInitException` `RunningOnDifferentThreadException` `EncodeJsonRpcException` `InvalidParameterJsonRpcException` `InvalidRequestJsonRpcException` `MethodNotFoundJsonRpcException` `CryptException` `CowFSDirectoryNotEmptyException` `CowFSFileAlreadyExistsException` `CowFSFileSystemException` `CowFSIllegalArgumentException` `CowFSNoSuchFileException` `CowFSNotDirectoryException` |
+| B | 15 | `Transparency` `GpuDebugOptions` `DeviceFeatures` `HintsAndWorkarounds` `SpvSampler` `SpvUniformBuffer` `SpvVariable` `UploadResult` `ScreenPosition` `FrameSize` `ChainModifiers` `RetryOptions` `ClientInfo` `ColumnPos` `Stopwatch` |
+| C | 14 | `BlendEquation` `DepthStencilState` `DisplayData` `WidgetSprites` `ModelLayerLocation` `PartPose` `UVPair` `ParticleRenderType` `HitboxRenderState` `GizmoStyle` `Atom` `EntitySpawnRequest` `DecoratedPotPattern` `LevelResource` |
+| D1 | 15 | `Std140SizeCalculator` `ScissorState` `SpvcUtil` `LoadingDotsText` `CubeDeformation` `MaterialDefinition` `SetOnceOptionState` `BlockDestructionProgress` `TickThrottler` `AnimationState` `WalkAnimationState` `FeatureFlagUniverse` `BeaconBeamOwner` `ChestLidController` `SavedData` |
+| D2 | 17 | `Optionull` `TextureSlot` `ClientAvatarState` `TranslucencyPointOfView` `VisibilitySet` `InvertableSetOptionState` `AtlasIds` `GameTestEvent` `TickTask` `NetworkDataOutputStream` `SegmentedAnglePrecision` `SmoothDouble` `ContextKey` `ResultField` `TemperatureVariants` `PistonMath` `ChunkEntities` |
+| E | 20 | `GlyphInfo` `ResourceHandle` `CharPredicate` `SelectableEntry` `TabOrderedElement` `CommandResultCallback` `HolderOwner` `SkipAll` `AbortableIterationConsumer` `BoundedFloatFunction` `TimeSource` `packrat.Control` `LerpFunction` `PlayerRideableJumping` `ai.control.Control` `ReputationEventType` `LevelHeightAccessor` `PaletteResize` `LightEventListener` `BooleanOp` |
+| F | 31 | `GpuFence` `CompiledRenderPipeline` `WindowEventHandler` `GpuQuery` `GpuQueryPool` `GpuSampler` `Destroyable` `ResettableOptionWidget` `DebugScreenDisplayer` `HasDifficultyReaction` `HasGamemasterPermissionReaction` `SlotSelectTime` `Dumpable` `TickableTexture` `ModelDebugName` `ResolvableModel` `AmbientSoundHandler` `TraceCallbacks` `Position` `TestPosFinder` `GizmoProperties` `StreamMemberEncoder` `ServerInfo` `SampleLogger` `SampleStorage` `ProfiledDuration` `SampledFloat` `ContainerData` `TickingBlockEntity` `ChunkStatusUpdateListener` `LevelCallback` |
+| G | 8 | `GpuFormat` `MultiblockChestResources` `BlockDisplayContext` `FieldSelector` `PngInfo` (PARTIAL) `SingleKeyCache` `FileResourceType` `BoundingBoxRenderable` |
+| H | 3 | `ChunkResult` `StaticCache2D` `CarvingMask` |
+| I | 2 | `ResourceDescriptor` `GaussianSampler` |
+| J | 1 | `ListenerTransform` |
+
+Two kinds of VERIFIED:
+
+* **Behaviour (113).** Every method was run against probe rows. Stateful classes were checked
+  by replaying the jar's own operation scripts.
+* **Declaration-only (31).** These interfaces have no bodies. Their methods, signatures and
+  modifiers were checked against the jar by reflection, and a compile-time `impl` shows the trait
+  can be implemented.
+
+Nothing was stubbed. The session added no `todo!()` and no `unimplemented!()`.
+
+---
+
+## Defects found and fixed
+
+### 1. Two session-22 tests passed only in debug · FIXED in `0713802e` (OPEN_QUESTIONS #33)
+
+* **`PISTON`.** The test compared the raw bits of a computed NaN. Release LLVM turns
+  `amount * -1.0` into a negation and flips the NaN's sign. Rust leaves those bits unspecified,
+  and Java can only see them through `doubleToRawLongBits`.
+  * Fix: a `nan_canon` helper, applied to both sides of the 8 computed groups.
+  * Non-NaN values are still compared bit for bit, and the bit-exact groups still compare raw
+    bits.
+  * Its own unit test, plus planted faults that turn a NaN into a number, show it hides no real
+    NaN bug.
+* **`BLOCKDISPCTX`.** The port was a zero-sized type, and the test compared two creates with
+  `std::ptr::eq`. In release they got the same address. This was a **port** defect: Java's class
+  exists to be compared by identity.
+  * Fix: each `create()` now takes a fresh id from an atomic counter, and equality compares that
+    id.
+  * The test: two creates differ, a copy is equal, and 400 creates across 4 threads are all
+    distinct.
+
+Debug passed both tests, so a debug-only verification would have marked them VERIFIED. The full
+release suite is what found them.
+
+### 2. Four planted faults first survived · FIXED (the probe was strengthened)
+
+| Fault | Why it survived | Input added |
+|---|---|---|
+| `NetworkDataOutputStream.writeFloat` NaN bits | no NaN with a payload was written | payload NaNs |
+| `LerpFunction.ofDegrees` `>=` changed to `>` | no `Math.abs(delta) == maxDelta` case | the pairs `{0,30}` and `{15,-15}` |
+| `BitSet.valueOf` trailing-zero trim; `CarvingMask` short-circuit order | no `CARVING` script reached the changed branch | `CARVING` scripts `arr:5,0,0:0 g:2:0:0`, `arr:0,0:3 g:0:3:0`, and a `g:-5:-5:5` step |
+
+In total, the planted-fault runs reported **KILLED 45 times** (36 in sub-batches A-I, 4 for
+defect 1, 5 for sub-batch J). The guard was checked too: a planted unclaimed `ZZFAKE` probe group made
+`every_probe_group_is_claimed` fail.
+
+### 3. A file wrongly listed as blocked · FIXED (converted as sub-batch J, `9037fe23`)
+
+`ListenerTransform` was listed as blocked on "`Vec3.hashCode` not ported". It is ported:
+`Vec3.java_hash_code`. Checking each blocked-list reason for the report found this. The file was
+converted, and the other 39 reasons were re-checked against their sources; each holds.
+
+### 4. Doc claims that the code did not support · CORRECTED before commit
+
+Several file headers said things the source or the probe did not support, and they were
+corrected:
+
+* the JSON-RPC error codes;
+* where `SilentInitException`, `CryptException` and `RealmsHttpException` are caught;
+* `ChestLidController`: the tenth step lands exactly on `1.0`;
+* `CubeDeformation`: `NONE.extend(-0.0)` is `+0.0`;
+* `Control`'s clamp rule;
+* how `TranslucencyPointOfView` and `InvertableSetOptionState` are used;
+* the purpose of `NetworkDataOutputStream`;
+* `StaticCache2D`'s `contains`/`get` disagreement.
+
+Remarks about where a class is used that nobody had checked were deleted rather than kept.
+
+---
+
+## Reviewed and correct -- PASS
+
+| Item | Finding |
+|---|---|
+| Record `hashCode` | The fold starts from **0**; `Objects.hash` starts from 1. Checked over every record in `REC`. |
+| Record float components | `Float.compare` / `Double.compare` semantics: NaN equals NaN, and `0.0` does not equal `-0.0`. Pinned by `FEQ`/`DEQ`. |
+| `TextureSlot.create` visibility | `private` in the jar, and so private in the port. The decompiled source is access-widened (#32). |
+| `small_probe.txt` | Regenerated byte-identical at the end of the session. |
+
+---
+
+## Test Results
+
+| Mode | Passed | Failed | Ignored |
+|---|---|---|---|
+| Debug | 717 | 0 | 2 |
+| Release | 717 | 0 | 2 |
+
+The 2 ignored tests are the same as in session 21. `e2849953`, which only clears two clippy
+warnings in `session22` test code, was followed by `session22` passing 90/90 in both modes.
+`cargo clippy --all-targets` reports nothing in the library or in session-22 code.
+
+---
+
+## Known Remaining Gaps
+
+| File(s) | Gap | Reason |
+|---|---|---|
+| 30 small candidates | SKELETON | A JDK type with no `javacompat` model: `UUID`, `CompletableFuture`, `Path`/NIO, `java.time`, `Formatter`/`DecimalFormat`, `Math.sin`/`pow`, and others. The table is in OPEN_QUESTIONS #29. |
+| `RecipeBookCategory`, `ReflectionBasedSerialization`, `Exclude`, `SuppressForbidden` | SKELETON | Nothing to port: an empty class, a marker, and two annotations. |
+| `MemoryReserve`, `CacheSlot` | SKELETON | `MemoryReserve` has no observable behaviour without a non-vanilla API. `CacheSlot` is a self-referential generic cleaner keyed on identity. |
+| `LayoutSettings`, `Ease`, `RotatingSectionStorage` | SKELETON | Over 100 lines and not trivial. |
+| `PngInfo` | PARTIAL | `validateHeader` leaves the caller's `ByteBuffer` big-endian on failure (#31). |
+| Identity-hash `hashCode`/`toString` | not ported | Not reproducible across JVM runs (#30). |
+| whole crate | `cargo fmt --check` fails | Pre-existing, and not a CI step. Only this session's files were formatted. |
+| macOS ARM64 CI | `cargo test (debug)` failing before this session | Pre-existing and non-gating. Not claimed to pass. |

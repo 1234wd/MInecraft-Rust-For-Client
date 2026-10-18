@@ -1322,3 +1322,142 @@ one bin. `nbt_probe.txt` already carries `HMOP` (1,730 rows), `HMRES`, `HMCOPY`,
 Order: JDK-order map -> `CompoundTag` -> `ListTag` -> delete the two groups from BLOCKED and
 claim `GEN`/`CASE`/`CASEW`/`IDENT`/`LGET`/`CGET` -> `NbtIo` (claims `READ`, `CASED`) ->
 the `visitors` subpackage -> `SnbtGrammar`/`TagParser`/`SnbtPrinterTagVisitor`.
+
+# Session 22 - the small-file sweep: 145 files, 144 VERIFIED
+
+Baseline `c36b0227` (session 21's Windows-job repair), `main` level with `origin/main`. The brief:
+convert as many small, simple, dependency-ready files as can be done safely, in verified
+sub-batches, with no fixed cap and nothing padded in.
+
+## What landed
+
+**145 files, 3,378 Java lines: 144 VERIFIED, 1 PARTIAL.** Of the VERIFIED files, 113 are checked for
+behaviour against the jar and 31 are declaration-only interfaces whose API shape is checked against
+the jar.
+
+| sub-batch | commit | files | what |
+|---|---|---|---|
+| A | `3f4d8968` | 19 | exception classes: message, cause, `toString`, the JSON-RPC error codes |
+| B | `10e4477b` | 15 | records: generated `equals`/`hashCode`/`toString` |
+| C | `240267ca` | 14 | records with float, `Identifier`, enum and `OptionalInt` components |
+| D1 | `48d4bdbb` | 15 | small stateful classes, checked by jar scripts replayed in Rust |
+| D2 | `2d5ba618` | 17 | more stateful classes; Java `signum`/`compareTo`/`round(float)` added to `javacompat` |
+| E | `74d424dd` | 20 | interfaces with defaults, constants and factories |
+| F | `85c4aa6b` | 31 | declaration-only interfaces; API shape checked against the jar |
+| G | `89de45e1` | 8 | `GpuFormat` (56 formats) and 6 more VERIFIED; `PngInfo` PARTIAL |
+| H | `371ce6ed` | 3 | `ChunkResult`, `StaticCache2D`, `CarvingMask` (plus a `javacompat` `BitSet`) |
+| I | `161c8bc4` | 2 | `ResourceDescriptor`, `GaussianSampler` |
+| - | `11aae2f6` | - | rustfmt on the session's files only |
+| - | `0713802e` | - | the two release-only failures (below) |
+| J | `9037fe23` | 1 | `ListenerTransform`, which had been listed as blocked by mistake (below) |
+| - | `e2849953` | - | the two clippy warnings in session-22 tests |
+
+`PngInfo` is PARTIAL for one side effect only (OPEN_QUESTIONS #31). Every return value and every
+exception text it produces matches the jar.
+
+## The oracle
+
+`_porting/java-oracle/src/p/SmallProbe.java` runs against the real 26.2 jar on JDK 25.0.4.1 and
+writes `_porting/test-data/small_probe.txt`: 9,201 rows in 129 groups. It regenerated
+**byte-identical** at the end of the session. Values whose source is an identity hash are written
+as `-`, so the file stays reproducible (OPEN_QUESTIONS #30).
+
+The new `session22` target holds 90 tests. Its `every_probe_group_is_claimed` guard fails if a group
+in the file has no test reading it. A planted unclaimed `ZZFAKE` group made it fail, as it should.
+
+Stateful classes are checked by scripts. The probe drives the Java object through a list of
+operations, writes the script and its results into the row, and the Rust test replays the same
+script from that row. Private fields the probe reads by reflection are compared through the derived
+`Debug` text, so no test-only API was added to any port.
+
+## `javacompat` additions
+
+* `throwable.rs` (new): `Throwable.toString`, and the message a cause gives an exception.
+* `java_object.rs`: the record `hashCode` fold, `Objects.hash`, and `Float`/`Double` equality and
+  hashing.
+* `time_unit.rs` (new): `TimeUnit`.
+* `bit_set.rs` (new): the part of `BitSet` that `CarvingMask` uses, with the JDK's exception texts.
+* `java_lang`: `signum`, `String.compareTo`, and `Math.round(float)`.
+
+## Java semantics worth recording
+
+* A record's generated `hashCode` folds `31 * h + c` starting from **0**. `Objects.hash` starts
+  from **1**. A port that uses one for the other is wrong in every case.
+* Float and double record components compare with `Float.compare`/`Double.compare`. So NaN equals
+  NaN, and `0.0` does not equal `-0.0`.
+* `TextureSlot.create` is `private` in the jar and `public` in `minecraft-decompiled/`. That source
+  is Fabric access-widened, in 944 places across 179 files (OPEN_QUESTIONS #32).
+* `HexFormat.of().withUpperCase().withPrefix("0x").toHexDigits(long)` ignores the prefix. `PngInfo`'s error
+  message is therefore `FFD8FFE000104A46`, not `0xFFD8FFE000104A46`.
+* `StaticCache2D.contains` can be true where `get` returns null: near `Integer.MAX_VALUE` the
+  range wraps.
+* `ChunkResult.Fail` keeps its error *supplier*. `getError` runs the supplier again on every call,
+  and `map` passes the same supplier on unchanged.
+
+## The release run caught two things debug did not (OPEN_QUESTIONS #33)
+
+Before the push, `cargo test --release` failed two session-22 tests that had passed in debug:
+
+1. **`PISTON`.** Release LLVM turns `amount * -1.0` into a negation, which flips a NaN's sign bit.
+   Rust leaves the bits of a computed NaN unspecified, and Java can only see them through
+   `doubleToRawLongBits`. A new test helper, `nan_canon`, now makes all NaNs compare equal, on
+   both sides, for the 8 groups whose values are computed. Every other value is still compared
+   bit for bit.
+2. **`BLOCKDISPCTX`.** `BlockDisplayContext` was a zero-sized type, and its test used
+   `std::ptr::eq`. In release, two creates got the same address. Java's class exists to be
+   compared by identity, so the port now takes a fresh id from an atomic counter on every
+   `create()`.
+
+Four planted faults were caught after the fix. Two of them turned a NaN into a number, which shows
+`nan_canon` does not hide a real NaN bug.
+
+## Planted faults
+
+Each sub-batch was followed by planted faults, applied by a script that restores each file
+byte-for-byte. The run reported **KILLED 45 times**: 36 during sub-batches A-I, 4 for the
+release fixes and 5 for J. **4 faults first SURVIVED**:
+
+* `NetworkDataOutputStream.writeFloat`'s NaN bits;
+* `LerpFunction.ofDegrees`' `>=` boundary;
+* `BitSet`'s trailing-word trim;
+* `CarvingMask`'s short-circuit order.
+
+Each one was killed after the probe gained the missing input.
+
+## Not converted: 39 of the 184 candidates
+
+The candidates came from a strict filter. Each one:
+
+* is not a `package-info`;
+* has no `SKELETON` dependency in the manifest;
+* imports nothing from DFU, netty, Guava, fastutil, gson, LWJGL, JOML or logging.
+
+| reason | count | files |
+|---|---|---|
+| no behaviour to port (an empty class body, a marker, or an annotation) | 4 | `RecipeBookCategory`, `ReflectionBasedSerialization`, `Exclude`, `SuppressForbidden` |
+| a JDK type with no `javacompat` model (OPEN_QUESTIONS #29) | 30 | see the table in #29 |
+| no observable behaviour without a non-vanilla API | 1 | `MemoryReserve` |
+| a self-referential generic cleaner keyed on identity | 1 | `CacheSlot` |
+| over 100 lines and not trivial | 3 | `LayoutSettings` (145), `Ease` (170, with `Math.pow`/`sin`), `RotatingSectionStorage` (174) |
+
+`ListenerTransform` was first in this list, as blocked on `Vec3.hashCode`. That reason was wrong:
+checking every reason for the report turned up `Vec3.java_hash_code`. It was converted as
+sub-batch J. The other 39 reasons were then re-checked against their sources, and each holds.
+
+## Gates
+
+| Gate | Result |
+|---|---|
+| `cargo check --all-targets --locked` | clean, 0 warnings |
+| `cargo test --locked --no-fail-fast` | **717 passed, 0 failed, 2 ignored** at `9037fe23` (was 623/0/2) |
+| `cargo test --locked --release --no-fail-fast` | **717 passed, 0 failed, 2 ignored** at `9037fe23`. The first release run, at `11aae2f6`, failed 2 (above) |
+| `cargo clippy --all-targets --locked` | exit 0, with nothing in the library or in session-22 code. 15 warnings remain, all in older test files (`parity_batch2`, `parity_jvm_math`, `parity_mth`, `session19_a`, `session19_h`) |
+| host-transcendental guard | pass, debug and release |
+| `python _porting/tools/mirror.py --check` | OK, 7055 java files |
+| `python _porting/tools/check_mirror.py` | OK, 1:1, baseline MATCHES |
+| `small_probe.txt` regenerated | byte-identical |
+| rustfmt on the session's `.rs` files | clean. `cargo fmt --check` still fails repo-wide, as before; it is not a CI step |
+| macOS ARM64 CI | its `cargo test (debug)` job was already failing and is non-gating. Not run locally, and not claimed to pass |
+
+`e2849953` changed only `tests/session22/f_interfaces.rs`. After it, `session22` passed 90/90 in
+debug and in release, and clippy was re-run.
