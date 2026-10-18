@@ -1,10 +1,11 @@
 //! Port of: net/minecraft/nbt/Tag.java
 //! Java class(es): net.minecraft.nbt.Tag
-//! Status: PARTIAL
+//! Status: VERIFIED
 //!
-//! Session 21. The constants, the tag-value representation and every `default` method of
-//! the interface are ported. **Two of the thirteen tag kinds are not yet in the enum**:
-//! `ListTag` and `CompoundTag`. See "What is missing" below.
+//! Session 21 ported the constants, the tag-value representation and every `default` method of
+//! the interface for eleven tag kinds; session 23 added the last two, `ListTag` and
+//! `CompoundTag`, with `asList()`/`asCompound()` and their arms of every dispatch below. All
+//! thirteen kinds and every member of the interface are now ported.
 //!
 //! # A `sealed interface` BECOMES AN ENUM, NOT A TRAIT OBJECT
 //!
@@ -37,32 +38,37 @@
 //! override only matters because `Tag`'s version would route through `asNumber`. Reproduced
 //! as written rather than collapsed.
 //!
-//! # What is missing, and why
+//! # `copy()` IS NOT `Clone` FOR THE CONTAINERS
 //!
-//! `ListTag` and `CompoundTag` are still SKELETON, so [`Tag`] has no variant for them and
-//! `asList()` / `asCompound()` are **not** ported. They could only ever return `None`
-//! here, and a method that is hard-wired to one answer is worse than an absent one: a
-//! caller writing `if let Some(c) = tag.as_compound()` would compile, never fire, and look
-//! correct. Leaving them out makes that a compile error instead.
+//! `CompoundTag.copy()` builds a NEW `HashMap` and re-inserts every entry in iteration order, so
+//! the copy's table is sized for its contents and its iteration order can differ from the
+//! original's (a compound that grew and shrank has a big table; its copy does not). Rust's
+//! `Clone` duplicates the table as it stands. So [`Tag::copy`] dispatches to
+//! `CompoundTag::copy` / `ListTag::copy`, and `Clone` is kept only as the Rust-side duplicate --
+//! it is never what a ported `copy()` does.
 //!
-//! `CompoundTag` is not merely "more of the same". It wraps a `java.util.HashMap`, and
-//! `CompoundTag.write` serialises in **map iteration order**, so byte-exact NBT output
-//! needs a map that reproduces JDK bucket order -- hash spreading, resize thresholds and
-//! treeification included. `nbt_probe.txt` already carries the `HMOP`/`HMRES`/`HMCOPY`
-//! rows for it. That is the next batch, deliberately not started here rather than
-//! half-done.
+//! # `hashCode` CAN BE UNPORTABLE: [`Tag::java_hash_code`] RETURNS `Option`
 //!
-//! Consequently [`accept`](Tag::accept) covers eleven kinds and
-//! [`crate::net::minecraft::nbt::TagVisitor`] declares eleven methods. When the containers
-//! land, both grow and every `match` in the crate stops compiling until it handles them --
-//! which is the point of using an enum.
+//! `EndTag` does not override `hashCode`, so its hash -- and the hash of any compound or list
+//! holding one -- is `Object.hashCode()`, an identity hash that differs between JVM runs. Those
+//! cases return `None` rather than a made-up number; every other tree hashes exactly as Java
+//! does. (`EndTag` inside a container is malformed anyway: it is written but cannot be read back.)
+//!
+//! # Ownership instead of aliasing
+//!
+//! Java passes tags by reference: `outer.put("x", inner); inner.putInt("a", 1);` changes what
+//! `outer` holds. Here `put` takes the tag by value, so the same edit is
+//! `outer.get_compound_mut("x")`. Every Java getter that hands out a live child has a `_mut`
+//! twin for this reason.
 
 use crate::net::minecraft::nbt::ByteArrayTag::ByteArrayTag;
 use crate::net::minecraft::nbt::ByteTag::ByteTag;
+use crate::net::minecraft::nbt::CompoundTag::CompoundTag;
 use crate::net::minecraft::nbt::DoubleTag::DoubleTag;
 use crate::net::minecraft::nbt::FloatTag::FloatTag;
 use crate::net::minecraft::nbt::IntArrayTag::IntArrayTag;
 use crate::net::minecraft::nbt::IntTag::IntTag;
+use crate::net::minecraft::nbt::ListTag::ListTag;
 use crate::net::minecraft::nbt::LongArrayTag::LongArrayTag;
 use crate::net::minecraft::nbt::LongTag::LongTag;
 use crate::net::minecraft::nbt::NumericTag::NumericTag;
@@ -113,8 +119,8 @@ pub const MAX_DEPTH: i32 = 512;
 
 /// Port of the `sealed interface net.minecraft.nbt.Tag`.
 ///
-/// See the module docs for why this is an enum. `ListTag` and `CompoundTag` variants are
-/// not here yet.
+/// See the module docs for why this is an enum. `PartialEq` is Java's `equals` for every kind
+/// (each kind's own `PartialEq` is).
 #[derive(Clone, Debug, PartialEq)]
 pub enum Tag {
     /// `EndTag.INSTANCE`. A unit variant: `EndTag` has no state and a private constructor.
@@ -139,6 +145,10 @@ pub enum Tag {
     IntArray(IntArrayTag),
     /// `LongArrayTag`.
     LongArray(LongArrayTag),
+    /// `ListTag`.
+    List(ListTag),
+    /// `CompoundTag`.
+    Compound(CompoundTag),
 }
 
 impl Tag {
@@ -156,6 +166,8 @@ impl Tag {
             Tag::String(_) => TAG_STRING,
             Tag::IntArray(_) => TAG_INT_ARRAY,
             Tag::LongArray(_) => TAG_LONG_ARRAY,
+            Tag::List(_) => TAG_LIST,
+            Tag::Compound(_) => TAG_COMPOUND,
         }
     }
 
@@ -181,17 +193,42 @@ impl Tag {
             Tag::String(t) => t.size_in_bytes(),
             Tag::IntArray(t) => t.size_in_bytes(),
             Tag::LongArray(t) => t.size_in_bytes(),
+            Tag::List(t) => t.size_in_bytes(),
+            Tag::Compound(t) => t.size_in_bytes(),
         }
     }
 
     /// Port of `Tag#copy()`.
     ///
-    /// `PrimitiveTag` and `EndTag` return `this` because they are immutable; the array and
-    /// container kinds deep-copy. Rust's `Clone` on this enum does the same thing by
-    /// construction -- a `clone` of `Tag::Byte` copies nine bytes of stack and a `clone` of
-    /// `Tag::ByteArray` copies the `Vec` -- so this is `clone()` with the Java name on it.
+    /// `PrimitiveTag` and `EndTag` return `this` because they are immutable, and the array kinds
+    /// copy their array -- for those `clone()` is the same thing. The containers deep-copy
+    /// through their own `copy()`, which re-inserts (see the module docs).
     pub fn copy(&self) -> Tag {
-        self.clone()
+        match self {
+            Tag::List(t) => Tag::List(t.copy()),
+            Tag::Compound(t) => Tag::Compound(t.copy()),
+            other => other.clone(),
+        }
+    }
+
+    /// Port of `Tag#hashCode()` -- each kind's override -- or `None` where Java's answer is an
+    /// identity hash: `EndTag`, and any container that holds one. See the module docs.
+    pub fn java_hash_code(&self) -> Option<i32> {
+        Some(match self {
+            Tag::End => return None,
+            Tag::Byte(t) => t.java_hash_code(),
+            Tag::Short(t) => t.java_hash_code(),
+            Tag::Int(t) => t.java_hash_code(),
+            Tag::Long(t) => t.java_hash_code(),
+            Tag::Float(t) => t.java_hash_code(),
+            Tag::Double(t) => t.java_hash_code(),
+            Tag::ByteArray(t) => t.java_hash_code(),
+            Tag::String(t) => t.java_hash_code(),
+            Tag::IntArray(t) => t.java_hash_code(),
+            Tag::LongArray(t) => t.java_hash_code(),
+            Tag::List(t) => return t.java_hash_code(),
+            Tag::Compound(t) => return t.java_hash_code(),
+        })
     }
 
     /// Port of `Tag#write(DataOutput)`.
@@ -212,6 +249,8 @@ impl Tag {
             Tag::String(t) => t.write(output),
             Tag::IntArray(t) => t.write(output),
             Tag::LongArray(t) => t.write(output),
+            Tag::List(t) => t.write(output),
+            Tag::Compound(t) => t.write(output),
         }
     }
 
@@ -229,6 +268,8 @@ impl Tag {
             Tag::String(t) => visitor.visit_string(t),
             Tag::IntArray(t) => visitor.visit_int_array(t),
             Tag::LongArray(t) => visitor.visit_long_array(t),
+            Tag::List(t) => visitor.visit_list(t),
+            Tag::Compound(t) => visitor.visit_compound(t),
         }
     }
 
@@ -331,6 +372,22 @@ impl Tag {
         }
     }
 
+    /// Port of `Tag#asCompound()`: `Optional.of(this)` for a `CompoundTag`, empty otherwise.
+    pub fn as_compound(&self) -> Option<&CompoundTag> {
+        match self {
+            Tag::Compound(t) => Some(t),
+            _ => None,
+        }
+    }
+
+    /// Port of `Tag#asList()`: `Optional.of(this)` for a `ListTag`, empty otherwise.
+    pub fn as_list(&self) -> Option<&ListTag> {
+        match self {
+            Tag::List(t) => Some(t),
+            _ => None,
+        }
+    }
+
     /// Port of `Tag#accept(StreamTagVisitor)`.
     pub fn accept_stream(
         &self,
@@ -348,6 +405,8 @@ impl Tag {
             Tag::String(t) => t.accept_stream(visitor),
             Tag::IntArray(t) => t.accept_stream(visitor),
             Tag::LongArray(t) => t.accept_stream(visitor),
+            Tag::List(t) => t.accept_stream(visitor),
+            Tag::Compound(t) => t.accept_stream(visitor),
         }
     }
 

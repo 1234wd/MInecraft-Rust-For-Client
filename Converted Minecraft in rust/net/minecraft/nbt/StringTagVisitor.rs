@@ -1,11 +1,20 @@
 //! Port of: net/minecraft/nbt/StringTagVisitor.java
 //! Java class(es): net.minecraft.nbt.StringTagVisitor
-//! Status: PARTIAL
+//! Status: VERIFIED
 //!
-//! Session 21. Eleven of the thirteen `visitX` methods plus `build()` and the private
-//! `handleKeyEscape`. `visitList` and `visitCompound` arrive with `ListTag` and
-//! `CompoundTag`. Verified against the `PRIM`, `QUOTE` and `CASEW` rows of
-//! `_porting/test-data/nbt_probe.txt` by `_porting/tests/session19_g.rs`.
+//! Session 21 ported eleven of the thirteen `visitX` methods plus `build()` and the private
+//! `handleKeyEscape`; session 23 added `visitList` and `visitCompound` with `ListTag` and
+//! `CompoundTag`. Verified against the `PRIM`, `QUOTE` and `OTHER` rows of
+//! `_porting/test-data/nbt_probe.txt` by `_porting/tests/session19_g.rs`, and against the
+//! `toString` of every `GEN`/`CASE`/`CASEW`/`CTOPS`/`LTOPS` tree by `_porting/tests/session23.rs`.
+//!
+//! # `visitCompound` SORTS THE KEYS -- BY `String.compareTo`
+//!
+//! `entries.sort(Entry.comparingByKey())`: unlike `CompoundTag.write`, the text form does NOT
+//! follow `HashMap` order, so `toString` is the same for two compounds with the same entries
+//! whatever their history. The comparison is `String.compareTo`, over UTF-16 code units --
+//! which is not Rust's `str` ordering (UTF-8 bytes) once a key has a character at or above
+//! U+E000 next to a supplementary one -- so the sort uses `java_lang::string_compare_to`.
 //!
 //! This is the SNBT writer behind every `Tag.toString()`, so it is the thing that decides
 //! what a tag looks like in a crash log, in `/data get` output and in a command's error.
@@ -45,12 +54,15 @@
 //! never through a well-formed compound. Pinned by the `CASEW end_value` oracle row rather
 //! than assumed.
 
+use crate::javacompat::java_lang;
 use crate::net::minecraft::nbt::ByteArrayTag::ByteArrayTag;
 use crate::net::minecraft::nbt::ByteTag::ByteTag;
+use crate::net::minecraft::nbt::CompoundTag::CompoundTag;
 use crate::net::minecraft::nbt::DoubleTag::DoubleTag;
 use crate::net::minecraft::nbt::FloatTag::FloatTag;
 use crate::net::minecraft::nbt::IntArrayTag::IntArrayTag;
 use crate::net::minecraft::nbt::IntTag::IntTag;
+use crate::net::minecraft::nbt::ListTag::ListTag;
 use crate::net::minecraft::nbt::LongArrayTag::LongArrayTag;
 use crate::net::minecraft::nbt::LongTag::LongTag;
 use crate::net::minecraft::nbt::NumericTag::NumericTag;
@@ -68,7 +80,9 @@ pub struct StringTagVisitor {
 impl StringTagVisitor {
     /// Port of the implicit no-arg constructor.
     pub fn new() -> Self {
-        Self { builder: String::new() }
+        Self {
+            builder: String::new(),
+        }
     }
 
     /// Port of `StringTagVisitor#build()`.
@@ -118,7 +132,8 @@ fn unquoted_key_match(input: &str) -> bool {
 impl TagVisitor for StringTagVisitor {
     /// Port of `StringTagVisitor#visitString(StringTag)`.
     fn visit_string(&mut self, tag: &StringTagValue) {
-        self.builder.push_str(&StringTag::quote_and_escape(tag.value()));
+        self.builder
+            .push_str(&StringTag::quote_and_escape(tag.value()));
     }
 
     /// Port of `StringTagVisitor#visitByte(ByteTag)`.
@@ -199,6 +214,38 @@ impl TagVisitor for StringTagVisitor {
             self.builder.push('L');
         }
         self.builder.push(']');
+    }
+
+    /// Port of `StringTagVisitor#visitList(ListTag)`: `[a,b,c]`, elements in list order.
+    fn visit_list(&mut self, tag: &ListTag) {
+        self.builder.push('[');
+        for i in 0..tag.size() {
+            if i != 0 {
+                self.builder.push(',');
+            }
+            tag.get(i).accept(self);
+        }
+        self.builder.push(']');
+    }
+
+    /// Port of `StringTagVisitor#visitCompound(CompoundTag)`: `{k:v,...}` with the entries
+    /// sorted by key (`Entry.comparingByKey()`, i.e. `String.compareTo`) and each key through
+    /// [`handle_key_escape`](StringTagVisitor::handle_key_escape).
+    fn visit_compound(&mut self, tag: &CompoundTag) {
+        self.builder.push('{');
+        let mut entries: Vec<(&String, &crate::net::minecraft::nbt::Tag::Tag)> =
+            tag.entry_set().collect();
+        // A stable sort, as `List.sort` is; the keys are distinct, so stability cannot show.
+        entries.sort_by(|a, b| java_lang::string_compare_to(a.0, b.0).cmp(&0));
+        for (i, (key, value)) in entries.into_iter().enumerate() {
+            if i != 0 {
+                self.builder.push(',');
+            }
+            self.handle_key_escape(key);
+            self.builder.push(':');
+            value.accept(self);
+        }
+        self.builder.push('}');
     }
 
     /// Port of `StringTagVisitor#visitEnd(EndTag)`.

@@ -10,10 +10,11 @@
 //!
 //! # What is NOT covered here, and why
 //!
-//! `ListTag` and `CompoundTag` are still SKELETON, so the `LGET`, `CGET`, `READ`, `GEN`,
-//! `CASE*`, `HM*`, `IDENT` and `ACC`-via-`NbtIo` groups have no port to check yet, and the
-//! `list_*` rows of `IDX` and entries 7 and 8 of `OTHER` are skipped by name rather than
-//! silently dropped -- see [`unstarted_groups_are_declared`], which fails if that list
+//! Session 23 ported `ListTag` and `CompoundTag`, and the JDK-order `HashMap` under them. The
+//! tree, getter and HashMap groups (`GEN`, `CASE*`, `IDENT`, `LGET`, `CGET`, `HM*`, and session
+//! 23's `TEQ`/`CTOPS`/`LTOPS`/`TLOAD`) are checked by `tests/session23.rs`; the `list_*` rows of
+//! `IDX` and entries 7 and 8 of `OTHER` are checked here. `READ` -- `NbtIo` over crafted streams
+//! -- is still blocked on `NbtIo`. [`unstarted_groups_are_declared`] fails if that bookkeeping
 //! drifts out of step with what the file contains.
 
 #[path = "support/consts_dump.rs"]
@@ -29,10 +30,12 @@ use minecraft_rust::javacompat::java_io::{
 use minecraft_rust::net::minecraft::nbt::ByteArrayTag::ByteArrayTag;
 use minecraft_rust::net::minecraft::nbt::ByteTag::ByteTag;
 use minecraft_rust::net::minecraft::nbt::CollectionTag::CollectionTag;
+use minecraft_rust::net::minecraft::nbt::CompoundTag::CompoundTag;
 use minecraft_rust::net::minecraft::nbt::DoubleTag::DoubleTag;
 use minecraft_rust::net::minecraft::nbt::FloatTag::FloatTag;
 use minecraft_rust::net::minecraft::nbt::IntArrayTag::IntArrayTag;
 use minecraft_rust::net::minecraft::nbt::IntTag::IntTag;
+use minecraft_rust::net::minecraft::nbt::ListTag::ListTag;
 use minecraft_rust::net::minecraft::nbt::LongArrayTag::LongArrayTag;
 use minecraft_rust::net::minecraft::nbt::LongTag::LongTag;
 use minecraft_rust::net::minecraft::nbt::NbtAccounter::NbtAccounter;
@@ -567,7 +570,9 @@ fn array_tag_collection_edits_match_the_jar() {
     assert_eq!(la.is_empty().to_string(), want_empty, "COLL longarray isEmpty");
 }
 
-/// The index-error messages for the three array tags.
+/// The index-error messages for the three array tags, and (session 23) for `ListTag`, whose
+/// errors are `java.util.ArrayList`'s: `Objects.checkIndex` for `get`/`set`/`remove`/`setTag`
+/// and `rangeCheckForAdd` ("Index: n, Size: m") for `add(int, Tag)`/`addTag`.
 ///
 /// `get`/`setTag`/`remove` raise the JDK's `ArrayIndexOutOfBoundsException` text, while
 /// `addTag` goes through commons-lang3's `ArrayUtils.add` and raises
@@ -623,18 +628,51 @@ fn array_tag_index_errors_match_the_jar() {
     check("la_remove_3", &mut || {
         LongArrayTag::new(vec![1, 2, 3]).remove(3);
     });
+
+    // Session 23: `ListTag`, over the probe's `[1, 2, 3]` of `IntTag`s.
+    let list = || {
+        let mut l = ListTag::new();
+        for v in 1..=3 {
+            l.add(IntTag::value_of(v).into_tag());
+        }
+        l
+    };
+    let zero = || IntTag::value_of(0).into_tag();
+    check("list_get_3", &mut || {
+        list().get(3);
+    });
+    check("list_get_neg", &mut || {
+        list().get(-1);
+    });
+    check("list_set_3", &mut || {
+        list().set(3, zero());
+    });
+    check("list_add_4", &mut || {
+        list().add_i32_tag(4, zero());
+    });
+    check("list_add_neg", &mut || {
+        list().add_i32_tag(-1, zero());
+    });
+    check("list_remove_3", &mut || {
+        list().remove(3);
+    });
+    check("list_settag_3", &mut || {
+        CollectionTag::set_tag(&mut list(), 3, &zero());
+    });
+    check("list_addtag_4", &mut || {
+        CollectionTag::add_tag(&mut list(), 4, &zero());
+    });
+    assert_eq!(rows.len(), 19, "every IDX row is checked above");
 }
 
-/// `toString`, `hashCode`, `sizeInBytes` and the `asX()` views for the non-numeric kinds.
-///
-/// Entries 7 and 8 of the probe's array are a `ListTag` and a `CompoundTag`; they are
-/// skipped here and declared in [`unstarted_groups_are_declared`].
+/// `toString`, `hashCode`, `sizeInBytes` and the `asX()` views for the non-numeric kinds,
+/// including (since session 23) entries 7 and 8, the empty `ListTag` and `CompoundTag`.
 #[test]
 fn non_numeric_tag_views_match_the_jar() {
     let rows = probe::rows("OTHER");
     assert_eq!(rows.len(), 9, "OTHER row count");
 
-    // The probe's `others` array, entries 0..=6. 7 = new ListTag(), 8 = new CompoundTag().
+    // The probe's `others` array.
     let tags: Vec<(usize, Tag)> = vec![
         (0, StringTagValue::value_of("").into_tag()),
         (1, StringTagValue::value_of("abc").into_tag()),
@@ -643,7 +681,10 @@ fn non_numeric_tag_views_match_the_jar() {
         (4, IntArrayTag::new(vec![1, 2, -3]).into_tag()),
         (5, LongArrayTag::new(vec![1, 2, -3, i64::MIN]).into_tag()),
         (6, ByteArrayTag::new(vec![]).into_tag()),
+        (7, ListTag::new().into_tag()),
+        (8, CompoundTag::new().into_tag()),
     ];
+    assert_eq!(tags.len(), rows.len(), "every OTHER entry is checked");
 
     for (i, tag) in &tags {
         let r = rows
@@ -653,13 +694,7 @@ fn non_numeric_tag_views_match_the_jar() {
 
         assert_eq!(probe::esc(&tag.to_string()), r[2], "OTHER {i} toString");
 
-        let hash = match tag {
-            Tag::String(t) => t.java_hash_code(),
-            Tag::ByteArray(t) => t.java_hash_code(),
-            Tag::IntArray(t) => t.java_hash_code(),
-            Tag::LongArray(t) => t.java_hash_code(),
-            other => panic!("unexpected OTHER tag {other:?}"),
-        };
+        let hash = tag.java_hash_code().expect("no EndTag among the OTHER entries");
         assert_eq!(hash.to_string(), r[3], "OTHER {i} hashCode");
         assert_eq!(tag.size_in_bytes().to_string(), r[4], "OTHER {i} sizeInBytes");
 
@@ -1128,22 +1163,19 @@ fn unstarted_groups_are_declared() {
     /// Checked by `tests/session23.rs` (session 23: the JDK-order map, `CompoundTag`, `ListTag`).
     /// Each must be read there -- `rows("<group>")` in one of [`SESSION23_SOURCES`] -- or this
     /// test fails, so moving a group here is not a way to stop checking it.
-    const COVERED_IN_SESSION23: &[&str] =
-        &["HMOP", "HMRES", "HMCOPY", "HMINT", "HMINTRES", "HMSTEP", "HMEQ"];
-
-    /// Blocked on `ListTag` / `CompoundTag` / `NbtIo` / the `visitors` package, none of
-    /// which is ported. Delete an entry when its port lands, and the `COVERED` check will
-    /// then demand a test for it.
-    const BLOCKED: &[(&str, &str)] = &[
-        ("GEN", "the shared tree generator: needs CompoundTag and ListTag"),
-        ("READ", "NbtIo.read over crafted streams: needs NbtIo"),
-        ("CASE", "tree round trips: needs CompoundTag and ListTag"),
-        ("CASED", "direct writeUTF of over-long strings: needs NbtIo"),
-        ("CASEW", "tree write/toString: needs CompoundTag and ListTag"),
-        ("IDENT", "CompoundTag's identify() fast path: needs CompoundTag"),
-        ("LGET", "ListTag getters: needs ListTag"),
-        ("CGET", "CompoundTag getters: needs CompoundTag"),
+    const COVERED_IN_SESSION23: &[&str] = &[
+        "HMOP", "HMRES", "HMCOPY", "HMINT", "HMINTRES", "HMSTEP", "HMEQ", "GEN", "CASE", "CASEW",
+        "CASED", "IDENT", "LGET", "CGET", "TEQ", "CTOPS", "LTOPS", "TLOAD", "TACC",
     ];
+
+    /// Blocked on an unported class. Delete an entry when its port lands, and the `COVERED`
+    /// check will then demand a test for it. (`GEN`/`CASE` are covered in session 23 except
+    /// their `PW`/`PU`/`CF*`/`SF*` sub-rows, which need the `visitors` package; session 23's
+    /// `c_trees::UNCHECKED_SUB_ROWS` names them.)
+    const BLOCKED: &[(&str, &str)] = &[(
+        "READ",
+        "NbtIo.read/readAnyTag/readUnnamedTag/parse over crafted streams: needs NbtIo (and          CollectToTag for the parse reader); CompoundTag/ListTag's own TYPE.load on the same          kind of input is covered by session 23's TLOAD",
+    )];
 
     for group in COVERED_IN_SESSION23 {
         let claim = format!("rows(\"{group}\")");
@@ -1207,6 +1239,9 @@ fn unstarted_groups_are_declared() {
 const SESSION23_SOURCES: &[&str] = &[
     include_str!("session23.rs"),
     include_str!("session23/a_hashmap.rs"),
+    include_str!("session23/b_support.rs"),
+    include_str!("session23/c_trees.rs"),
+    include_str!("session23/d_ops.rs"),
 ];
 
 /// Helper: `(float) Math.PI`, spelled out so the round-trip corpus has a value with a long

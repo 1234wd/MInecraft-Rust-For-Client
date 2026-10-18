@@ -17,11 +17,20 @@ use nbt_probe::*;
 
 #[path = "session23/a_hashmap.rs"]
 mod a_hashmap;
+#[path = "session23/b_support.rs"]
+mod b_support;
+#[path = "session23/c_trees.rs"]
+mod c_trees;
+#[path = "session23/d_ops.rs"]
+mod d_ops;
 
 /// The source of every module in this target, for the `rows("...")` scans.
 pub const SOURCES: &[&str] = &[
     include_str!("session23.rs"),
     include_str!("session23/a_hashmap.rs"),
+    include_str!("session23/b_support.rs"),
+    include_str!("session23/c_trees.rs"),
+    include_str!("session23/d_ops.rs"),
 ];
 
 /// Every group this target reads, found by scanning [`SOURCES`] for `rows("...")`.

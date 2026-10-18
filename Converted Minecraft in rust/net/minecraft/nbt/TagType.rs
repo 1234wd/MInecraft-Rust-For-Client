@@ -1,13 +1,13 @@
 //! Port of: net/minecraft/nbt/TagType.java
 //! Java class(es): net.minecraft.nbt.TagType, net.minecraft.nbt.StaticSize, net.minecraft.nbt.VariableSize, TagType::<1 anonymous class(es)>
-//! Status: PARTIAL
+//! Status: VERIFIED
 //!
-//! Session 21. The interface, both nested sub-interfaces, `createInvalid`, and the
-//! per-kind `load`/`parse`/`skip`/`getName`/`getPrettyName` for the eleven ported tag
-//! kinds. `LIST` and `COMPOUND` report their names and sizes correctly but their
-//! `load`/`parse`/`skip` are PORT-BLOCKED on `ListTag`/`CompoundTag`. Verified against the
-//! `TT`, `TTEX` and `SKIP` rows of `_porting/test-data/nbt_probe.txt` by
-//! `_porting/tests/session19_g.rs`.
+//! Session 21 ported the interface, both nested sub-interfaces, `createInvalid`, and the per-kind
+//! `load`/`parse`/`skip`/`getName`/`getPrettyName` for eleven tag kinds; session 23 filled the
+//! `LIST` and `COMPOUND` arms, which delegate to `ListTag`/`CompoundTag`'s ports of their
+//! anonymous `TYPE`s. Verified against the `TT`, `TTEX` and `SKIP` rows of
+//! `_porting/test-data/nbt_probe.txt` by `_porting/tests/session19_g.rs`, and through the
+//! containers' `TYPE`s by the `GEN`/`CASE`/`TLOAD` rows in `_porting/tests/session23.rs`.
 //!
 //! # `TagType<T>` BECOMES A TAG-ID ENUM, NOT A TRAIT OBJECT
 //!
@@ -61,10 +61,12 @@
 use crate::javacompat::java_io::{self, DataInput};
 use crate::net::minecraft::nbt::ByteArrayTag::ByteArrayTag;
 use crate::net::minecraft::nbt::ByteTag::ByteTag;
+use crate::net::minecraft::nbt::CompoundTag::CompoundTag;
 use crate::net::minecraft::nbt::DoubleTag::DoubleTag;
 use crate::net::minecraft::nbt::FloatTag::FloatTag;
 use crate::net::minecraft::nbt::IntArrayTag::IntArrayTag;
 use crate::net::minecraft::nbt::IntTag::IntTag;
+use crate::net::minecraft::nbt::ListTag::ListTag;
 use crate::net::minecraft::nbt::LongArrayTag::LongArrayTag;
 use crate::net::minecraft::nbt::LongTag::LongTag;
 use crate::net::minecraft::nbt::NbtAccounter::NbtAccounter;
@@ -213,12 +215,8 @@ impl TagTypeRef {
             TagTypeRef::Known(12) => {
                 Ok(LongArrayTag::new(LongArrayTag::read_accounted(input, accounter)?).into_tag())
             }
-            TagTypeRef::Known(9) => {
-                todo!("PORT-BLOCKED: net.minecraft.nbt.ListTag is not ported")
-            }
-            TagTypeRef::Known(10) => {
-                todo!("PORT-BLOCKED: net.minecraft.nbt.CompoundTag is not ported")
-            }
+            TagTypeRef::Known(9) => ListTag::load_type(input, accounter),
+            TagTypeRef::Known(10) => CompoundTag::load_type(input, accounter),
             TagTypeRef::Known(other) => Err(Self::invalid_exception(*other as i32)),
             TagTypeRef::Invalid(id) => Err(Self::invalid_exception(*id)),
         }
@@ -284,12 +282,8 @@ impl TagTypeRef {
                 let data = LongArrayTag::read_accounted(input, accounter)?;
                 Ok(output.visit_long_array(&data))
             }
-            TagTypeRef::Known(9) => {
-                todo!("PORT-BLOCKED: net.minecraft.nbt.ListTag is not ported")
-            }
-            TagTypeRef::Known(10) => {
-                todo!("PORT-BLOCKED: net.minecraft.nbt.CompoundTag is not ported")
-            }
+            TagTypeRef::Known(9) => ListTag::parse_type(input, output, accounter),
+            TagTypeRef::Known(10) => CompoundTag::parse_type(input, output, accounter),
             TagTypeRef::Known(other) => Err(Self::invalid_exception(*other as i32)),
             TagTypeRef::Invalid(id) => Err(Self::invalid_exception(*id)),
         }
@@ -299,7 +293,7 @@ impl TagTypeRef {
     pub fn skip<I: DataInput + ?Sized>(
         &self,
         input: &mut I,
-        _accounter: &mut NbtAccounter,
+        accounter: &mut NbtAccounter,
     ) -> std::io::Result<()> {
         // `StaticSize.skip` is `input.skipBytes(this.size())`.
         if let Some(size) = self.static_size() {
@@ -313,12 +307,8 @@ impl TagTypeRef {
             TagTypeRef::Known(8) => StringTag::skip_string(input),
             TagTypeRef::Known(11) => IntArrayTag::skip(input),
             TagTypeRef::Known(12) => LongArrayTag::skip(input),
-            TagTypeRef::Known(9) => {
-                todo!("PORT-BLOCKED: net.minecraft.nbt.ListTag is not ported")
-            }
-            TagTypeRef::Known(10) => {
-                todo!("PORT-BLOCKED: net.minecraft.nbt.CompoundTag is not ported")
-            }
+            TagTypeRef::Known(9) => ListTag::skip_type(input, accounter),
+            TagTypeRef::Known(10) => CompoundTag::skip_type(input, accounter),
             // Every static-size kind returned above, so a `Known` reaching here is an id
             // outside 0..=12 -- which `TagTypes::get_type` would have made `Invalid`.
             TagTypeRef::Known(other) => Err(Self::invalid_exception(*other as i32)),

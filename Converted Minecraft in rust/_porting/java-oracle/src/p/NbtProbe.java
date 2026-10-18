@@ -1520,6 +1520,551 @@ public class NbtProbe {
 		return m;
 	}
 
+	// ------------------------------------------------------------------ session 23: containers
+
+	/**
+	 * A tag as a literal the Rust tests parse back: {@code E}, {@code b<n>} {@code s<n>} {@code i<n>}
+	 * {@code l<n>}, {@code f<raw bits hex>} {@code d<raw bits hex>}, {@code S"<esc>"}, {@code B(..)}
+	 * {@code I(..)} {@code L(..)}, {@code [a,b]}, and {@code {"k":v,...}} in ITERATION order. Inside
+	 * quotes the text is {@link #esc}aped and a double quote is written as {@code "}.
+	 */
+	static String lit(Tag t) {
+		if (t instanceof EndTag) {
+			return "E";
+		} else if (t instanceof ByteTag b) {
+			return "b" + b.value();
+		} else if (t instanceof ShortTag s) {
+			return "s" + s.value();
+		} else if (t instanceof IntTag i) {
+			return "i" + i.value();
+		} else if (t instanceof LongTag l) {
+			return "l" + l.value();
+		} else if (t instanceof FloatTag f) {
+			return "f" + Integer.toHexString(Float.floatToRawIntBits(f.value()));
+		} else if (t instanceof DoubleTag d) {
+			return "d" + Long.toHexString(Double.doubleToRawLongBits(d.value()));
+		} else if (t instanceof StringTag(String v)) {
+			return "S" + qesc(v);
+		} else if (t instanceof ByteArrayTag a) {
+			StringBuilder b = new StringBuilder("B(");
+			byte[] d = a.getAsByteArray();
+			for (int i = 0; i < d.length; i++) {
+				b.append(i == 0 ? "" : ",").append(d[i]);
+			}
+			return b.append(')').toString();
+		} else if (t instanceof IntArrayTag a) {
+			StringBuilder b = new StringBuilder("I(");
+			int[] d = a.getAsIntArray();
+			for (int i = 0; i < d.length; i++) {
+				b.append(i == 0 ? "" : ",").append(d[i]);
+			}
+			return b.append(')').toString();
+		} else if (t instanceof LongArrayTag a) {
+			StringBuilder b = new StringBuilder("L(");
+			long[] d = a.getAsLongArray();
+			for (int i = 0; i < d.length; i++) {
+				b.append(i == 0 ? "" : ",").append(d[i]);
+			}
+			return b.append(')').toString();
+		} else if (t instanceof ListTag l) {
+			StringBuilder b = new StringBuilder("[");
+			for (int i = 0; i < l.size(); i++) {
+				b.append(i == 0 ? "" : ",").append(lit(l.get(i)));
+			}
+			return b.append(']').toString();
+		} else {
+			CompoundTag c = (CompoundTag) t;
+			StringBuilder b = new StringBuilder("{");
+			boolean first = true;
+			for (Map.Entry<String, Tag> e : c.entrySet()) {
+				b.append(first ? "" : ",").append(qesc(e.getKey())).append(':').append(lit(e.getValue()));
+				first = false;
+			}
+			return b.append('}').toString();
+		}
+	}
+
+	static String qesc(String s) {
+		return "\"" + esc(s).replace("\"", "\\u0022") + "\"";
+	}
+
+	static boolean hasEnd(Tag t) {
+		if (t instanceof EndTag) {
+			return true;
+		} else if (t instanceof ListTag l) {
+			for (Tag e : l) {
+				if (hasEnd(e)) {
+					return true;
+				}
+			}
+		} else if (t instanceof CompoundTag c) {
+			for (Tag e : c.values()) {
+				if (hasEnd(e)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	/** hashCode, or "-" where it folds in EndTag's identity hash. */
+	static String hashOf(Tag t) {
+		return hasEnd(t) ? "-" : Integer.toString(t.hashCode());
+	}
+
+	static String hexWrite(Tag t) {
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		try {
+			t.write(new DataOutputStream(bos));
+			return hex(bos.toByteArray());
+		} catch (Throwable e) {
+			return "EX:" + e.getClass().getName();
+		}
+	}
+
+	static String exText(Throwable e) {
+		return "EX:" + e.getClass().getName() + ":" + esc(e.getMessage());
+	}
+
+	static String optStr(java.util.Optional<?> o) {
+		return o.map(Object::toString).orElse("-");
+	}
+
+	/** Every CompoundTag getter for one key, in a fixed order. */
+	static String compoundGetters(CompoundTag c, String k) {
+		return String.join(";",
+			"B=" + optStr(c.getByte(k)), "BO=" + c.getByteOr(k, (byte) 7),
+			"S=" + optStr(c.getShort(k)), "SO=" + c.getShortOr(k, (short) 7),
+			"I=" + optStr(c.getInt(k)), "IO=" + c.getIntOr(k, 7),
+			"L=" + optStr(c.getLong(k)), "LO=" + c.getLongOr(k, 7L),
+			"F=" + c.getFloat(k).map(v -> Integer.toHexString(Float.floatToRawIntBits(v))).orElse("-"),
+			"FO=" + Integer.toHexString(Float.floatToRawIntBits(c.getFloatOr(k, 7.0f))),
+			"D=" + c.getDouble(k).map(v -> Long.toHexString(Double.doubleToRawLongBits(v))).orElse("-"),
+			"DO=" + Long.toHexString(Double.doubleToRawLongBits(c.getDoubleOr(k, 7.0))),
+			"STR=" + c.getString(k).map(NbtProbe::esc).orElse("-"), "STRO=" + esc(c.getStringOr(k, "d")),
+			"BA=" + c.getByteArray(k).map(a -> Integer.toString(a.length)).orElse("-"),
+			"IA=" + c.getIntArray(k).map(a -> Integer.toString(a.length)).orElse("-"),
+			"LA=" + c.getLongArray(k).map(a -> Integer.toString(a.length)).orElse("-"),
+			"C=" + c.getCompound(k).map(NbtProbe::lit).orElse("-"), "CO=" + lit(c.getCompoundOrEmpty(k)),
+			"LI=" + c.getList(k).map(NbtProbe::lit).orElse("-"), "LIO=" + lit(c.getListOrEmpty(k)),
+			"BOOL=" + optStr(c.getBoolean(k)), "BOOLO0=" + c.getBooleanOr(k, false), "BOOLO1=" + c.getBooleanOr(k, true),
+			"HAS=" + c.contains(k), "GET=" + (c.get(k) == null ? "-" : lit(c.get(k))));
+	}
+
+	/** Every ListTag getter for one index, in a fixed order. */
+	static String listGetters(ListTag l, int i) {
+		return String.join(";",
+			"C=" + l.getCompound(i).map(NbtProbe::lit).orElse("-"), "CO=" + lit(l.getCompoundOrEmpty(i)),
+			"LI=" + l.getList(i).map(NbtProbe::lit).orElse("-"), "LIO=" + lit(l.getListOrEmpty(i)),
+			"S=" + optStr(l.getShort(i)), "SO=" + l.getShortOr(i, (short) 7),
+			"I=" + optStr(l.getInt(i)), "IO=" + l.getIntOr(i, 7),
+			"IA=" + l.getIntArray(i).map(a -> Integer.toString(a.length)).orElse("-"),
+			"LA=" + l.getLongArray(i).map(a -> Integer.toString(a.length)).orElse("-"),
+			"D=" + l.getDouble(i).map(v -> Long.toHexString(Double.doubleToRawLongBits(v))).orElse("-"),
+			"DO=" + Long.toHexString(Double.doubleToRawLongBits(l.getDoubleOr(i, 7.0))),
+			"F=" + l.getFloat(i).map(v -> Integer.toHexString(Float.floatToRawIntBits(v))).orElse("-"),
+			"FO=" + Integer.toHexString(Float.floatToRawIntBits(l.getFloatOr(i, 7.0f))),
+			"STR=" + l.getString(i).map(NbtProbe::esc).orElse("-"), "STRO=" + esc(l.getStringOr(i, "d")));
+	}
+
+	/** One container state: literal, write bytes, toString, hashCode, sizeInBytes, size. */
+	static List<String> state(Tag t) throws Exception {
+		List<String> f = new ArrayList<>();
+		f.add(lit(t));
+		f.add(hexWrite(t));
+		f.add(esc(t.toString()));
+		f.add(hashOf(t));
+		f.add(Integer.toString(t.sizeInBytes()));
+		f.add(Integer.toString(t instanceof ListTag l ? l.size() : ((CompoundTag) t).size()));
+		if (t instanceof ListTag l) {
+			f.add(Byte.toString((Byte) IDENTIFY.invoke(l)));
+		} else {
+			f.add("-");
+		}
+		return f;
+	}
+
+	static ListTag listOf(Tag... tags) {
+		ListTag l = new ListTag();
+		for (Tag t : tags) {
+			l.add(t);
+		}
+		return l;
+	}
+
+	static CompoundTag compoundOf(Object... kv) {
+		CompoundTag c = new CompoundTag();
+		for (int i = 0; i < kv.length; i += 2) {
+			c.put((String) kv[i], (Tag) kv[i + 1]);
+		}
+		return c;
+	}
+
+	static void ctRow(String name, int step, String op, String arg, String ret, CompoundTag c) throws Exception {
+		List<String> f = new ArrayList<>();
+		f.add("CTOPS");
+		f.add(name);
+		f.add(Integer.toString(step));
+		f.add(op);
+		f.add(arg);
+		f.add(ret);
+		f.addAll(state(c));
+		row(f.toArray(new String[0]));
+	}
+
+	static void ltRow(String name, int step, String op, String arg, String ret, ListTag l) throws Exception {
+		List<String> f = new ArrayList<>();
+		f.add("LTOPS");
+		f.add(name);
+		f.add(Integer.toString(step));
+		f.add(op);
+		f.add(arg);
+		f.add(ret);
+		f.addAll(state(l));
+		row(f.toArray(new String[0]));
+	}
+
+	static void containerSection() throws Exception {
+		// TEQ: Tag.equals matrix and hashCode. Records compare floats with Float.compare.
+		Tag[] eq = {
+			new FloatTag(0.0f), new FloatTag(-0.0f), new FloatTag(Float.NaN), new FloatTag(Float.intBitsToFloat(0x7f800001)),
+			new FloatTag(1.0f), new DoubleTag(0.0), new DoubleTag(-0.0), new DoubleTag(Double.NaN),
+			new DoubleTag(Double.longBitsToDouble(0xfff0000000000001L)), new DoubleTag(1.0), ByteTag.valueOf((byte) 1), IntTag.valueOf(1),
+			StringTag.valueOf("1"), compoundOf("a", new FloatTag(0.0f)), compoundOf("a", new FloatTag(-0.0f)),
+			compoundOf("a", new FloatTag(Float.NaN)), compoundOf("a", new FloatTag(Float.intBitsToFloat(0x7fc00001))),
+			listOf(new DoubleTag(Double.NaN)), listOf(new DoubleTag(Double.longBitsToDouble(0x7ff0000000000002L))),
+			listOf(IntTag.valueOf(1), IntTag.valueOf(2)), listOf(IntTag.valueOf(2), IntTag.valueOf(1)),
+			compoundOf("a", IntTag.valueOf(1), "b", IntTag.valueOf(2)), compoundOf("b", IntTag.valueOf(2), "a", IntTag.valueOf(1)),
+			new ListTag(), new CompoundTag(), new ByteArrayTag(new byte[] {1}), new IntArrayTag(new int[] {1}),
+			listOf(compoundOf("", IntTag.valueOf(1))), listOf(IntTag.valueOf(1)), EndTag.INSTANCE, listOf(EndTag.INSTANCE)
+		};
+		for (int i = 0; i < eq.length; i++) {
+			StringBuilder bits = new StringBuilder();
+			for (Tag other : eq) {
+				bits.append(eq[i].equals(other) ? '1' : '0');
+			}
+			row("TEQ", Integer.toString(i), lit(eq[i]), hashOf(eq[i]), bits.toString());
+		}
+
+		// CTOPS: a CompoundTag through every mutator and getter, with the full state after each op.
+		CompoundTag c = new CompoundTag();
+		int step = 0;
+		String name = "compound";
+		Tag[] values = {
+			ByteTag.valueOf((byte) -1), ShortTag.valueOf((short) 300), IntTag.valueOf(-129), LongTag.valueOf(0x100L),
+			LongTag.valueOf(0x100000080L), new FloatTag(-1.5f), new FloatTag(3.0e9f), new FloatTag(Float.NaN), new DoubleTag(1e10),
+			new DoubleTag(-1e30), new DoubleTag(Double.NaN), StringTag.valueOf("txt"), new ByteArrayTag(new byte[] {1, 2}),
+			new IntArrayTag(new int[] {3}), new LongArrayTag(new long[] {4, 5, 6}), listOf(IntTag.valueOf(1)),
+			compoundOf("in", IntTag.valueOf(2)), new ListTag(), new CompoundTag(), ByteTag.valueOf((byte) 0)
+		};
+		String[] keys = {"b", "s", "i", "l", "l2", "f", "f2", "fnan", "d", "d2", "dnan", "str", "ba", "ia", "la", "lst", "cmp", "el", "ec", "zero"};
+		for (int i = 0; i < values.length; i++) {
+			Tag prev = c.put(keys[i], values[i]);
+			ctRow(name, step++, "put", qesc(keys[i]) + "=" + lit(values[i]), prev == null ? "\\N" : lit(prev), c);
+		}
+		for (String k : new String[] {"b", "s", "i", "l", "l2", "f", "f2", "fnan", "d", "d2", "dnan", "str", "ba", "ia", "la", "lst", "cmp", "el", "ec", "zero", "missing"}) {
+			ctRow(name, step++, "getters", qesc(k), esc(compoundGetters(c, k)), c);
+		}
+		c.putByte("pb", (byte) 0x7f);
+		ctRow(name, step++, "putByte", qesc("pb") + "=127", "-", c);
+		c.putShort("ps", (short) -32768);
+		ctRow(name, step++, "putShort", qesc("ps") + "=-32768", "-", c);
+		c.putInt("pi", Integer.MIN_VALUE);
+		ctRow(name, step++, "putInt", qesc("pi") + "=-2147483648", "-", c);
+		c.putLong("pl", Long.MAX_VALUE);
+		ctRow(name, step++, "putLong", qesc("pl") + "=9223372036854775807", "-", c);
+		c.putFloat("pf", -0.0f);
+		ctRow(name, step++, "putFloat", qesc("pf") + "=80000000", "-", c);
+		c.putDouble("pd", -0.0);
+		ctRow(name, step++, "putDouble", qesc("pd") + "=8000000000000000", "-", c);
+		c.putString("pstr", "q\"u");
+		ctRow(name, step++, "putString", qesc("pstr") + "=" + qesc("q\"u"), "-", c);
+		c.putByteArray("pba", new byte[] {-128, 127});
+		ctRow(name, step++, "putByteArray", qesc("pba") + "=-128,127", "-", c);
+		c.putIntArray("pia", new int[] {});
+		ctRow(name, step++, "putIntArray", qesc("pia") + "=", "-", c);
+		c.putLongArray("pla", new long[] {Long.MIN_VALUE});
+		ctRow(name, step++, "putLongArray", qesc("pla") + "=-9223372036854775808", "-", c);
+		c.putBoolean("pt", true);
+		ctRow(name, step++, "putBoolean", qesc("pt") + "=true", "-", c);
+		c.putBoolean("pfalse", false);
+		ctRow(name, step++, "putBoolean", qesc("pfalse") + "=false", "-", c);
+		for (String k : new String[] {"i", "missing", "cmp", "pl"}) {
+			Tag removed = c.remove(k);
+			ctRow(name, step++, "remove", qesc(k), removed == null ? "\\N" : lit(removed), c);
+		}
+		Tag prev = c.put("b", StringTag.valueOf("replaced"));
+		ctRow(name, step++, "put", qesc("b") + "=" + lit(StringTag.valueOf("replaced")), prev == null ? "\\N" : lit(prev), c);
+		// merge: a compound into a compound merges; anything else replaces with a copy.
+		CompoundTag src = compoundOf("lst", compoundOf("x", IntTag.valueOf(9)), "ec", compoundOf("m", IntTag.valueOf(1)),
+			"new", listOf(IntTag.valueOf(3)), "str", IntTag.valueOf(5));
+		c.merge(src);
+		ctRow(name, step++, "merge", lit(src), "-", c);
+		// copy isolation: mutate the original's nested children; the copy must not change.
+		CompoundTag copy = c.copy();
+		c.getCompound("ec").ifPresent(e -> e.putInt("after", 1));
+		c.getList("new").ifPresent(l -> l.add(IntTag.valueOf(4)));
+		ctRow(name, step++, "mutated-original", "-", "-", c);
+		ctRow(name, step++, "copy", "-", Boolean.toString(copy.equals(c)), copy);
+		ctRow(name, step++, "shallowCopy", "-", "-", (CompoundTag) SHALLOW_COPY.invoke(c));
+		// A compound that grew and shrank: copy() re-inserts into a smaller table.
+		CompoundTag grown = new CompoundTag();
+		for (int i = 0; i < 100; i++) {
+			grown.putInt("g" + i, i);
+		}
+		for (int i = 0; i < 90; i++) {
+			grown.remove("g" + i);
+		}
+		ctRow("grown", 0, "grow-shrink", "100-90", "-", grown);
+		ctRow("grown", 1, "copy", "-", Boolean.toString(grown.copy().equals(grown)), grown.copy());
+		ctRow("grown", 2, "shallowCopy", "-", "-", (CompoundTag) SHALLOW_COPY.invoke(grown));
+		// copy() of a compound HOLDING that one: the nested copy re-inserts too.
+		CompoundTag outer = new CompoundTag();
+		outer.put("g", grown);
+		outer.putInt("z", 1);
+		ctRow("grown", 3, "nested-copy", "-", "-", outer.copy());
+		// merge into a compound that already has content, two levels deep.
+		CompoundTag base = compoundOf("keep", compoundOf("a", IntTag.valueOf(1), "deep", compoundOf("x", IntTag.valueOf(1), "y", IntTag.valueOf(2))),
+			"other", IntTag.valueOf(5), "list", listOf(IntTag.valueOf(1)));
+		ctRow("merge2", 0, "base", lit(base), "-", base);
+		CompoundTag src2 = compoundOf("keep", compoundOf("b", IntTag.valueOf(2), "deep", compoundOf("y", IntTag.valueOf(3), "z", IntTag.valueOf(4))),
+			"other", compoundOf("now", StringTag.valueOf("compound")), "list", listOf(IntTag.valueOf(2)));
+		base.merge(src2);
+		ctRow("merge2", 1, "merge", lit(src2), "-", base);
+
+		// LTOPS: a ListTag through every mutator and getter.
+		ListTag l = new ListTag();
+		name = "list";
+		step = 0;
+		ltRow(name, step++, "new", "-", "-", l);
+		Tag[] adds = {IntTag.valueOf(1), IntTag.valueOf(2), StringTag.valueOf("mixed"), compoundOf("x", IntTag.valueOf(1)),
+			compoundOf("", ByteTag.valueOf((byte) 5)), new ListTag(), new DoubleTag(-2.5), new FloatTag(3.75f), new IntArrayTag(new int[] {9, 8}),
+			new LongArrayTag(new long[] {7}), ShortTag.valueOf((short) -300), EndTag.INSTANCE};
+		for (Tag t : adds) {
+			ltRow(name, step++, "add", lit(t), Boolean.toString(l.add(t)), l);
+		}
+		for (int i = -1; i <= l.size(); i++) {
+			ltRow(name, step++, "getters", Integer.toString(i), esc(listGetters(l, i)), l);
+		}
+		String[][] edits = {
+			{"set", "0", "S\"first\""}, {"set", "12", "i0"}, {"set", "-1", "i0"}, {"remove", "11", ""}, {"remove", "11", ""},
+			{"addAt", "0", "l64"}, {"addAt", "12", "i99"}, {"addAt", "14", "i0"}, {"addAt", "-1", "i0"},
+			{"setTag", "1", "b1"}, {"setTag", "13", "b1"}, {"addTag", "13", "s2"}, {"addTag", "15", "s2"},
+			{"get", "4", ""}, {"get", "14", ""}, {"get", "-1", ""}
+		};
+		for (String[] e : edits) {
+			int idx = Integer.parseInt(e[1]);
+			String ret;
+			try {
+				switch (e[0]) {
+					case "set" -> ret = lit(l.set(idx, parseLit(e[2])));
+					case "remove" -> ret = lit(l.remove(idx));
+					case "addAt" -> { l.add(idx, parseLit(e[2])); ret = "-"; }
+					case "setTag" -> ret = Boolean.toString(l.setTag(idx, parseLit(e[2])));
+					case "addTag" -> ret = Boolean.toString(l.addTag(idx, parseLit(e[2])));
+					default -> ret = lit(l.get(idx));
+				}
+			} catch (Throwable ex) {
+				ret = exText(ex);
+			}
+			ltRow(name, step++, e[0], e[1] + (e[2].isEmpty() ? "" : "=" + e[2]), ret, l);
+		}
+		ListTag lcopy = l.copy();
+		l.getCompound(4).ifPresent(cc -> cc.putInt("y", 2));
+		ltRow(name, step++, "mutated-original", "-", "-", l);
+		ltRow(name, step++, "copy", "-", Boolean.toString(lcopy.equals(l)), lcopy);
+		l.clear();
+		ltRow(name, step++, "clear", "-", "-", l);
+		// addAndUnwrap: a one-entry "" compound unwraps; anything else is added as is.
+		Tag[] unwraps = {compoundOf("", IntTag.valueOf(7)), compoundOf("", compoundOf("", IntTag.valueOf(8))), compoundOf("x", IntTag.valueOf(1)),
+			compoundOf("", IntTag.valueOf(1), "y", IntTag.valueOf(2)), new CompoundTag(), StringTag.valueOf("s"), compoundOf("", EndTag.INSTANCE)};
+		for (Tag t : unwraps) {
+			l.addAndUnwrap(t);
+			ltRow(name, step++, "addAndUnwrap", lit(t), "-", l);
+		}
+		// Element-type transitions on write: empty, homogeneous, mixed, back to homogeneous.
+		ListTag tr = new ListTag();
+		step = 0;
+		ltRow("transitions", step++, "new", "-", "-", tr);
+		for (Tag t : new Tag[] {compoundOf("a", IntTag.valueOf(1)), compoundOf("", IntTag.valueOf(2)), IntTag.valueOf(3)}) {
+			tr.add(t);
+			ltRow("transitions", step++, "add", lit(t), "-", tr);
+		}
+		tr.remove(0);
+		ltRow("transitions", step++, "remove", "0", "-", tr);
+		tr.remove(0);
+		ltRow("transitions", step++, "remove", "0", "-", tr);
+		tr.add(0, EndTag.INSTANCE);
+		ltRow("transitions", step++, "addAt", "0=E", "-", tr);
+
+		// TACC: acceptAsRoot traces over containers the generated trees never hold -- lists
+		// with END elements (whose element type is the first NON-END id), wrappers, nesting.
+		String[][] accs = {
+			{"end_long", "{\"l\":[E,l5]}"}, {"end_only", "{\"l\":[E,E]}"},
+			{"mixed", "{\"m\":[i1,S\"a\",{\"x\":i1},{\"\":b5},[],[i1]]}"},
+			{"nested_lists", "{\"n\":[[i1,i2],[S\"s\"],[]]}"}, {"empty", "{}"}, {"list_root", "[i1,{\"a\":i2},E]"},
+			{"end_root", "E"}
+		};
+		for (String[] a : accs) {
+			Tag t = parseFullLit(a[1]);
+			for (int policy = 0; policy < 3; policy++) {
+				Random pr = policy == 0 ? null : new Random(1000L * policy + a[0].hashCode());
+				TraceVisitor tv = new TraceVisitor(pr);
+				t.acceptAsRoot(tv);
+				row("TACC", a[0], Integer.toString(policy), lit(t), esc(tv.log.toString()));
+			}
+		}
+
+		// TLOAD: TYPE.load / skip / parse of crafted payloads (no root framing).
+		String[][] payloads = {
+			{"c_empty_input", "10", ""}, {"c_empty", "10", "00"}, {"c_one", "10", "030001610000000100"},
+			{"c_dup", "10", "03000161000000010300016100000002" + "00"}, {"c_invalid_child", "10", "6300016100"},
+			{"c_child_list_negative", "10", "0900016c03ffffffff00"}, {"c_child_list_missing_type", "10", "0900016c000000000200"},
+			{"c_child_list_end_empty", "10", "0900016c000000000000"}, {"c_truncated_value", "10", "0300016100"},
+			{"c_truncated_key", "10", "0300"}, {"c_end_child", "10", "0000"},
+			{"c_nested", "10", "0a0001610a0001620300016300000007" + "0000" + "00"},
+			{"c_wrapped_list", "10", "0900016c0a00000002" + "030000000000070000" + "00" + "00"},
+			{"l_ints", "9", "030000000200000001fffffffe"}, {"l_empty", "9", "0000000000"}, {"l_missing_type", "9", "0000000001"},
+			{"l_negative", "9", "03ffffffff"}, {"l_negative_static_skip", "9", "03fffffffe"}, {"l_bytes", "9", "0100000003010203"},
+			{"l_compounds", "9", "0a00000003" + "030000000000070000" + "030001780000000100"},
+			{"l_truncated", "9", "03000000030000000100000002"}, {"l_strings", "9", "080000000200016100026263"},
+			{"l_lists", "9", "09000000020100000001ff0000000000"}
+		};
+		long[][] limits = {{Long.MAX_VALUE, 512}, {100, 512}, {Long.MAX_VALUE, 1}};
+		for (String[] p : payloads) {
+			for (long[] lim : limits) {
+				byte[] in = unhex(p[2]);
+				TagType<?> type = TagTypes.getType(Integer.parseInt(p[1]));
+				String load;
+				NbtAccounter acc = new NbtAccounter(lim[0], (int) lim[1]);
+				try {
+					Tag t = type.load(in(in), acc);
+					load = "OK\t" + lit(t) + "\t" + acc.getUsage() + "\t" + acc.getDepth();
+				} catch (Throwable e) {
+					load = exc(e);
+				}
+				String skip;
+				acc = new NbtAccounter(lim[0], (int) lim[1]);
+				DataInputStream d = in(in);
+				try {
+					type.skip(d, acc);
+					skip = "OK\t" + d.available() + "\t" + acc.getUsage() + "\t" + acc.getDepth();
+				} catch (Throwable e) {
+					skip = exc(e);
+				}
+				String parse;
+				acc = new NbtAccounter(lim[0], (int) lim[1]);
+				TraceVisitor tv = new TraceVisitor(null);
+				d = in(in);
+				try {
+					StreamTagVisitor.ValueResult r = type.parse(d, tv, acc);
+					parse = "OK\t" + esc(tv.log.toString()) + "\t" + r.name() + "\t" + d.available() + "\t" + acc.getUsage() + "\t" + acc.getDepth();
+				} catch (Throwable e) {
+					parse = exc(e) + "\t" + esc(tv.log.toString());
+				}
+				row("TLOAD", p[0], p[1], Long.toString(lim[0]), Long.toString(lim[1]), p[2], load, skip, parse);
+			}
+		}
+	}
+
+	/** The inverse of {@link #lit}, complete: what the Rust tests parse, parsed the same way. */
+	static Tag parseFullLit(String s) {
+		int[] at = {0};
+		Tag t = parseLitAt(s, at);
+		if (at[0] != s.length()) {
+			throw new IllegalArgumentException("trailing text in " + s);
+		}
+		return t;
+	}
+
+	static String litWord(String s, int[] at) {
+		int start = at[0];
+		while (at[0] < s.length() && ",)]}".indexOf(s.charAt(at[0])) < 0) {
+			at[0]++;
+		}
+		return s.substring(start, at[0]);
+	}
+
+	static String litQuoted(String s, int[] at) {
+		at[0]++;
+		int start = at[0];
+		while (s.charAt(at[0]) != '"') {
+			at[0]++;
+		}
+		String raw = s.substring(start, at[0]);
+		at[0]++;
+		StringBuilder b = new StringBuilder();
+		for (int i = 0; i < raw.length(); i++) {
+			char c = raw.charAt(i);
+			if (c == '\\' && raw.charAt(i + 1) == 'u') {
+				b.append((char) Integer.parseInt(raw.substring(i + 2, i + 6), 16));
+				i += 5;
+			} else if (c == '\\') {
+				b.append('\\');
+				i++;
+			} else {
+				b.append(c);
+			}
+		}
+		return b.toString();
+	}
+
+	static Tag parseLitAt(String s, int[] at) {
+		char c = s.charAt(at[0]++);
+		switch (c) {
+			case 'E':
+				return EndTag.INSTANCE;
+			case 'b':
+				return ByteTag.valueOf(Byte.parseByte(litWord(s, at)));
+			case 's':
+				return ShortTag.valueOf(Short.parseShort(litWord(s, at)));
+			case 'i':
+				return IntTag.valueOf(Integer.parseInt(litWord(s, at)));
+			case 'l':
+				return LongTag.valueOf(Long.parseLong(litWord(s, at)));
+			case 'S':
+				return StringTag.valueOf(litQuoted(s, at));
+			case '[': {
+				ListTag l = new ListTag();
+				while (s.charAt(at[0]) != ']') {
+					l.add(parseLitAt(s, at));
+					if (s.charAt(at[0]) == ',') {
+						at[0]++;
+					}
+				}
+				at[0]++;
+				return l;
+			}
+			case '{': {
+				CompoundTag t = new CompoundTag();
+				while (s.charAt(at[0]) != '}') {
+					String k = litQuoted(s, at);
+					at[0]++;
+					t.put(k, parseLitAt(s, at));
+					if (s.charAt(at[0]) == ',') {
+						at[0]++;
+					}
+				}
+				at[0]++;
+				return t;
+			}
+			default:
+				throw new IllegalArgumentException("literal: " + c);
+		}
+	}
+
+	/** The inverse of {@link #lit}, for the handful of literals the edit script uses. */
+	static Tag parseLit(String s) {
+		return switch (s.charAt(0)) {
+			case 'i' -> IntTag.valueOf(Integer.parseInt(s.substring(1)));
+			case 'b' -> ByteTag.valueOf(Byte.parseByte(s.substring(1)));
+			case 's' -> ShortTag.valueOf(Short.parseShort(s.substring(1)));
+			case 'l' -> LongTag.valueOf(Long.parseLong(s.substring(1)));
+			case 'S' -> StringTag.valueOf(s.substring(2, s.length() - 1));
+			default -> throw new IllegalArgumentException(s);
+		};
+	}
+
 	public static void main(String[] args) throws Exception {
 		SHALLOW_COPY = CompoundTag.class.getDeclaredMethod("shallowCopy");
 		SHALLOW_COPY.setAccessible(true);
@@ -1543,6 +2088,7 @@ public class NbtProbe {
 			readSection();
 			genSection();
 			hashMapStepSection();
+			containerSection();
 			out.flush();
 		}
 		System.err.println("rows: " + rows);

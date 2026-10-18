@@ -1,11 +1,11 @@
 //! Port of: net/minecraft/nbt/TagVisitor.java
 //! Java class(es): net.minecraft.nbt.TagVisitor
-//! Status: PARTIAL
+//! Status: VERIFIED
 //!
-//! Session 21. Eleven of the thirteen `visitX` methods. `visitList` and `visitCompound`
-//! arrive with `ListTag` and `CompoundTag` -- see
-//! [`Tag`](crate::net::minecraft::nbt::Tag)'s module docs for why those two are a separate
-//! batch.
+//! Session 21 ported eleven of the thirteen `visitX` methods; session 23 added `visitList` and
+//! `visitCompound` with `ListTag` and `CompoundTag`, so the interface is complete. It has no
+//! behaviour of its own: its one implementor, `StringTagVisitor`, is verified against the
+//! `PRIM`/`QUOTE`/`CASEW`/`GEN`/`CASE` rows of `nbt_probe.txt`.
 //!
 //! # `visitEnd` TAKES NO ARGUMENT HERE
 //!
@@ -19,10 +19,12 @@
 
 use crate::net::minecraft::nbt::ByteArrayTag::ByteArrayTag;
 use crate::net::minecraft::nbt::ByteTag::ByteTag;
+use crate::net::minecraft::nbt::CompoundTag::CompoundTag;
 use crate::net::minecraft::nbt::DoubleTag::DoubleTag;
 use crate::net::minecraft::nbt::FloatTag::FloatTag;
 use crate::net::minecraft::nbt::IntArrayTag::IntArrayTag;
 use crate::net::minecraft::nbt::IntTag::IntTag;
+use crate::net::minecraft::nbt::ListTag::ListTag;
 use crate::net::minecraft::nbt::LongArrayTag::LongArrayTag;
 use crate::net::minecraft::nbt::LongTag::LongTag;
 use crate::net::minecraft::nbt::ShortTag::ShortTag;
@@ -59,6 +61,12 @@ pub trait TagVisitor {
 
     /// Port of `TagVisitor#visitLongArray(LongArrayTag)`.
     fn visit_long_array(&mut self, tag: &LongArrayTag);
+
+    /// Port of `TagVisitor#visitList(ListTag)`.
+    fn visit_list(&mut self, tag: &ListTag);
+
+    /// Port of `TagVisitor#visitCompound(CompoundTag)`.
+    fn visit_compound(&mut self, tag: &CompoundTag);
 
     /// Port of `TagVisitor#visitEnd(EndTag)`.
     ///

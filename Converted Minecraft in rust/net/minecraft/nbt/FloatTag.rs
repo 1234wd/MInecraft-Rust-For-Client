@@ -50,9 +50,21 @@ pub const TYPE: TagType::TagTypeRef = TagType::TagTypeRef::Known(5);
 pub const ZERO: FloatTag = FloatTag::new(0.0);
 
 /// Port of the `record net.minecraft.nbt.FloatTag(float value)`.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug)]
 pub struct FloatTag {
     value: f32,
+}
+
+/// Port of the record's generated `equals`: `Float.compare(this.value, other.value) == 0`.
+///
+/// NOT `==` on the f32: a record compares a floating-point component with `Float.compare`, so every
+/// NaN equals every NaN and `0.0` does not equal `-0.0` -- the opposite of IEEE on both counts. Until
+/// session 23 this was a derived `PartialEq`, which had both backwards; nothing compared these tags
+/// until `CompoundTag`/`ListTag` equality arrived. Pinned by the `TEQ` rows of `nbt_probe.txt`.
+impl PartialEq for FloatTag {
+    fn eq(&self, other: &Self) -> bool {
+        crate::javacompat::java_object::equals_f32(self.value, other.value)
+    }
 }
 
 impl FloatTag {
@@ -78,7 +90,6 @@ impl FloatTag {
             Self::new(data)
         }
     }
-
 
     /// Port of `FloatTag#write(DataOutput)`.
     pub fn write<O: DataOutput + ?Sized>(&self, output: &mut O) -> std::io::Result<()> {
