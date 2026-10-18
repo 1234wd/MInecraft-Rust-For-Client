@@ -95,6 +95,7 @@ public class SmallProbe {
 			apiShapes();
 			classesG();
 			classesH();
+			classesI();
 		}
 		System.err.println("small_probe: " + rows + " rows -> " + target);
 	}
@@ -1922,6 +1923,45 @@ public class SmallProbe {
 				tail = "[" + arr + "]|" + st;
 			}
 			row("CARVING", scr, esc(out.toString()), tail);
+		}
+	}
+
+	// ------------------------------------------------------------------ sub-batch I: ResourceDescriptor, GaussianSampler
+
+	record DescA(int width) implements com.mojang.blaze3d.resource.ResourceDescriptor<String> {
+		@Override
+		public String allocate() {
+			return "a" + width;
+		}
+
+		@Override
+		public void free(final String resource) {}
+	}
+
+	record DescB(int width) implements com.mojang.blaze3d.resource.ResourceDescriptor<String> {
+		@Override
+		public String allocate() {
+			return "b" + width;
+		}
+
+		@Override
+		public void free(final String resource) {}
+	}
+
+	static void classesI() throws Exception {
+		DescA a1 = new DescA(1), a1b = new DescA(1), a2 = new DescA(2);
+		DescB b1 = new DescB(1);
+		a1.prepare("x");
+		row("RESDESC", b(a1.canUsePhysicalResource(a1)), b(a1.canUsePhysicalResource(a1b)), b(a1.canUsePhysicalResource(a2)),
+			b(a1.canUsePhysicalResource(b1)), a1.allocate());
+
+		double[][] positions = {{0.0, 0.0, 0.0}, {0.5, 0.5, 0.5}, {10.25, -3.75, 64.9}, {-0.0, 1e-9, -1e-9}, {1e6 + 0.3, 2.5, -7.125}};
+		for (double[] pv : positions) {
+			StringBuilder out = new StringBuilder();
+			net.minecraft.world.attribute.GaussianSampler.sample(new net.minecraft.world.phys.Vec3(pv[0], pv[1], pv[2]),
+				(x, y, z) -> x + "," + y + "," + z,
+				(weight, value) -> out.append(out.length() == 0 ? "" : ";").append(value).append('=').append(d(weight)));
+			row("GAUSS", d(pv[0]), d(pv[1]), d(pv[2]), out.toString());
 		}
 	}
 }

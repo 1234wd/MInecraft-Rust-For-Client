@@ -34,6 +34,8 @@ mod g_api;
 mod h_misc;
 #[path = "session22/i_more.rs"]
 mod i_more;
+#[path = "session22/j_last.rs"]
+mod j_last;
 
 /// The source of every module in this target, for the guard's `rows("...")` scan.
 const SOURCES: &[&str] = &[
@@ -47,6 +49,7 @@ const SOURCES: &[&str] = &[
     include_str!("session22/g_api.rs"),
     include_str!("session22/h_misc.rs"),
     include_str!("session22/i_more.rs"),
+    include_str!("session22/j_last.rs"),
 ];
 
 #[test]
