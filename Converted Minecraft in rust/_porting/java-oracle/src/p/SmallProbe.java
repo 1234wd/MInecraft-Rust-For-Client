@@ -94,6 +94,7 @@ public class SmallProbe {
 			interfacesE();
 			apiShapes();
 			classesG();
+			classesH();
 		}
 		System.err.println("small_probe: " + rows + " rows -> " + target);
 	}
@@ -1794,5 +1795,133 @@ public class SmallProbe {
 			}
 		}
 		return -1;
+	}
+
+	// ------------------------------------------------------------------ sub-batch H: ChunkResult, StaticCache2D, CarvingMask (+ BitSet)
+
+	static void classesH() throws Exception {
+		// ChunkResult: Success / Fail behaviour, static orElse, Success's record members
+		net.minecraft.server.level.ChunkResult<Integer> ok = net.minecraft.server.level.ChunkResult.of(5);
+		int[] supplied = {0};
+		java.util.function.Supplier<String> sup = () -> "err" + (++supplied[0]);
+		net.minecraft.server.level.ChunkResult<Integer> bad = net.minecraft.server.level.ChunkResult.error(sup);
+		net.minecraft.server.level.ChunkResult<Integer> badStr = net.minecraft.server.level.ChunkResult.error("boom");
+		java.util.List<String> seen = new java.util.ArrayList<>();
+		row("CHUNKRES", "of", b(ok.isSuccess()), String.valueOf(ok.orElse(-1)), esc(ok.getError()),
+			b(ok.ifSuccess(v -> seen.add("ok:" + v)) == ok), String.valueOf(ok.map(v -> v * 10).orElse(null)),
+			String.valueOf(net.minecraft.server.level.ChunkResult.orElse(ok, -7)), String.valueOf(ok.orElseThrow(IllegalStateException::new)));
+		String thrown;
+		try {
+			bad.orElseThrow(() -> new IllegalStateException("no chunk"));
+			thrown = "none";
+		} catch (IllegalStateException e) {
+			thrown = exText(e);
+		}
+		net.minecraft.server.level.ChunkResult<String> badMapped = bad.map(v -> "x" + v);
+		row("CHUNKRES", "error-supplier", b(bad.isSuccess()), String.valueOf(bad.orElse(-1)), esc(bad.getError()),
+			b(bad.ifSuccess(v -> seen.add("bad:" + v)) == bad), String.valueOf(badMapped.orElse(null)),
+			String.valueOf(net.minecraft.server.level.ChunkResult.orElse(bad, -7)), esc(thrown));
+		row("CHUNKRESERR", esc(bad.getError()), esc(badMapped.getError()), esc(badStr.getError()), esc(badStr.getError()),
+			i(supplied[0]), b(((net.minecraft.server.level.ChunkResult.Fail<?>) badMapped).error() == sup), String.join(",", seen));
+		rec("ChunkResult$Success", true, ok, net.minecraft.server.level.ChunkResult.of(5), net.minecraft.server.level.ChunkResult.of(-5),
+			net.minecraft.server.level.ChunkResult.of(0));
+		row("CHUNKRESFAILEQ", b(bad.equals(bad)), b(bad.equals(net.minecraft.server.level.ChunkResult.error(sup))),
+			b(bad.equals(net.minecraft.server.level.ChunkResult.error(() -> "err1"))));
+
+		// StaticCache2D: create, toString, contains/get grid (with the IAE text), forEach order
+		int[][] caches = {{0, 0, 0}, {10, -3, 1}, {-5, 7, 2}, {0, 0, -1}, {3, 3, -2}, {MAX, 0, 1}};
+		for (int[] cv : caches) {
+			java.util.List<String> inits = new java.util.ArrayList<>();
+			net.minecraft.util.StaticCache2D<String> sc = net.minecraft.util.StaticCache2D.create(cv[0], cv[1], cv[2], (x, z) -> {
+				inits.add(x + ":" + z);
+				return x + "/" + z;
+			});
+			java.util.List<String> each = new java.util.ArrayList<>();
+			sc.forEach(v -> each.add(String.valueOf(v)));
+			StringBuilder grid = new StringBuilder();
+			for (int dx = -3; dx <= 3; dx++) {
+				for (int dz = -3; dz <= 3; dz++) {
+					int x = cv[0] + dx, z = cv[1] + dz;
+					String g;
+					try {
+						g = sc.get(x, z);
+					} catch (IllegalArgumentException e) {
+						g = "EX:" + e.getMessage();
+					}
+					grid.append(grid.length() == 0 ? "" : ";").append(sc.contains(x, z) ? '1' : '0').append(g);
+				}
+			}
+			row("STATICCACHE", i(cv[0]), i(cv[1]), i(cv[2]), esc(sc.toString()), String.join(",", inits), String.join(",", each), esc(grid.toString()));
+		}
+		String nase;
+		try {
+			net.minecraft.util.StaticCache2D.create(0, 0, 23170, (x, z) -> "");
+			nase = "none";
+		} catch (NegativeArraySizeException e) {
+			nase = exText(e);
+		}
+		row("STATICCACHENASE", esc(nase));
+
+		// BitSet (the subset CarvingMask uses) and CarvingMask
+		String[] cmScripts = {
+			"new:2:0 s:0:0:0 s:15:1:15 s:3:0:2 g:0:0:0 g:1:0:0 g:15:1:15 g:3:0:2 g:0:5:0",
+			"new:1:-64 s:0:-64:0 s:5:-63:9 g:5:-63:9 g:5:-64:9 s:0:-65:0",
+			"new:1:0 s:16:0:17 s:-1:0:-1 g:16:0:17 g:0:0:1 g:15:0:15",
+			"new:4:0 s:0:3:0 m g:7:-9:7 g:0:3:0 g:1:1:1 g:-5:-5:5",
+			"arr:5,0,0:0 g:2:0:0",
+			"arr:0,0:3 g:0:3:0",
+			"arr:5,0,0:0 g:0:0:0 g:2:0:0 g:0:0:0 s:0:1:0",
+			"arr:0,-1:-1 g:0:-1:0 g:15:0:15",
+			"new:-1:0",
+		};
+		for (String scr : cmScripts) {
+			StringBuilder out = new StringBuilder();
+			net.minecraft.world.level.chunk.CarvingMask cm = null;
+			for (String op : scr.split(" ")) {
+				String[] p = op.split(":");
+				String r;
+				try {
+					switch (p[0]) {
+						case "new" -> {
+							cm = new net.minecraft.world.level.chunk.CarvingMask(Integer.parseInt(p[1]), Integer.parseInt(p[2]));
+							r = "ok";
+						}
+						case "arr" -> {
+							String[] ws = p[1].split(",");
+							long[] arr = new long[ws.length];
+							for (int k = 0; k < ws.length; k++) {
+								arr[k] = Long.parseLong(ws[k]);
+							}
+							cm = new net.minecraft.world.level.chunk.CarvingMask(arr, Integer.parseInt(p[2]));
+							r = "ok";
+						}
+						case "s" -> {
+							cm.set(Integer.parseInt(p[1]), Integer.parseInt(p[2]), Integer.parseInt(p[3]));
+							r = "ok";
+						}
+						case "m" -> {
+							cm.setAdditionalMask((x, y, z) -> x == y && y == -z);
+							r = "ok";
+						}
+						default -> r = b(cm.get(Integer.parseInt(p[1]), Integer.parseInt(p[2]), Integer.parseInt(p[3])));
+					}
+				} catch (RuntimeException e) {
+					r = "EX:" + exText(e);
+				}
+				out.append(out.length() == 0 ? "" : ";").append(r);
+			}
+			String tail = "-";
+			if (cm != null) {
+				StringBuilder arr = new StringBuilder();
+				for (long w : cm.toArray()) {
+					arr.append(arr.length() == 0 ? "" : ",").append(w);
+				}
+				StringBuilder st = new StringBuilder();
+				cm.stream(new net.minecraft.world.level.ChunkPos(2, -3)).forEach(bp ->
+					st.append(st.length() == 0 ? "" : ",").append(bp.getX()).append('/').append(bp.getY()).append('/').append(bp.getZ()));
+				tail = "[" + arr + "]|" + st;
+			}
+			row("CARVING", scr, esc(out.toString()), tail);
+		}
 	}
 }

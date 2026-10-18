@@ -32,6 +32,8 @@ mod f_interfaces;
 mod g_api;
 #[path = "session22/h_misc.rs"]
 mod h_misc;
+#[path = "session22/i_more.rs"]
+mod i_more;
 
 /// The source of every module in this target, for the guard's `rows("...")` scan.
 const SOURCES: &[&str] = &[
@@ -44,6 +46,7 @@ const SOURCES: &[&str] = &[
     include_str!("session22/f_interfaces.rs"),
     include_str!("session22/g_api.rs"),
     include_str!("session22/h_misc.rs"),
+    include_str!("session22/i_more.rs"),
 ];
 
 #[test]

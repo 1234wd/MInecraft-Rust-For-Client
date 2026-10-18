@@ -21,10 +21,12 @@
 //! | [`throwable`] | `Throwable#toString` and the `Throwable(Throwable)` message rule | JDK 25 |
 //! | [`java_object`] | boxed `hashCode`s, `Objects.hash`, record `hashCode`/`equals` | JDK 25 |
 //! | [`time_unit`] | `java.util.concurrent.TimeUnit` (conversion from nanoseconds) | JDK 25 |
+//! | [`bit_set`] | `java.util.BitSet` (the subset `CarvingMask` uses) | JDK 25 |
 //!
 //! Every "pinned to" version is read from the Fabric Loom / Gradle cache, i.e. what
 //! Minecraft 26.2 actually resolves -- see `java-oracle/fetch_libs.ps1`.
 
+pub mod bit_set;
 pub mod entropy;
 pub mod fraction;
 pub mod golden;
