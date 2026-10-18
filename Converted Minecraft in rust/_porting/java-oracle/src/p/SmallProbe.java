@@ -96,6 +96,7 @@ public class SmallProbe {
 			classesG();
 			classesH();
 			classesI();
+			classesJ();
 		}
 		System.err.println("small_probe: " + rows + " rows -> " + target);
 	}
@@ -1962,6 +1963,27 @@ public class SmallProbe {
 				(x, y, z) -> x + "," + y + "," + z,
 				(weight, value) -> out.append(out.length() == 0 ? "" : ";").append(value).append('=').append(d(weight)));
 			row("GAUSS", d(pv[0]), d(pv[1]), d(pv[2]), out.toString());
+		}
+	}
+
+	// ------------------------------------------------------------------ sub-batch J: ListenerTransform
+
+	static void classesJ() throws Exception {
+		net.minecraft.world.phys.Vec3 o = net.minecraft.world.phys.Vec3.ZERO;
+		com.mojang.blaze3d.audio.ListenerTransform[] ts = {
+			com.mojang.blaze3d.audio.ListenerTransform.INITIAL,
+			new com.mojang.blaze3d.audio.ListenerTransform(o, new net.minecraft.world.phys.Vec3(0.0, 0.0, -1.0), new net.minecraft.world.phys.Vec3(0.0, 1.0, 0.0)),
+			new com.mojang.blaze3d.audio.ListenerTransform(new net.minecraft.world.phys.Vec3(-0.0, 0.0, 0.0), new net.minecraft.world.phys.Vec3(0.0, 0.0, -1.0), new net.minecraft.world.phys.Vec3(0.0, 1.0, 0.0)),
+			new com.mojang.blaze3d.audio.ListenerTransform(new net.minecraft.world.phys.Vec3(1.5, -2.25, 64.0), new net.minecraft.world.phys.Vec3(1.0, 0.0, 0.0), new net.minecraft.world.phys.Vec3(0.0, 0.0, 1.0)),
+			new com.mojang.blaze3d.audio.ListenerTransform(new net.minecraft.world.phys.Vec3(Double.NaN, 0.0, 0.0), new net.minecraft.world.phys.Vec3(1e300, -1e-300, 0.1), new net.minecraft.world.phys.Vec3(Double.POSITIVE_INFINITY, 2.0, 3.0)),
+			new com.mojang.blaze3d.audio.ListenerTransform(new net.minecraft.world.phys.Vec3(Double.NaN, 0.0, 0.0), new net.minecraft.world.phys.Vec3(1e300, -1e-300, 0.1), new net.minecraft.world.phys.Vec3(Double.POSITIVE_INFINITY, 2.0, 3.0)),
+			new com.mojang.blaze3d.audio.ListenerTransform(o, o, new net.minecraft.world.phys.Vec3(Double.POSITIVE_INFINITY, 0.0, 0.0)),
+			new com.mojang.blaze3d.audio.ListenerTransform(o, new net.minecraft.world.phys.Vec3(0.3, -0.7, 1e-8), new net.minecraft.world.phys.Vec3(-1e8, 0.25, Double.MIN_VALUE)),
+		};
+		rec("ListenerTransform", true, (Object[]) ts);
+		for (int a = 0; a < ts.length; a++) {
+			net.minecraft.world.phys.Vec3 r = ts[a].right();
+			row("LISTENER", i(a), d(r.x), d(r.y), d(r.z));
 		}
 	}
 }
