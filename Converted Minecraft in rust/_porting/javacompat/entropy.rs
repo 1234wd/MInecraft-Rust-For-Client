@@ -212,14 +212,23 @@ mod tests {
         // before 2100. If this ever fails the UNIT is wrong, not the machine's clock.
         set_override(NANOS_OVERRIDE_NONE);
         let nanos = nano_time();
-        assert!(nanos > 1_577_836_800_000_000_000, "nano_time looks like seconds: {nanos}");
-        assert!(nanos < 4_102_444_800_000_000_000, "nano_time overflowed: {nanos}");
+        assert!(
+            nanos > 1_577_836_800_000_000_000,
+            "nano_time looks like seconds: {nanos}"
+        );
+        assert!(
+            nanos < 4_102_444_800_000_000_000,
+            "nano_time overflowed: {nanos}"
+        );
     }
     #[test]
     fn thread_local_random_is_stable_under_override() {
         let _guard = TEST_CLOCK_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         with_override(42, || {
-            assert_eq!(thread_local_random_next_long(), thread_local_random_next_long());
+            assert_eq!(
+                thread_local_random_next_long(),
+                thread_local_random_next_long()
+            );
             // Still differs from `nano_time` itself, so it is not a pass-through.
             assert_ne!(thread_local_random_next_long(), 42);
         });

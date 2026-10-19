@@ -210,10 +210,22 @@ mod tests {
     #[test]
     fn canonicalising_form_collapses_every_payload() {
         for bits in [0x7fc0_0000u32, 0xffc0_0000, 0x7f80_0001, 0xffa0_0001] {
-            assert_eq!(float_to_int_bits(f32::from_bits(bits)), 0x7fc0_0000, "bits {bits:#x}");
+            assert_eq!(
+                float_to_int_bits(f32::from_bits(bits)),
+                0x7fc0_0000,
+                "bits {bits:#x}"
+            );
         }
-        for bits in [0x7ff8_0000_0000_0000u64, 0xfff8_0000_0000_0000, 0x7ff0_0000_0000_0001] {
-            assert_eq!(double_to_long_bits(f64::from_bits(bits)), 0x7ff8_0000_0000_0000u64 as i64, "bits {bits:#x}");
+        for bits in [
+            0x7ff8_0000_0000_0000u64,
+            0xfff8_0000_0000_0000,
+            0x7ff0_0000_0000_0001,
+        ] {
+            assert_eq!(
+                double_to_long_bits(f64::from_bits(bits)),
+                0x7ff8_0000_0000_0000u64 as i64,
+                "bits {bits:#x}"
+            );
         }
     }
 
@@ -242,8 +254,20 @@ mod tests {
     #[test]
     fn observable_normalises_the_invalid_operation_nan() {
         // Matches what HotSpot 21 on x86-64 produces for Inf - Inf.
-        assert_eq!(double_to_raw_long_bits(observable_f64(java_lang::sub_f64(f64::INFINITY, f64::INFINITY))), REAL_INDEFINITE_F64 as i64);
-        assert_eq!(float_to_raw_int_bits(observable_f32(java_lang::sub_f32(f32::INFINITY, f32::INFINITY))), REAL_INDEFINITE_F32 as i32);
+        assert_eq!(
+            double_to_raw_long_bits(observable_f64(java_lang::sub_f64(
+                f64::INFINITY,
+                f64::INFINITY
+            ))),
+            REAL_INDEFINITE_F64 as i64
+        );
+        assert_eq!(
+            float_to_raw_int_bits(observable_f32(java_lang::sub_f32(
+                f32::INFINITY,
+                f32::INFINITY
+            ))),
+            REAL_INDEFINITE_F32 as i32
+        );
         // Non-NaN values pass through untouched, including signed zero.
         assert!(observable_f64(-0.0).is_sign_negative());
         assert_eq!(observable_f64(1.5), 1.5);
@@ -251,8 +275,14 @@ mod tests {
 
     #[test]
     fn canonicalize_gives_the_positive_default() {
-        assert_eq!(float_to_raw_int_bits(canonicalize_f32(f32::from_bits(0xffc0_0000))), 0x7fc0_0000);
-        assert_eq!(double_to_raw_long_bits(canonicalize_f64(f64::from_bits(0xfff8_0000_0000_0000))), 0x7ff8_0000_0000_0000u64 as i64);
+        assert_eq!(
+            float_to_raw_int_bits(canonicalize_f32(f32::from_bits(0xffc0_0000))),
+            0x7fc0_0000
+        );
+        assert_eq!(
+            double_to_raw_long_bits(canonicalize_f64(f64::from_bits(0xfff8_0000_0000_0000))),
+            0x7ff8_0000_0000_0000u64 as i64
+        );
         assert_eq!(canonicalize_f64(-0.0).to_bits(), (-0.0f64).to_bits());
     }
 }

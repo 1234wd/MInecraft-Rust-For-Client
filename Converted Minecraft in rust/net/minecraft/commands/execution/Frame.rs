@@ -1,6 +1,6 @@
 //! Port of: net/minecraft/commands/execution/Frame.java
 //! Java class(es): net.minecraft.commands.execution.Frame, net.minecraft.commands.execution.Frame.FrameControl
-//! Status: VERIFIED
+//! Status: PARTIAL
 //!
 //! Session 24. `public record Frame(int depth, CommandResultCallback returnValueConsumer,
 //! Frame.FrameControl frameControl)`: one level of the command execution stack. Three methods

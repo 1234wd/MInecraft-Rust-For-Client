@@ -171,6 +171,12 @@ path = "_porting/tests/session23.rs"
 name = "session24"
 path = "_porting/tests/session24.rs"
 
+# Session 25: the fastutil double-list subset and the vanilla shape list wrappers. The same
+# jar-backed SweepProbe writes these groups; each session target has its own strict group guard.
+[[test]]
+name = "session25"
+path = "_porting/tests/session25.rs"
+
 # Runtime dependencies. Currently EMPTY on purpose, and that is worth keeping that way.
 #
 # Session 08 measured musl's `log` (the `libm` crate) against FdLibm's as a candidate for

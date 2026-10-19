@@ -327,7 +327,10 @@ mod tests {
     #[test]
     fn invsqrt_widening_is_equivalent_for_normal_inputs() {
         let x = 3.0f32;
-        assert_eq!(math::invsqrt(x).to_bits(), (1.0f32 / (x as f64).sqrt() as f32).to_bits());
+        assert_eq!(
+            math::invsqrt(x).to_bits(),
+            (1.0f32 / (x as f64).sqrt() as f32).to_bits()
+        );
 
         // Sweep a wide pseudo-random sample of positive finite floats and require
         // exact agreement. If this ever fails, the 2p+2 reasoning above is wrong and
@@ -340,13 +343,17 @@ mod tests {
                 assert_eq!(
                     math::invsqrt(v).to_bits(),
                     (1.0f32 / (v as f64).sqrt() as f32).to_bits(),
-                    "disagreement at {v:e} ({:#x})", v.to_bits()
+                    "disagreement at {v:e} ({:#x})",
+                    v.to_bits()
                 );
                 checked += 1;
             }
             probe = probe.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
         }
-        assert_eq!(checked, 200_000, "the sample should have covered 200k normal floats");
+        assert_eq!(
+            checked, 200_000,
+            "the sample should have covered 200k normal floats"
+        );
     }
 
     /// The places where the two spellings genuinely part company, which is why the
@@ -385,7 +392,11 @@ mod tests {
         let d = math::invsqrt(math::fma(
             before.x,
             before.x,
-            math::fma(before.y, before.y, math::fma(before.z, before.z, before.w * before.w)),
+            math::fma(
+                before.y,
+                before.y,
+                math::fma(before.z, before.z, before.w * before.w),
+            ),
         ));
         assert_eq!(q.x.to_bits(), (before.x * d).to_bits());
         assert_eq!(q.y.to_bits(), (before.y * d).to_bits());

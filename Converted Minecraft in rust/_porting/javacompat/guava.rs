@@ -30,6 +30,28 @@
 
 use crate::javacompat::java_lang::string_hash_code;
 
+/// Guava 33.6.0-jre's `com.google.common.math.IntMath` methods used by small ports.
+pub mod int_math {
+    /// `IntMath.gcd(int, int)` for non-negative values.
+    ///
+    /// The Java method rejects negative operands before taking the GCD. Its messages name the
+    /// first failing argument, in declaration order.
+    pub fn gcd(a: i32, b: i32) -> i32 {
+        if a < 0 {
+            panic!("java.lang.IllegalArgumentException: a ({a}) must be >= 0");
+        }
+        if b < 0 {
+            panic!("java.lang.IllegalArgumentException: b ({b}) must be >= 0");
+        }
+
+        let (mut x, mut y) = (a, b);
+        while y != 0 {
+            (x, y) = (y, x % y);
+        }
+        x
+    }
+}
+
 /// Port of a Guava `ImmutableMap<String, String>` built from string literals.
 #[derive(Debug, Clone, Copy)]
 pub struct ImmutableStrMap {

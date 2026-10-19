@@ -58,6 +58,7 @@ fn every_probe_group_is_claimed() {
     claimed.remove("...");
     let present: std::collections::BTreeSet<String> = sweep_probe::kinds()
         .into_iter()
+        .filter(|kind| !kind.starts_with("S25_"))
         .map(str::to_string)
         .collect();
     let unread: Vec<&String> = present.difference(&claimed).collect();

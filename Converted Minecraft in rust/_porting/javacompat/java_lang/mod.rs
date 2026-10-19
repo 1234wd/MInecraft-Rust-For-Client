@@ -584,8 +584,16 @@ pub fn compare_f64(a: f64, b: f64) -> Ordering {
         Ordering::Greater
     } else {
         // Both equal (or both NaN): distinguish the bit patterns so that -0.0 < +0.0.
-        let ab = if a.is_nan() { 0x7ff8_0000_0000_0000u64 } else { a.to_bits() };
-        let bb = if b.is_nan() { 0x7ff8_0000_0000_0000u64 } else { b.to_bits() };
+        let ab = if a.is_nan() {
+            0x7ff8_0000_0000_0000u64
+        } else {
+            a.to_bits()
+        };
+        let bb = if b.is_nan() {
+            0x7ff8_0000_0000_0000u64
+        } else {
+            b.to_bits()
+        };
         ab.cmp(&bb)
     }
 }
@@ -598,8 +606,16 @@ pub fn compare_f32(a: f32, b: f32) -> Ordering {
     } else if a > b {
         Ordering::Greater
     } else {
-        let ab = if a.is_nan() { 0x7fc0_0000u32 } else { a.to_bits() };
-        let bb = if b.is_nan() { 0x7fc0_0000u32 } else { b.to_bits() };
+        let ab = if a.is_nan() {
+            0x7fc0_0000u32
+        } else {
+            a.to_bits()
+        };
+        let bb = if b.is_nan() {
+            0x7fc0_0000u32
+        } else {
+            b.to_bits()
+        };
         ab.cmp(&bb)
     }
 }
@@ -822,7 +838,10 @@ mod tests {
         assert_eq!(string_hash_code("\u{4f60}"), 20320);
         // U+1F600 is a surrogate PAIR in UTF-16 (0xD83D, 0xDE00) but 4 bytes in
         // UTF-8, so a byte-wise hash would disagree.
-        assert_eq!(string_hash_code("\u{1f600}"), 0xD83Du32.wrapping_mul(31) as i32 + 0xDE00);
+        assert_eq!(
+            string_hash_code("\u{1f600}"),
+            0xD83Du32.wrapping_mul(31) as i32 + 0xDE00
+        );
     }
     /// The JVM raises the hardware's real-indefinite QNaN (NEGATIVE) for
     /// `Inf % finite` and `finite % 0`; Rust hands back the POSITIVE default NaN.
@@ -837,14 +856,26 @@ mod tests {
         assert_eq!(rem_f32(f32::INFINITY, 360.0).to_bits(), 0xffc0_0000);
         assert_eq!(rem_f32(f32::NEG_INFINITY, 360.0).to_bits(), 0xffc0_0000);
         assert_eq!(rem_f32(1.0, 0.0).to_bits(), 0xffc0_0000);
-        assert_eq!(rem_f64(f64::INFINITY, 360.0).to_bits(), 0xfff8_0000_0000_0000);
-        assert_eq!(rem_f64(f64::NEG_INFINITY, 360.0).to_bits(), 0xfff8_0000_0000_0000);
+        assert_eq!(
+            rem_f64(f64::INFINITY, 360.0).to_bits(),
+            0xfff8_0000_0000_0000
+        );
+        assert_eq!(
+            rem_f64(f64::NEG_INFINITY, 360.0).to_bits(),
+            0xfff8_0000_0000_0000
+        );
         assert_eq!(rem_f64(1.0, 0.0).to_bits(), 0xfff8_0000_0000_0000);
         assert_eq!(rem_f64(-1.0, 0.0).to_bits(), 0xfff8_0000_0000_0000);
 
         // NaN operand -> propagate, exactly like the raw operator.
-        assert_eq!(rem_f32(f32::NAN, 360.0).to_bits(), (f32::NAN % 360.0).to_bits());
-        assert_eq!(rem_f64(f64::NAN, 360.0).to_bits(), (f64::NAN % 360.0).to_bits());
+        assert_eq!(
+            rem_f32(f32::NAN, 360.0).to_bits(),
+            (f32::NAN % 360.0).to_bits()
+        );
+        assert_eq!(
+            rem_f64(f64::NAN, 360.0).to_bits(),
+            (f64::NAN % 360.0).to_bits()
+        );
 
         // Finite results are untouched, including the sign of -0.0.
         assert_eq!(rem_f32(7.0, 3.0), 1.0);

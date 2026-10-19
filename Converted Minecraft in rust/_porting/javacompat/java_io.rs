@@ -67,7 +67,10 @@ pub struct JavaIoException {
 impl JavaIoException {
     /// An exception of class `class_name` (fully qualified) with `getMessage()` = `message`.
     pub fn new(class_name: &'static str, message: Option<String>) -> Self {
-        Self { class_name, message }
+        Self {
+            class_name,
+            message,
+        }
     }
 
     /// `getClass().getName()`.
@@ -95,22 +98,32 @@ impl std::error::Error for JavaIoException {}
 
 /// `new EOFException()` (null message).
 pub fn eof_exception() -> io::Error {
-    io::Error::new(ErrorKind::UnexpectedEof, JavaIoException::new(EOF_EXCEPTION, None))
+    io::Error::new(
+        ErrorKind::UnexpectedEof,
+        JavaIoException::new(EOF_EXCEPTION, None),
+    )
 }
 
 /// `new IOException(message)`.
 pub fn io_exception(message: impl Into<String>) -> io::Error {
-    io::Error::new(ErrorKind::Other, JavaIoException::new(IO_EXCEPTION, Some(message.into())))
+    io::Error::new(
+        ErrorKind::Other,
+        JavaIoException::new(IO_EXCEPTION, Some(message.into())),
+    )
 }
 
 /// `new UTFDataFormatException(message)`.
 pub fn utf_data_format_exception(message: impl Into<String>) -> io::Error {
-    io::Error::new(ErrorKind::InvalidData, JavaIoException::new(UTF_DATA_FORMAT_EXCEPTION, Some(message.into())))
+    io::Error::new(
+        ErrorKind::InvalidData,
+        JavaIoException::new(UTF_DATA_FORMAT_EXCEPTION, Some(message.into())),
+    )
 }
 
 /// The Java exception inside `e`, if `e` was raised by this module.
 pub fn java_exception(e: &io::Error) -> Option<&JavaIoException> {
-    e.get_ref().and_then(|inner| inner.downcast_ref::<JavaIoException>())
+    e.get_ref()
+        .and_then(|inner| inner.downcast_ref::<JavaIoException>())
 }
 
 /// The Java class name of `e`: exact for errors raised here, `java.io.IOException` (or
@@ -273,11 +286,15 @@ pub fn decode_modified_utf8(bytes: &[u8]) -> io::Result<Vec<u16>> {
                 // 110x xxxx   10xx xxxx
                 count += 2;
                 if count > utflen {
-                    return Err(utf_data_format_exception("malformed input: partial character at end"));
+                    return Err(utf_data_format_exception(
+                        "malformed input: partial character at end",
+                    ));
                 }
                 let char2 = bytes[count - 1] as i32;
                 if (char2 & 0xC0) != 0x80 {
-                    return Err(utf_data_format_exception(format!("malformed input around byte {count}")));
+                    return Err(utf_data_format_exception(format!(
+                        "malformed input around byte {count}"
+                    )));
                 }
                 chars.push((((c & 0x1F) << 6) | (char2 & 0x3F)) as u16);
             }
@@ -285,18 +302,25 @@ pub fn decode_modified_utf8(bytes: &[u8]) -> io::Result<Vec<u16>> {
                 // 1110 xxxx  10xx xxxx  10xx xxxx
                 count += 3;
                 if count > utflen {
-                    return Err(utf_data_format_exception("malformed input: partial character at end"));
+                    return Err(utf_data_format_exception(
+                        "malformed input: partial character at end",
+                    ));
                 }
                 let char2 = bytes[count - 2] as i32;
                 let char3 = bytes[count - 1] as i32;
                 if (char2 & 0xC0) != 0x80 || (char3 & 0xC0) != 0x80 {
-                    return Err(utf_data_format_exception(format!("malformed input around byte {}", count - 1)));
+                    return Err(utf_data_format_exception(format!(
+                        "malformed input around byte {}",
+                        count - 1
+                    )));
                 }
                 chars.push((((c & 0x0F) << 12) | ((char2 & 0x3F) << 6) | (char3 & 0x3F)) as u16);
             }
             _ => {
                 // 10xx xxxx,  1111 xxxx
-                return Err(utf_data_format_exception(format!("malformed input around byte {count}")));
+                return Err(utf_data_format_exception(format!(
+                    "malformed input around byte {count}"
+                )));
             }
         }
     }
@@ -450,7 +474,15 @@ pub fn write_utf_units<O: DataOutput + ?Sized>(out: &mut O, units: &[u16]) -> io
 pub fn encode_modified_utf8(units: &[u16]) -> io::Result<Vec<u8>> {
     let utflen: u64 = units
         .iter()
-        .map(|&c| if c >= 0x800 { 3u64 } else if c >= 0x80 || c == 0 { 2 } else { 1 })
+        .map(|&c| {
+            if c >= 0x800 {
+                3u64
+            } else if c >= 0x80 || c == 0 {
+                2
+            } else {
+                1
+            }
+        })
         .sum();
     if utflen > 65535 {
         return Err(utf_data_format_exception(too_long_msg(units, utflen)));
@@ -520,7 +552,11 @@ impl<W: Write> DataOutput for DataOutputStream<W> {
     fn write(&mut self, b: &[u8]) -> io::Result<()> {
         self.inner.write_all(b)?;
         let next = (self.written as i64) + b.len() as i64;
-        self.written = if next > i32::MAX as i64 { i32::MAX } else { next as i32 };
+        self.written = if next > i32::MAX as i64 {
+            i32::MAX
+        } else {
+            next as i32
+        };
         Ok(())
     }
 }

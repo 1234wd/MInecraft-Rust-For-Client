@@ -102,6 +102,10 @@ public class SweepProbe {
 			batchC();
 			batchD();
 			batchE();
+			batchF();
+		fileSystemCapabilities();
+		jfrStatistics();
+		uuidLookup();
 			apiShapes();
 		}
 		System.err.println("sweep_probe: " + rows + " rows -> " + target);
@@ -1649,6 +1653,616 @@ public class SweepProbe {
 		}
 	}
 
+	// ================================================================== sub-batch F: fastutil double lists
+
+	static String offsetValue(net.minecraft.world.phys.shapes.OffsetDoubleList list, int index) {
+		try {
+			return d(list.getDouble(index));
+		} catch (RuntimeException e) {
+			return ex(e);
+		}
+	}
+
+	static String offsetSize(net.minecraft.world.phys.shapes.OffsetDoubleList list) {
+		try {
+			return i(list.size());
+		} catch (RuntimeException e) {
+			return ex(e);
+		}
+	}
+
+	static void cubePointRanges() {
+		int[] parts = {MIN, -1, 0, 1, 2, 3, 7, MAX};
+		for (int p : parts) {
+			String result;
+			try {
+				net.minecraft.world.phys.shapes.CubePointRange range = new net.minecraft.world.phys.shapes.CubePointRange(p);
+				int[] indexes = {MIN, -1, 0, 1, p - 1, p, MAX};
+				StringBuilder values = new StringBuilder(i(range.size()));
+				for (int index : indexes) {
+					values.append('|').append(d(range.getDouble(index)));
+				}
+				result = values.toString();
+			} catch (RuntimeException e) {
+				result = ex(e);
+			}
+			row("S25_CUBERANGE", i(p), result);
+		}
+	}
+
+	static void offsetDoubleLists() {
+		double[][] values = {
+			{},
+			{-0.0, 0.0, 1.25, -3.5},
+			{Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.MIN_VALUE, Double.MAX_VALUE},
+		};
+		double[] offsets = {0.0, -0.0, 0.25, Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY};
+		for (int v = 0; v < values.length; v++) {
+			it.unimi.dsi.fastutil.doubles.DoubleArrayList delegate = new it.unimi.dsi.fastutil.doubles.DoubleArrayList(values[v]);
+			for (int o = 0; o < offsets.length; o++) {
+				net.minecraft.world.phys.shapes.OffsetDoubleList list = new net.minecraft.world.phys.shapes.OffsetDoubleList(delegate, offsets[o]);
+				row("S25_OFFSET", i(v), i(o), "size", offsetSize(list));
+				for (int index = -1; index <= values[v].length + 1; index++) {
+					row("S25_OFFSET", i(v), i(o), i(index), offsetValue(list, index));
+				}
+			}
+		}
+		net.minecraft.world.phys.shapes.OffsetDoubleList nullDelegate = new net.minecraft.world.phys.shapes.OffsetDoubleList(null, 0.5);
+		row("S25_OFFSETNULL", "get", offsetValue(nullDelegate, 0));
+		row("S25_OFFSETNULL", "size", offsetSize(nullDelegate));
+
+		it.unimi.dsi.fastutil.doubles.DoubleArrayList mutable = new it.unimi.dsi.fastutil.doubles.DoubleArrayList(new double[]{1.25, -0.0});
+		net.minecraft.world.phys.shapes.OffsetDoubleList view = new net.minecraft.world.phys.shapes.OffsetDoubleList(mutable, 0.5);
+		String before = i(view.size()) + "|" + d(view.getDouble(0)) + "|" + d(view.getDouble(1));
+		mutable.set(0, 4.0);
+		mutable.add(9.0);
+		String after = i(view.size()) + "|" + d(view.getDouble(0)) + "|" + d(view.getDouble(1)) + "|" + d(view.getDouble(2));
+		row("S25_OFFSETALIAS", before, after);
+	}
+
+	static void batchF() throws Exception {
+		cubePointRanges();
+		offsetDoubleLists();
+		identicalMergers();
+		nonOverlappingMergers();
+		discreteCubeMergers();
+		divisors();
+		commonLinks();
+		exceptionCollectors();
+	}
+
+	// ---- EXCEPTIONCOLLECTOR AND THROWABLE SUPPRESSION
+
+	static final class CollectorThrowable extends Throwable {
+		CollectorThrowable(String message) { super(message); }
+		CollectorThrowable(String message, boolean suppressionEnabled) { super(message, null, suppressionEnabled, false); }
+	}
+
+	static String collectorAdd(net.minecraft.util.ExceptionCollector<Throwable> collector, Throwable value, Throwable expectedCause) {
+		try {
+			collector.add(value);
+			return "ok";
+		} catch (Throwable error) {
+			return error.getClass().getName() + "|" + esc(error.getMessage()) + "|" + b(error.getCause() == expectedCause);
+		}
+	}
+
+	static boolean collectorThrowsSame(net.minecraft.util.ExceptionCollector<Throwable> collector, Throwable expected) {
+		try {
+			collector.throwIfPresent();
+			return expected == null;
+		} catch (Throwable actual) {
+			return actual == expected;
+		}
+	}
+
+	static void exceptionCollectors() {
+		net.minecraft.util.ExceptionCollector<Throwable> empty = new net.minecraft.util.ExceptionCollector<>();
+		row("S25_EXCCOLL", "empty", collectorAdd(empty, null, null), b(collectorThrowsSame(empty, null)), b(collectorThrowsSame(empty, null)));
+
+		net.minecraft.util.ExceptionCollector<Throwable> ordered = new net.minecraft.util.ExceptionCollector<>();
+		CollectorThrowable primary = new CollectorThrowable("primary");
+		CollectorThrowable first = new CollectorThrowable("first suppressed");
+		CollectorThrowable second = new CollectorThrowable("second suppressed");
+		ordered.add(primary);
+		ordered.add(first);
+		ordered.add(second);
+		Throwable[] suppressed = primary.getSuppressed();
+		row("S25_EXCCOLL", "ordered", b(collectorThrowsSame(ordered, primary)), b(collectorThrowsSame(ordered, primary)),
+			i(suppressed.length), b(suppressed.length > 0 && suppressed[0] == first), b(suppressed.length > 1 && suppressed[1] == second),
+			esc(suppressed[0].getMessage()), esc(suppressed[1].getMessage()));
+
+		net.minecraft.util.ExceptionCollector<Throwable> nullFirst = new net.minecraft.util.ExceptionCollector<>();
+		nullFirst.add(null);
+		CollectorThrowable afterNull = new CollectorThrowable("after null");
+		nullFirst.add(afterNull);
+		row("S25_EXCCOLL", "null-first", b(collectorThrowsSame(nullFirst, afterNull)), i(afterNull.getSuppressed().length));
+
+		net.minecraft.util.ExceptionCollector<Throwable> nullSuppressed = new net.minecraft.util.ExceptionCollector<>();
+		CollectorThrowable nullPrimary = new CollectorThrowable("null target");
+		nullSuppressed.add(nullPrimary);
+		String nullResult = collectorAdd(nullSuppressed, null, null);
+		row("S25_EXCCOLL", "null-suppressed", nullResult, i(nullPrimary.getSuppressed().length), b(collectorThrowsSame(nullSuppressed, nullPrimary)));
+
+		net.minecraft.util.ExceptionCollector<Throwable> self = new net.minecraft.util.ExceptionCollector<>();
+		CollectorThrowable selfPrimary = new CollectorThrowable("self target");
+		self.add(selfPrimary);
+		String selfResult = collectorAdd(self, selfPrimary, selfPrimary);
+		row("S25_EXCCOLL", "self", selfResult, i(selfPrimary.getSuppressed().length), b(collectorThrowsSame(self, selfPrimary)));
+
+		net.minecraft.util.ExceptionCollector<Throwable> disabled = new net.minecraft.util.ExceptionCollector<>();
+		CollectorThrowable noSuppression = new CollectorThrowable("disabled", false);
+		disabled.add(noSuppression);
+		row("S25_EXCCOLL", "disabled", collectorAdd(disabled, new CollectorThrowable("ignored"), null),
+			i(noSuppression.getSuppressed().length), b(collectorThrowsSame(disabled, noSuppression)));
+
+		net.minecraft.util.ExceptionCollector<Throwable> disabledSelf = new net.minecraft.util.ExceptionCollector<>();
+		CollectorThrowable disabledSelfPrimary = new CollectorThrowable("disabled self", false);
+		disabledSelf.add(disabledSelfPrimary);
+		row("S25_EXCCOLL", "disabled-self", collectorAdd(disabledSelf, disabledSelfPrimary, disabledSelfPrimary),
+			i(disabledSelfPrimary.getSuppressed().length), b(collectorThrowsSame(disabledSelf, disabledSelfPrimary)));
+	}
+
+	// ---- FILE SYSTEM CAPABILITIES AND THE JDK COPY-OPTION SUBSET
+
+	static String joinEnumNames(Enum<?>[] values) {
+		StringBuilder result = new StringBuilder();
+		for (Enum<?> value : values) {
+			if (result.length() != 0) result.append(',');
+			result.append(value.name()).append(':').append(value.ordinal());
+		}
+		return result.toString();
+	}
+
+	static String enumValueOf(Class<? extends Enum> type, String name) {
+		try {
+			return Enum.valueOf(type, name).name();
+		} catch (Throwable error) {
+			return ex(error);
+		}
+	}
+
+	static void fileSystemCapabilities() {
+		row("S25_NIOENUM", "link-values", joinEnumNames(java.nio.file.LinkOption.values()));
+		row("S25_NIOENUM", "copy-values", joinEnumNames(java.nio.file.StandardCopyOption.values()));
+		for (String name : new String[]{"NOFOLLOW_LINKS", "bad", null}) {
+			row("S25_NIOENUM", "link-valueOf", name == null ? "\\N" : name,
+				enumValueOf(java.nio.file.LinkOption.class, name));
+		}
+		for (String name : new String[]{"ATOMIC_MOVE", "bad", null}) {
+			row("S25_NIOENUM", "copy-valueOf", name == null ? "\\N" : name,
+				enumValueOf(java.nio.file.StandardCopyOption.class, name));
+		}
+
+		for (boolean atomic : new boolean[]{false, true}) {
+			for (boolean hardLinks : new boolean[]{false, true}) {
+				net.minecraft.util.filefix.FileSystemCapabilities capability =
+					new net.minecraft.util.filefix.FileSystemCapabilities(atomic, hardLinks);
+				java.nio.file.CopyOption[] first = capability.getMoveOptions();
+				java.nio.file.CopyOption[] second = capability.getMoveOptions();
+				StringBuilder options = new StringBuilder();
+				for (java.nio.file.CopyOption option : first) {
+					if (options.length() != 0) options.append(',');
+					options.append(option.getClass().getName()).append(':').append(option.toString());
+				}
+				net.minecraft.util.filefix.FileSystemCapabilities equal =
+					new net.minecraft.util.filefix.FileSystemCapabilities(atomic, hardLinks);
+				row("S25_FSCAP", b(capability.atomicMove()), b(capability.hardLinks()),
+					i(capability.hashCode()), esc(capability.toString()), b(capability.equals(equal)),
+					b(capability.equals(new net.minecraft.util.filefix.FileSystemCapabilities(!atomic, hardLinks))));
+				row("S25_FSMOVE", b(atomic), b(hardLinks), options.toString(), b(first != second), i(first.length));
+			}
+		}
+	}
+
+	@jdk.jfr.Name("p.MinecraftStatProbe")
+	@jdk.jfr.StackTrace(false)
+	public static class MinecraftStatProbe extends jdk.jfr.Event {
+		public String level;
+		public String dimension;
+		public int chunkPosX;
+		public int chunkPosZ;
+		public float jvmSystem;
+		public float jvmUser;
+		public float machineTotal;
+		public int fps;
+		public String packetDirection;
+		public String protocolId;
+		public String packetId;
+	}
+
+	static jdk.jfr.consumer.RecordedEvent recordedStatEvent() throws Exception {
+		Path dump = Files.createTempFile("minecraft-stat-probe", ".jfr");
+		try (jdk.jfr.Recording recording = new jdk.jfr.Recording()) {
+			recording.enable(MinecraftStatProbe.class);
+			recording.start();
+			MinecraftStatProbe event = new MinecraftStatProbe();
+			event.begin();
+			event.level = "minecraft:overworld";
+			event.dimension = "minecraft:overworld";
+			event.chunkPosX = -123;
+			event.chunkPosZ = 456;
+			event.jvmSystem = 0.5F;
+			event.jvmUser = -0.0F;
+			event.machineTotal = 0.125F;
+			event.fps = 144;
+			event.packetDirection = "PLAY_TO_SERVER";
+			event.protocolId = "minecraft:game";
+			event.packetId = "minecraft:chat_command";
+			event.end();
+			event.commit();
+			recording.stop();
+			recording.dump(dump);
+		}
+		try (jdk.jfr.consumer.RecordingFile file = new jdk.jfr.consumer.RecordingFile(dump)) {
+			while (file.hasMoreEvents()) {
+				jdk.jfr.consumer.RecordedEvent event = file.readEvent();
+				if (event.getEventType().getName().equals("p.MinecraftStatProbe")) {
+					return event;
+				}
+			}
+		} finally {
+			Files.deleteIfExists(dump);
+		}
+		throw new IllegalStateException("stat probe event was not recorded");
+	}
+
+	static String eventFailure(Runnable action) {
+		try {
+			action.run();
+			return "ok";
+		} catch (Throwable error) {
+			return ex(error);
+		}
+	}
+
+	static void jfrStatistics() throws Exception {
+		jdk.jfr.consumer.RecordedEvent event = recordedStatEvent();
+		net.minecraft.util.profiling.jfr.stats.ChunkIdentification chunk =
+			net.minecraft.util.profiling.jfr.stats.ChunkIdentification.from(event);
+		net.minecraft.util.profiling.jfr.stats.CpuLoadStat cpu =
+			net.minecraft.util.profiling.jfr.stats.CpuLoadStat.from(event);
+		net.minecraft.util.profiling.jfr.stats.FpsStat fps =
+			net.minecraft.util.profiling.jfr.stats.FpsStat.from(event, "fps");
+		net.minecraft.util.profiling.jfr.stats.PacketIdentification packet =
+			net.minecraft.util.profiling.jfr.stats.PacketIdentification.from(event);
+		row("S25_JFRSTAT", "chunk", esc(chunk.level()), esc(chunk.dimension()), i(chunk.x()), i(chunk.z()),
+			i(chunk.hashCode()), esc(chunk.toString()));
+		row("S25_JFRSTAT", "cpu", d(cpu.jvm()), d(cpu.userJvm()), d(cpu.system()),
+			i(cpu.hashCode()), esc(cpu.toString()));
+		row("S25_JFRSTAT", "fps", i(fps.fps()), i(fps.hashCode()), esc(fps.toString()));
+		row("S25_JFRSTAT", "packet", esc(packet.direction()), esc(packet.protocolId()), esc(packet.packetId()),
+			i(packet.hashCode()), esc(packet.toString()));
+		row("S25_JFRSTAT", "bad-int-field", eventFailure(() -> event.getInt("missing")));
+		row("S25_JFRSTAT", "wrong-int-type", eventFailure(() -> event.getInt("level")));
+		row("S25_JFRSTAT", "wrong-string-type", eventFailure(() -> event.getString("fps")));
+		row("S25_JFRSTAT", "null-event", eventFailure(() -> net.minecraft.util.profiling.jfr.stats.ChunkIdentification.from(null)));
+		row("S25_JFRSTAT", "null-fps-event", eventFailure(() -> net.minecraft.util.profiling.jfr.stats.FpsStat.from(null, "fps")));
+		row("S25_JFRSTAT", "null-fps-field", eventFailure(() -> net.minecraft.util.profiling.jfr.stats.FpsStat.from(event, null)));
+		row("S25_JFRSTAT", "missing-fps", eventFailure(() -> net.minecraft.util.profiling.jfr.stats.FpsStat.from(event, "missing")));
+		net.minecraft.util.profiling.jfr.stats.ChunkIdentification nullChunk =
+			new net.minecraft.util.profiling.jfr.stats.ChunkIdentification(null, null, -1, 2);
+		row("S25_JFRSTAT", "null-chunk", esc(nullChunk.toString()), i(nullChunk.hashCode()),
+			b(nullChunk.equals(new net.minecraft.util.profiling.jfr.stats.ChunkIdentification(null, null, -1, 2))));
+		net.minecraft.util.profiling.jfr.stats.PacketIdentification nullPacket =
+			new net.minecraft.util.profiling.jfr.stats.PacketIdentification(null, null, null);
+		row("S25_JFRSTAT", "null-packet", esc(nullPacket.toString()), i(nullPacket.hashCode()),
+			b(nullPacket.equals(new net.minecraft.util.profiling.jfr.stats.PacketIdentification(null, null, null))));
+		net.minecraft.util.profiling.jfr.stats.CpuLoadStat nanCpu =
+			new net.minecraft.util.profiling.jfr.stats.CpuLoadStat(Double.NaN, -0.0, 1.0);
+		row("S25_JFRSTAT", "cpu-ieee", b(nanCpu.equals(new net.minecraft.util.profiling.jfr.stats.CpuLoadStat(Double.longBitsToDouble(0x7ff0000000000001L), -0.0, 1.0))),
+			b(nanCpu.equals(new net.minecraft.util.profiling.jfr.stats.CpuLoadStat(Double.NaN, 0.0, 1.0))),
+			i(nanCpu.hashCode()));
+	}
+
+	static final class ProbeIdentified implements net.minecraft.world.level.entity.UniquelyIdentifyable {
+		private final java.util.UUID uuid;
+		ProbeIdentified(java.util.UUID uuid) { this.uuid = uuid; }
+		@Override public java.util.UUID getUUID() { return this.uuid; }
+		@Override public boolean isRemoved() { return false; }
+	}
+
+	static void uuidLookup() {
+		java.util.UUID expected = new java.util.UUID(0x0123456789abcdefL, 0xfedcba9876543210L);
+		ProbeIdentified found = new ProbeIdentified(expected);
+		net.minecraft.world.level.entity.UUIDLookup<ProbeIdentified> lookup = uuid -> uuid.equals(expected) ? found : null;
+		row("S25_UUIDLOOKUP", "hit", b(lookup.lookup(expected) == found));
+		row("S25_UUIDLOOKUP", "miss", b(lookup.lookup(new java.util.UUID(0L, 0L)) == null));
+	}
+
+	// ---- COMMONLINKS, UUID AND THE AUTHlib UndashedUuid FORMATTER
+
+	static String commonLinkField(String name) throws Exception {
+		Object value = net.minecraft.util.CommonLinks.class.getDeclaredField(name).get(null);
+		return esc(value.toString());
+	}
+
+	static void commonLinks() throws Exception {
+		String[] names = {
+			"GDPR", "EULA", "PRIVACY_STATEMENT", "ATTRIBUTION", "LICENSES", "BUY_MINECRAFT_JAVA", "ACCOUNT_SETTINGS",
+			"SNAPSHOT_FEEDBACK", "RELEASE_FEEDBACK", "SNAPSHOT_BUGS_FEEDBACK", "GENERAL_HELP", "ACCESSIBILITY_HELP",
+			"REPORTING_HELP", "SUSPENSION_HELP", "BLOCKING_HELP", "SYMLINK_HELP", "PRIVACY_AND_ONLINE_SETTINGS",
+			"START_REALMS_TRIAL", "BUY_REALMS", "REALMS_TERMS", "REALMS_CONTENT_CREATION", "EXTEND_REALMS_LINK",
+			"INTENTIONAL_GAME_DESIGN_BUG_ID", "INTENTIONAL_GAME_DESIGN_BUG"
+		};
+		for (String name : names) {
+			java.lang.reflect.Field field = net.minecraft.util.CommonLinks.class.getDeclaredField(name);
+			row("S25_LINK", name, field.getType().getTypeName(), commonLinkField(name));
+		}
+
+		long[][] uuidBits = {
+			{0L, 0L}, {-1L, -1L}, {Long.MIN_VALUE, Long.MIN_VALUE}, {Long.MAX_VALUE, Long.MAX_VALUE},
+			{0x0123456789abcdefL, 0xfedcba9876543210L}, {0x0000000000000001L, 0x0000000000000001L}
+		};
+		java.util.UUID[] uuids = new java.util.UUID[uuidBits.length];
+		for (int n = 0; n < uuidBits.length; n++) {
+			uuids[n] = new java.util.UUID(uuidBits[n][0], uuidBits[n][1]);
+			row("S25_UUID", l(uuidBits[n][0]), l(uuidBits[n][1]), uuids[n].toString(),
+				esc(com.mojang.util.UndashedUuid.toString(uuids[n])));
+		}
+
+		String[] subscriptions = {null, "", "realm-123", "id &ref?=x", "é realm/一"};
+		for (int s = 0; s < subscriptions.length; s++) {
+			for (int u = -1; u < uuids.length; u++) {
+				java.util.UUID uuid = u < 0 ? null : uuids[u];
+				String basic, trial, expired;
+				try { basic = esc(net.minecraft.util.CommonLinks.extendRealms(subscriptions[s], uuid)); }
+				catch (RuntimeException e) { basic = ex(e); }
+				try { trial = esc(net.minecraft.util.CommonLinks.extendRealms(subscriptions[s], uuid, true)); }
+				catch (RuntimeException e) { trial = ex(e); }
+				try { expired = esc(net.minecraft.util.CommonLinks.extendRealms(subscriptions[s], uuid, false)); }
+				catch (RuntimeException e) { expired = ex(e); }
+				row("S25_EXTREALM", i(s), i(u), basic, trial, expired);
+			}
+		}
+	}
+
+	// ---- DIVISOR AND FASTUTIL'S IntIterator DEFAULT METHODS
+
+	static String drainDivisor(it.unimi.dsi.fastutil.ints.IntIterator divisor) {
+		StringBuilder values = new StringBuilder();
+		while (divisor.hasNext()) {
+			values.append(values.length() == 0 ? "" : ",").append(divisor.nextInt());
+		}
+		String exhausted;
+		try {
+			exhausted = i(divisor.nextInt());
+		} catch (RuntimeException e) {
+			exhausted = ex(e);
+		}
+		return values + "|" + b(divisor.hasNext()) + "|" + exhausted;
+	}
+
+	static void divisors() {
+		for (int numerator : new int[]{MIN, -10, -5, -1, 0, 1, 5, 10, MAX}) {
+			for (int denominator : new int[]{-3, -1, 0, 1, 2, 3, 7}) {
+				row("S25_DIVISOR", i(numerator), i(denominator), drainDivisor(new com.mojang.math.Divisor(numerator, denominator)));
+			}
+		}
+
+		for (int[] p : new int[][]{{10, 3, 0}, {10, 3, 1}, {10, 3, 3}, {10, 3, 8}, {-10, 3, 1}, {-5, 2, 5}, {8, 0, 2}, {8, -2, 2}, {8, 3, -1}}) {
+			com.mojang.math.Divisor divisor = new com.mojang.math.Divisor(p[0], p[1]);
+			try {
+				int skipped = divisor.skip(p[2]);
+				row("S25_DIVISORSKIP", i(p[0]), i(p[1]), i(p[2]), i(skipped), drainDivisor(divisor));
+			} catch (RuntimeException e) {
+				row("S25_DIVISORSKIP", i(p[0]), i(p[1]), i(p[2]), ex(e));
+			}
+		}
+
+		for (int[] p : new int[][]{{10, 3}, {-10, 3}, {5, 0}}) {
+			Iterable<Integer> iterable = com.mojang.math.Divisor.asIterable(p[0], p[1]);
+			it.unimi.dsi.fastutil.ints.IntIterator first = (it.unimi.dsi.fastutil.ints.IntIterator) iterable.iterator();
+			it.unimi.dsi.fastutil.ints.IntIterator second = (it.unimi.dsi.fastutil.ints.IntIterator) iterable.iterator();
+			String a = first.hasNext() ? i(first.nextInt()) : "none";
+			String b = second.hasNext() ? i(second.nextInt()) : "none";
+			row("S25_DIVISORITER", i(p[0]), i(p[1]), a, b, drainDivisor(first), drainDivisor(second));
+		}
+
+		for (int[] p : new int[][]{{10, 3}, {5, 0}}) {
+			com.mojang.math.Divisor divisor = new com.mojang.math.Divisor(p[0], p[1]);
+			StringBuilder seen = new StringBuilder();
+			String result;
+			try {
+				divisor.forEachRemaining((java.util.function.IntConsumer)v -> seen.append(seen.length() == 0 ? "" : ",").append(v));
+				result = "ok";
+			} catch (RuntimeException e) {
+				result = ex(e);
+			}
+			row("S25_DIVISORFOREACH", i(p[0]), i(p[1]), result, seen.toString(), b(divisor.hasNext()));
+		}
+		for (int denominator : new int[]{0, 1}) {
+			com.mojang.math.Divisor divisor = new com.mojang.math.Divisor(4, denominator);
+			try {
+				divisor.forEachRemaining((java.util.function.IntConsumer)null);
+				row("S25_DIVISORNULL", i(denominator), "ok", b(divisor.hasNext()));
+			} catch (RuntimeException e) {
+				row("S25_DIVISORNULL", i(denominator), ex(e), b(divisor.hasNext()));
+			}
+		}
+		com.mojang.math.Divisor overflow = new com.mojang.math.Divisor(MAX, 1500000000);
+		StringBuilder prefix = new StringBuilder();
+		for (int n = 0; n < 6 && overflow.hasNext(); n++) {
+			prefix.append(n == 0 ? "" : ",").append(overflow.nextInt());
+		}
+		row("S25_DIVISORPREFIX", i(MAX), "1500000000", "6", prefix.toString(), b(overflow.hasNext()));
+	}
+
+	// ---- GUAVA INTMATH.GCD AND DISCRETE CUBE MERGER
+
+	static net.minecraft.world.phys.shapes.DiscreteCubeMerger newDiscreteCubeMerger(int first, int second) {
+		try {
+			java.lang.reflect.Constructor<net.minecraft.world.phys.shapes.DiscreteCubeMerger> c = net.minecraft.world.phys.shapes.DiscreteCubeMerger.class
+				.getDeclaredConstructor(int.class, int.class);
+			c.setAccessible(true);
+			return c.newInstance(first, second);
+		} catch (java.lang.reflect.InvocationTargetException e) {
+			if (e.getCause() instanceof RuntimeException r) {
+				throw r;
+			}
+			throw new RuntimeException(e.getCause());
+		} catch (ReflectiveOperationException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	static String discreteCubeState(int first, int second) {
+		try {
+			net.minecraft.world.phys.shapes.DiscreteCubeMerger merger = newDiscreteCubeMerger(first, second);
+			int size = merger.size();
+			if (size < 0 || size > 512) {
+				return i(size) + "|large";
+			}
+			it.unimi.dsi.fastutil.doubles.DoubleList list = merger.getList();
+			StringBuilder values = new StringBuilder();
+			for (int index = 0; index < size; index++) {
+				values.append(index == 0 ? "" : ",").append(d(list.getDouble(index)));
+			}
+			boolean sameList = list == merger.getList();
+			String all = mergerCalls(merger, -1, false);
+			String early = mergerCalls(merger, 1, false);
+			String nullCall = mergerCalls(merger, -1, true);
+			return i(size) + "|" + b(sameList) + "|" + values + "|" + all + "|" + early + "|" + nullCall;
+		} catch (RuntimeException e) {
+			return ex(e);
+		}
+	}
+
+	static void discreteCubeMergers() {
+		int[][] gcdPairs = {
+			{0, 0}, {0, 1}, {1, 0}, {1, 1}, {2, 3}, {12, 18}, {48, 18}, {1073741824, 536870912},
+			{MAX, MAX - 1}, {MAX, 0}, {-1, 3}, {3, -1}, {MIN, 1}, {1, MIN}, {MIN, MIN}
+		};
+		for (int[] pair : gcdPairs) {
+			try {
+				row("S25_GCD", i(pair[0]), i(pair[1]), i(com.google.common.math.IntMath.gcd(pair[0], pair[1])));
+			} catch (RuntimeException e) {
+				row("S25_GCD", i(pair[0]), i(pair[1]), ex(e));
+			}
+		}
+		int[][] mergerPairs = {
+			{1, 1}, {1, 2}, {2, 1}, {2, 3}, {3, 4}, {4, 6}, {6, 4}, {3, 9}, {5, 7}, {7, 5},
+			{8, 12}, {9, 15}, {10, 25}, {0, 0}, {0, 2}, {2, 0}, {-1, 2}, {2, -1}, {MIN, 1},
+			{MAX, 1}, {MAX, 2}, {46341, 46349}
+		};
+		for (int[] pair : mergerPairs) {
+			row("S25_DISCRETE", i(pair[0]), i(pair[1]), discreteCubeState(pair[0], pair[1]));
+		}
+	}
+
+	// ---- IDENTICAL MERGER: same coordinates on both axes
+
+	static String mergerCalls(net.minecraft.world.phys.shapes.IndexMerger merger, int stopAfter, boolean nullConsumer) {
+		StringBuilder calls = new StringBuilder();
+		int[] count = {0};
+		net.minecraft.world.phys.shapes.IndexMerger.IndexConsumer consumer = nullConsumer ? null : (first, second, result) -> {
+			if (calls.length() > 0) {
+				calls.append(';');
+			}
+			calls.append(first).append(',').append(second).append(',').append(result);
+			count[0]++;
+			return stopAfter < 0 || count[0] < stopAfter;
+		};
+		try {
+			return b(merger.forMergedIndexes(consumer)) + "|" + calls;
+		} catch (RuntimeException e) {
+			return ex(e);
+		}
+	}
+
+	static void identicalMergers() {
+		double[][] coordinates = {{}, {7.5}, {-0.0, 0.0, 1.25, -3.5}};
+		for (int c = 0; c < coordinates.length; c++) {
+			it.unimi.dsi.fastutil.doubles.DoubleArrayList list = new it.unimi.dsi.fastutil.doubles.DoubleArrayList(coordinates[c]);
+			net.minecraft.world.phys.shapes.IdenticalMerger merger = new net.minecraft.world.phys.shapes.IdenticalMerger(list);
+			for (int stop : new int[]{-1, 1, 2}) {
+				row("S25_IDENTICAL", i(c), i(stop), i(merger.size()), b(merger.getList() == list), mergerCalls(merger, stop, false));
+			}
+			row("S25_IDENTICALNULLCALL", i(c), mergerCalls(merger, -1, true));
+		}
+		net.minecraft.world.phys.shapes.IdenticalMerger nullCoords = new net.minecraft.world.phys.shapes.IdenticalMerger(null);
+		row("S25_IDENTICALNULL", "getList", null == nullCoords.getList() ? "true" : "false");
+		try {
+			row("S25_IDENTICALNULL", "size", i(nullCoords.size()));
+		} catch (RuntimeException e) {
+			row("S25_IDENTICALNULL", "size", ex(e));
+		}
+		try {
+			row("S25_IDENTICALNULL", "merge", mergerCalls(nullCoords, -1, false));
+		} catch (RuntimeException e) {
+			row("S25_IDENTICALNULL", "merge", ex(e));
+		}
+	}
+
+	// ---- NONOVERLAP: two lists share their boundary coordinate
+
+	static final double[][] MERGER_COORDS = {
+		{},
+		{7.5},
+		{-0.0, 0.0, 1.25},
+		{Double.NaN, Double.POSITIVE_INFINITY, Double.MIN_VALUE, Double.MAX_VALUE},
+	};
+
+	static net.minecraft.world.phys.shapes.NonOverlappingMerger newNonOverlapping(
+		it.unimi.dsi.fastutil.doubles.DoubleList lower,
+		it.unimi.dsi.fastutil.doubles.DoubleList upper,
+		boolean swap
+	) throws Exception {
+		java.lang.reflect.Constructor<net.minecraft.world.phys.shapes.NonOverlappingMerger> c = net.minecraft.world.phys.shapes.NonOverlappingMerger.class
+			.getDeclaredConstructor(it.unimi.dsi.fastutil.doubles.DoubleList.class,
+				it.unimi.dsi.fastutil.doubles.DoubleList.class, boolean.class);
+		c.setAccessible(true);
+		return c.newInstance(lower, upper, swap);
+	}
+
+	static String mergerValues(net.minecraft.world.phys.shapes.NonOverlappingMerger merger, int size) {
+		StringBuilder values = new StringBuilder();
+		for (int index = -1; index <= size + 1; index++) {
+			if (values.length() > 0) {
+				values.append(';');
+			}
+			try {
+				values.append(d(merger.getDouble(index)));
+			} catch (RuntimeException e) {
+				values.append(ex(e));
+			}
+		}
+		return values.toString();
+	}
+
+	static void nonOverlappingMergers() throws Exception {
+		for (int l = 0; l < MERGER_COORDS.length; l++) {
+			for (int u = 0; u < MERGER_COORDS.length; u++) {
+				for (boolean swap : new boolean[]{false, true}) {
+					it.unimi.dsi.fastutil.doubles.DoubleArrayList lower = new it.unimi.dsi.fastutil.doubles.DoubleArrayList(MERGER_COORDS[l]);
+					it.unimi.dsi.fastutil.doubles.DoubleArrayList upper = new it.unimi.dsi.fastutil.doubles.DoubleArrayList(MERGER_COORDS[u]);
+					net.minecraft.world.phys.shapes.NonOverlappingMerger merger = newNonOverlapping(lower, upper, swap);
+					int size = merger.size();
+					row("S25_NONOVERLAP", i(l), i(u), b(swap), i(size), b(merger.getList() == merger),
+						mergerValues(merger, size), mergerCalls(merger, -1, false), mergerCalls(merger, 1, false),
+						mergerCalls(merger, -1, true));
+				}
+			}
+		}
+		it.unimi.dsi.fastutil.doubles.DoubleArrayList one = new it.unimi.dsi.fastutil.doubles.DoubleArrayList(new double[]{1.0});
+		for (boolean nullLower : new boolean[]{true, false}) {
+			net.minecraft.world.phys.shapes.NonOverlappingMerger merger = newNonOverlapping(nullLower ? null : one, nullLower ? one : null, false);
+			for (String operation : new String[]{"size", "get", "merge"}) {
+				String result;
+				try {
+					result = switch (operation) {
+						case "size" -> i(merger.size());
+						case "get" -> d(merger.getDouble(nullLower ? 0 : 1));
+					default -> mergerCalls(merger, -1, false);
+					};
+				} catch (RuntimeException e) {
+					result = ex(e);
+				}
+				row("S25_NONOVERLAPNULL", nullLower ? "lower" : "upper", operation, result);
+			}
+		}
+	}
+
 	// ================================================================== API24: member accounting
 
 	static final String[] API_CLASSES = {
@@ -1703,6 +2317,29 @@ public class SweepProbe {
 		"com.mojang.blaze3d.systems.DeviceInfo",
 		"net.minecraft.util.profiling.metrics.storage.RecordedDeviation",
 	};
+	static final String[] API25_CLASSES = {
+		"net.minecraft.world.phys.shapes.CubePointRange",
+		"net.minecraft.world.phys.shapes.OffsetDoubleList",
+		"net.minecraft.world.phys.shapes.IndexMerger",
+		"net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer",
+		"net.minecraft.world.phys.shapes.IdenticalMerger",
+		"net.minecraft.world.phys.shapes.NonOverlappingMerger",
+		"net.minecraft.world.phys.shapes.DiscreteCubeMerger",
+		"com.mojang.math.Divisor",
+		"net.minecraft.util.CommonLinks",
+		"net.minecraft.world.level.entity.UniquelyIdentifyable",
+		"net.minecraft.util.ExceptionCollector",
+		"net.minecraft.util.filefix.FileSystemCapabilities",
+		"java.nio.file.CopyOption",
+		"java.nio.file.LinkOption",
+		"java.nio.file.StandardCopyOption",
+		"net.minecraft.CrashReportDetail",
+		"net.minecraft.util.profiling.jfr.stats.ChunkIdentification",
+		"net.minecraft.util.profiling.jfr.stats.CpuLoadStat",
+		"net.minecraft.util.profiling.jfr.stats.FpsStat",
+		"net.minecraft.util.profiling.jfr.stats.PacketIdentification",
+		"net.minecraft.world.level.entity.UUIDLookup",
+	};
 
 	static String vis(int mod) {
 		return java.lang.reflect.Modifier.isPublic(mod) ? "public" : java.lang.reflect.Modifier.isProtected(mod) ? "protected"
@@ -1715,7 +2352,12 @@ public class SweepProbe {
 	 * members are skipped, as are the members of anonymous classes (they belong to the factory).
 	 */
 	static void apiShapes() throws Exception {
-		for (String cn : API_CLASSES) {
+		apiShapes(API_CLASSES, "API24", "API24SUP");
+		apiShapes(API25_CLASSES, "S25_API", "S25_SUP");
+	}
+
+	static void apiShapes(String[] classes, String memberGroup, String superGroup) throws Exception {
+		for (String cn : classes) {
 			Class<?> c = Class.forName(cn);
 			String simple = cn.substring(cn.lastIndexOf('.') + 1);
 			java.util.List<String> rs = new java.util.ArrayList<>();
@@ -1756,7 +2398,7 @@ public class SweepProbe {
 			}
 			java.util.Collections.sort(rs);
 			for (String s : rs) {
-				row("API24", simple, s);
+				row(memberGroup, simple, s);
 			}
 			StringBuilder sup = new StringBuilder();
 			for (java.lang.reflect.Type t : c.getGenericInterfaces()) {
@@ -1767,7 +2409,7 @@ public class SweepProbe {
 			}
 			String kind = c.isAnnotation() ? "annotation" : c.isInterface() ? "interface" : c.isRecord() ? "record" : c.isEnum() ? "enum"
 				: java.lang.reflect.Modifier.isAbstract(c.getModifiers()) ? "abstract class" : "class";
-			row("API24SUP", simple, sup.length() == 0 ? "-" : sup.toString(), kind);
+			row(superGroup, simple, sup.length() == 0 ? "-" : sup.toString(), kind);
 		}
 	}
 }

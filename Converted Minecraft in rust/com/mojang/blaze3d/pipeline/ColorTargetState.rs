@@ -1,6 +1,6 @@
 //! Port of: com/mojang/blaze3d/pipeline/ColorTargetState.java
 //! Java class(es): com.mojang.blaze3d.pipeline.ColorTargetState, com.mojang.blaze3d.pipeline.ColorTargetState.WriteMask
-//! Status: VERIFIED
+//! Status: PARTIAL
 //!
 //! Session 24. `public record ColorTargetState(Optional<BlendFunction> blendFunction, GpuFormat
 //! format, @WriteMask int writeMask)`: how a pipeline writes one colour attachment -- the optional

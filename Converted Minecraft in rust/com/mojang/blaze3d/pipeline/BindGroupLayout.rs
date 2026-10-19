@@ -1,6 +1,6 @@
 //! Port of: com/mojang/blaze3d/pipeline/BindGroupLayout.java
 //! Java class(es): com.mojang.blaze3d.pipeline.BindGroupLayout, com.mojang.blaze3d.pipeline.BindGroupLayout.Builder, com.mojang.blaze3d.pipeline.BindGroupLayout.UniformDescription
-//! Status: VERIFIED
+//! Status: PARTIAL
 //!
 //! Session 24. `public class BindGroupLayout`: the named samplers and uniforms one bind group of a
 //! render pipeline exposes, built with a [`Builder`], plus three static helpers over a list of

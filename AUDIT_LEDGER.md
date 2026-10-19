@@ -164,3 +164,14 @@ The 1 ignored test is `blockpos_clamp_location_within` (golden data contradicts 
 | `BlockPos.rs` | `clampLocationWithin` | Golden data self-contradictory |
 | `BlockPos.rs` | Some iterator methods | Not on parity-tested path yet |
 | `AABB.rs` | `toString` | PORT-BLOCKED: FloatingDecimal subnormal formatting |
+
+
+## Session 24 reconciliation and Session 25 verification (2026-10-19)
+
+The audit reconciled the latest three Session24 commits with the current Rust files, probe API inventory, and 43-test target. Seven files were demoted from `VERIFIED` to `PARTIAL` because their JVM-generated identity methods are absent: `Frame.hashCode/toString`, `VertexFormatElement.hashCode`, `BlendFunction.hashCode`, `BindGroupLayout.UniformDescription.hashCode`, `StrictQueue.RunnableWithPriority.equals/hashCode/toString`, `ColorTargetState.hashCode`, and `DeviceInfo.hashCode`. The `z_api` guard names these omissions. The other 34 of 41 Session24 candidates remain verified. Current Session24 debug/release results: 43 passed each.
+
+Session25 adds 17 behaviorally implemented files: `CubePointRange`, `OffsetDoubleList`, `IndexMerger`, `IdenticalMerger`, `NonOverlappingMerger`, `DiscreteCubeMerger`, `Divisor`, `CommonLinks`, `UniquelyIdentifyable`, `ExceptionCollector`, `FileSystemCapabilities`, `CrashReportDetail`, `ChunkIdentification`, `CpuLoadStat`, `FpsStat`, `PacketIdentification`, and `UUIDLookup`. Their 32-test target consumes the corresponding JAR/JDK oracle groups and passes in debug and release. No claimed file contains a `todo!()` or `unimplemented!()` placeholder.
+
+The helpers are deliberately scoped: fastutil `DoubleList`; Guava `IntMath.gcd`; immutable URI spellings and UUID operations used by `CommonLinks`; NIO option types used by `FileSystemCapabilities`; `Callable<V>`; typed JFR fields read by four Minecraft stat records; and throwable suppression. The JFR and NIO helpers do not claim to model those complete JDK APIs.
+
+The full debug and release suites each report 814 passed, 0 failed, 2 ignored over 24 targets. `cargo check --all-targets`, `cargo clippy --all-targets`, focused rustfmt, diff whitespace, mirror check, and source-tree verifier pass. Clippy exits 0 with 15 warnings in older test targets only. The mirror verifier confirms 7,055/7,055 Java-to-Rust paths, zero orphans, and an unchanged Java source baseline. Current exact inventory and remaining direct blockers are in `_porting/SESSION_LOG.md` and `_porting/OPEN_QUESTIONS.md`.

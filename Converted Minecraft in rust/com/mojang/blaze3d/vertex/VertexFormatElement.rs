@@ -1,6 +1,6 @@
 //! Port of: com/mojang/blaze3d/vertex/VertexFormatElement.java
 //! Java class(es): com.mojang.blaze3d.vertex.VertexFormatElement
-//! Status: VERIFIED
+//! Status: PARTIAL
 //!
 //! Session 24. `public record VertexFormatElement(String name, int offset, GpuFormat format)`: one
 //! attribute of a vertex layout.

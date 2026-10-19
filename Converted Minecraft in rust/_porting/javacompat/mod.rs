@@ -26,6 +26,11 @@
 //! | [`fastutil`] | `HashCommon.mix` (the fastutil methods vanilla calls, one by one) | fastutil 8.5.18 |
 //! | [`guava`] | `ImmutableMap<String, String>` literal tables, `AbstractIterator`, `PeekingIterator` (the Guava types ported files need) | Guava 33.6.0-jre |
 //! | [`java_time`] | `java.time.Instant` as a value (no clock, no formatting) | JDK 25 |
+//! | [`java_net`] | fixed `java.net.URI` values used by `CommonLinks` | JDK 25 |
+//! | [`java_util`] | the UUID bit and undashed-string operations used by `CommonLinks` | JDK 25 + authlib 9.0.75 |
+//! | [`java_nio`] | `CopyOption` markers and the NIO option enums used by `FileSystemCapabilities` | JDK 25 |
+//! | [`java_concurrent`] | `Callable<V>` and its throwable result contract | JDK 25 |
+//! | [`java_jfr`] | the typed event fields read by Minecraft's small JFR stat records | JDK 25 |
 //!
 //! Every "pinned to" version is read from the Fabric Loom / Gradle cache, i.e. what
 //! Minecraft 26.2 actually resolves -- see `java-oracle/fetch_libs.ps1`.
@@ -36,16 +41,21 @@ pub mod fastutil;
 pub mod fraction;
 pub mod golden;
 pub mod guava;
+pub mod java_concurrent;
 pub mod java_hash_map;
 pub mod java_io;
+pub mod java_jfr;
 pub mod java_lang;
-pub mod java_time;
+pub mod java_net;
+pub mod java_nio;
 pub mod java_object;
+pub mod java_time;
+pub mod java_util;
 
-#[path = "jvm_math.rs"]
-pub mod jvm_math;
 pub mod java_random;
 pub mod joml;
+#[path = "jvm_math.rs"]
+pub mod jvm_math;
 pub mod md5;
 pub mod nan_policy;
 pub mod throwable;

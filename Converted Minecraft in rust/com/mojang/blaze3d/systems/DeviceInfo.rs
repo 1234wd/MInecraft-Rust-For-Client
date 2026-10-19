@@ -1,6 +1,6 @@
 //! Port of: com/mojang/blaze3d/systems/DeviceInfo.java
 //! Java class(es): com.mojang.blaze3d.systems.DeviceInfo
-//! Status: VERIFIED
+//! Status: PARTIAL
 //!
 //! Session 24. `public record DeviceInfo(String name, String vendorName, String driverInfo, boolean
 //! isZZeroToOne, String backendName, float timestampPeriod, DeviceLimits limits, DeviceFeatures

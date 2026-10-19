@@ -178,8 +178,12 @@ fn significant_digits(sci: &str) -> usize {
 /// Never for input produced by Rust's `{:e}`. The `expect` documents the invariant
 /// rather than papering over it.
 fn layout(sci: &str) -> String {
-    let (mantissa, exp) = sci.split_once('e').expect("Rust `{:e}` always emits an `e`");
-    let exp: i32 = exp.parse().expect("Rust `{:e}` always emits a decimal exponent");
+    let (mantissa, exp) = sci
+        .split_once('e')
+        .expect("Rust `{:e}` always emits an `e`");
+    let exp: i32 = exp
+        .parse()
+        .expect("Rust `{:e}` always emits a decimal exponent");
 
     let (neg, digits) = match mantissa.strip_prefix('-') {
         Some(rest) => (true, rest),
@@ -317,7 +321,11 @@ mod tests {
             (29, "4.1E-44"),
             (71, "9.9E-44"),
         ] {
-            assert_eq!(float_to_string(f32::from_bits(bits)), want, "f32 bits {bits}");
+            assert_eq!(
+                float_to_string(f32::from_bits(bits)),
+                want,
+                "f32 bits {bits}"
+            );
         }
 
         // And the ones where the significand IS a multiple of 10, so the canonical decimal
@@ -367,8 +375,21 @@ mod tests {
     #[test]
     fn round_trips() {
         for v in [
-            0.0f32, 1.0, -1.0, 0.1, 1.0 / 3.0, 1.0e-4, 1.0e-3, 1.0e7, 1.0e8,
-            1.0e30, 1.0e-30, f32::MIN_POSITIVE, f32::MAX, 123456.0, 0.000999,
+            0.0f32,
+            1.0,
+            -1.0,
+            0.1,
+            1.0 / 3.0,
+            1.0e-4,
+            1.0e-3,
+            1.0e7,
+            1.0e8,
+            1.0e30,
+            1.0e-30,
+            f32::MIN_POSITIVE,
+            f32::MAX,
+            123456.0,
+            0.000999,
         ] {
             let s = float_to_string(v);
             let back: f32 = s.parse().expect("java float_to_string must round-trip");

@@ -115,11 +115,15 @@ pub struct Row {
 
 impl Row {
     pub fn arg(&self, i: usize) -> &Val {
-        self.args.get(i).unwrap_or_else(|| panic!("row {} has no arg {i}", self.line))
+        self.args
+            .get(i)
+            .unwrap_or_else(|| panic!("row {} has no arg {i}", self.line))
     }
 
     pub fn exp(&self, i: usize) -> &Val {
-        self.expect.get(i).unwrap_or_else(|| panic!("row {} has no expected value {i}", self.line))
+        self.expect
+            .get(i)
+            .unwrap_or_else(|| panic!("row {} has no expected value {i}", self.line))
     }
 
     pub fn exp0(&self) -> &Val {
@@ -142,7 +146,11 @@ impl Golden {
         let path = dir.join(name);
         let text = std::fs::read_to_string(&path)
             .unwrap_or_else(|e| panic!("cannot read golden file {}: {e}", path.display()));
-        let mut g = Golden { path, groups: HashMap::new(), order: Vec::new() };
+        let mut g = Golden {
+            path,
+            groups: HashMap::new(),
+            order: Vec::new(),
+        };
 
         let mut current: Option<String> = None;
         for (i, raw) in text.lines().enumerate() {
@@ -161,8 +169,12 @@ impl Golden {
                 }
                 continue;
             }
-            let group = current.clone().unwrap_or_else(|| panic!("data row before any #fn header at line {}", i + 1));
-            let (lhs, rhs) = line.split_once(" -> ").unwrap_or_else(|| panic!("malformed row at line {}: {line}", i + 1));
+            let group = current
+                .clone()
+                .unwrap_or_else(|| panic!("data row before any #fn header at line {}", i + 1));
+            let (lhs, rhs) = line
+                .split_once(" -> ")
+                .unwrap_or_else(|| panic!("malformed row at line {}: {line}", i + 1));
             let row = Row {
                 line: i + 1,
                 args: split_vals(lhs),
@@ -180,7 +192,10 @@ impl Golden {
             .unwrap_or_else(|| {
                 let mut names: Vec<&str> = self.groups.keys().map(|s| s.as_str()).collect();
                 names.sort_unstable();
-                panic!("golden file {} has no group `{method}`; it has: {names:?}", self.path.display())
+                panic!(
+                    "golden file {} has no group `{method}`; it has: {names:?}",
+                    self.path.display()
+                )
             })
             .as_slice()
     }
@@ -195,7 +210,12 @@ impl Golden {
     /// Index of the only expected value of the single row in `method`.
     pub fn single(&self, method: &str) -> Val {
         let rows = self.rows(method);
-        assert_eq!(rows.len(), 1, "`{method}` should have exactly one row, has {}", rows.len());
+        assert_eq!(
+            rows.len(),
+            1,
+            "`{method}` should have exactly one row, has {}",
+            rows.len()
+        );
         rows[0].exp0().clone()
     }
 }
@@ -211,7 +231,10 @@ fn split_vals(s: &str) -> Vec<Val> {
     if s.is_empty() {
         return Vec::new();
     }
-    s.split(' ').filter(|p| !p.is_empty()).map(parse_val).collect()
+    s.split(' ')
+        .filter(|p| !p.is_empty())
+        .map(parse_val)
+        .collect()
 }
 
 /// Reverse of `Out.str` in the oracle.
@@ -242,19 +265,36 @@ fn unescape_str(s: &str) -> String {
 }
 
 fn parse_val(tok: &str) -> Val {
-    let (kind, rest) = tok.split_once(':').unwrap_or_else(|| panic!("value `{tok}` has no `type:` prefix"));
+    let (kind, rest) = tok
+        .split_once(':')
+        .unwrap_or_else(|| panic!("value `{tok}` has no `type:` prefix"));
     match kind {
-        "i32" => Val::I32(rest.parse().unwrap_or_else(|e| panic!("bad i32 `{rest}`: {e}"))),
-        "i64" => Val::I64(rest.parse().unwrap_or_else(|e| panic!("bad i64 `{rest}`: {e}"))),
+        "i32" => Val::I32(
+            rest.parse()
+                .unwrap_or_else(|e| panic!("bad i32 `{rest}`: {e}")),
+        ),
+        "i64" => Val::I64(
+            rest.parse()
+                .unwrap_or_else(|e| panic!("bad i64 `{rest}`: {e}")),
+        ),
         "bool" => Val::Bool(match rest {
             "true" => true,
             "false" => false,
             other => panic!("bad bool `{other}`"),
         }),
-        "f32" => Val::F32(u32::from_str_radix(rest.trim_start_matches("0x"), 16).expect("bad f32 hex")),
-        "f64" => Val::F64(u64::from_str_radix(rest.trim_start_matches("0x"), 16).expect("bad f64 hex")),
+        "f32" => {
+            Val::F32(u32::from_str_radix(rest.trim_start_matches("0x"), 16).expect("bad f32 hex"))
+        }
+        "f64" => {
+            Val::F64(u64::from_str_radix(rest.trim_start_matches("0x"), 16).expect("bad f64 hex"))
+        }
         "str" => Val::Str(unescape_str(rest)),
-        "s" => Val::Ints(rest.split(',').filter(|p| !p.is_empty()).map(|p| p.parse().expect("bad int list item")).collect()),
+        "s" => Val::Ints(
+            rest.split(',')
+                .filter(|p| !p.is_empty())
+                .map(|p| p.parse().expect("bad int list item"))
+                .collect(),
+        ),
         other => panic!("unknown golden value type `{other}`"),
     }
 }
@@ -275,17 +315,29 @@ pub fn test_data_dir() -> PathBuf {
 
 pub fn assert_i32(method: &str, row: &Row, actual: i32) {
     let expected = row.exp0().as_i32();
-    assert_eq!(actual, expected, "{method} (golden line {}) args={:?}: expected {expected}, got {actual}", row.line, row.args);
+    assert_eq!(
+        actual, expected,
+        "{method} (golden line {}) args={:?}: expected {expected}, got {actual}",
+        row.line, row.args
+    );
 }
 
 pub fn assert_i64(method: &str, row: &Row, actual: i64) {
     let expected = row.exp0().as_i64();
-    assert_eq!(actual, expected, "{method} (golden line {}) args={:?}: expected {expected}, got {actual}", row.line, row.args);
+    assert_eq!(
+        actual, expected,
+        "{method} (golden line {}) args={:?}: expected {expected}, got {actual}",
+        row.line, row.args
+    );
 }
 
 pub fn assert_bool(method: &str, row: &Row, actual: bool) {
     let expected = row.exp0().as_bool();
-    assert_eq!(actual, expected, "{method} (golden line {}) args={:?}: expected {expected}, got {actual}", row.line, row.args);
+    assert_eq!(
+        actual, expected,
+        "{method} (golden line {}) args={:?}: expected {expected}, got {actual}",
+        row.line, row.args
+    );
 }
 
 /// Bit-exact float comparison. Deliberately NOT `==`: that would treat NaN != NaN
@@ -313,24 +365,42 @@ pub fn assert_f64_bits(method: &str, row: &Row, actual: f64) {
 /// For rows whose return value is several numbers (e.g. a Vec3 or a UUID).
 pub fn assert_multi_f64(method: &str, row: &Row, actual: &[f64]) {
     let expected: Vec<f64> = (0..row.expect.len()).map(|i| row.exp(i).as_f64()).collect();
-    assert_eq!(actual.len(), expected.len(), "{method} (golden line {}): arity mismatch", row.line);
+    assert_eq!(
+        actual.len(),
+        expected.len(),
+        "{method} (golden line {}): arity mismatch",
+        row.line
+    );
     for (i, (a, e)) in actual.iter().zip(expected.iter()).enumerate() {
         assert!(
             f64_bits_match(method, e.to_bits(), a.to_bits()),
             "{method} (golden line {}) component {i}: expected {} (0x{:016x}), got {} (0x{:016x})",
-            row.line, e, e.to_bits(), a, a.to_bits()
+            row.line,
+            e,
+            e.to_bits(),
+            a,
+            a.to_bits()
         );
     }
 }
 
 pub fn assert_multi_f32(method: &str, row: &Row, actual: &[f32]) {
     let expected: Vec<f32> = (0..row.expect.len()).map(|i| row.exp(i).as_f32()).collect();
-    assert_eq!(actual.len(), expected.len(), "{method} (golden line {}): arity mismatch", row.line);
+    assert_eq!(
+        actual.len(),
+        expected.len(),
+        "{method} (golden line {}): arity mismatch",
+        row.line
+    );
     for (i, (a, e)) in actual.iter().zip(expected.iter()).enumerate() {
         assert!(
             f32_bits_match(method, e.to_bits(), a.to_bits()),
             "{method} (golden line {}) component {i}: expected {} (0x{:08x}), got {} (0x{:08x})",
-            row.line, e, e.to_bits(), a, a.to_bits()
+            row.line,
+            e,
+            e.to_bits(),
+            a,
+            a.to_bits()
         );
     }
 }
@@ -414,7 +484,9 @@ pub fn f32_bits_match(method: &str, expected_bits: u32, actual_bits: u32) -> boo
 #[inline]
 fn both_nan_f64(a: u64, b: u64) -> bool {
     const EXP: u64 = 0x7ff0_0000_0000_0000;
-    (a & EXP) == EXP && (a & 0x000f_ffff_ffff_ffff) != 0 && (b & EXP) == EXP
+    (a & EXP) == EXP
+        && (a & 0x000f_ffff_ffff_ffff) != 0
+        && (b & EXP) == EXP
         && (b & 0x000f_ffff_ffff_ffff) != 0
 }
 
@@ -439,7 +511,6 @@ fn nan_bits_observable_list_has_no_stale_entries() {
     }
 }
 
-
 /// Assert a space-separated list of `i32` results (e.g. a `Vec3i`'s x/y/z).
 ///
 /// Distinct from [`assert_ints`], which expects the `s:1,2,3` "int stream" encoding.
@@ -458,15 +529,17 @@ pub fn assert_multi_i32(method: &str, row: &Row, actual: &[i32]) {
     );
     for (i, (want, got)) in expected.iter().zip(actual.iter()).enumerate() {
         let want = want.as_i32();
-        assert_eq!(
-            *got, want,
-            "{method} (golden line {}) value {i}",
-            row.line
-        );
+        assert_eq!(*got, want, "{method} (golden line {}) value {i}", row.line);
     }
 }
 pub fn assert_ints(method: &str, row: &Row, actual: &[i32]) {
-    assert_eq!(actual, row.exp0().as_ints(), "{method} (golden line {}) args={:?}", row.line, row.args);
+    assert_eq!(
+        actual,
+        row.exp0().as_ints(),
+        "{method} (golden line {}) args={:?}",
+        row.line,
+        row.args
+    );
 }
 
 pub fn assert_str(method: &str, row: &Row, actual: &str) {
@@ -474,7 +547,11 @@ pub fn assert_str(method: &str, row: &Row, actual: &str) {
         Val::Str(s) => s.clone(),
         other => panic!("expected str, got {other:?}"),
     };
-    assert_eq!(actual, expected, "{method} (golden line {}) args={:?}", row.line, row.args);
+    assert_eq!(
+        actual, expected,
+        "{method} (golden line {}) args={:?}",
+        row.line, row.args
+    );
 }
 /// Assert a specific EXPECTED value of a multi-value row.
 ///
@@ -506,7 +583,12 @@ pub fn assert_f32_bits_at(method: &str, row: &Row, index: usize, label: &str, ac
 }
 /// Assert a specific EXPECTED value of a multi-value row against an `i32`.
 pub fn assert_i32_at(method: &str, row: &Row, index: usize, label: &str, actual: i32) {
-    assert_eq!(actual, row.exp(index).as_i32(), "{method} [{label}] (golden line {}, expected index {index})", row.line);
+    assert_eq!(
+        actual,
+        row.exp(index).as_i32(),
+        "{method} [{label}] (golden line {}, expected index {index})",
+        row.line
+    );
 }
 /// Does `actual` equal the EXPECTED value at `index` of `row`, bit for bit?
 ///

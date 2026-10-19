@@ -1,6 +1,6 @@
 //! Port of: net/minecraft/util/thread/StrictQueue.java
 //! Java class(es): net.minecraft.util.thread.StrictQueue, net.minecraft.util.thread.StrictQueue.FixedPriorityQueue, net.minecraft.util.thread.StrictQueue.QueueStrictQueue, net.minecraft.util.thread.StrictQueue.RunnableWithPriority
-//! Status: VERIFIED
+//! Status: PARTIAL
 //!
 //! Session 24. `public interface StrictQueue<T extends Runnable>`: the task queue behind
 //! `AbstractConsecutiveExecutor` -- `pop`, `push`, `isEmpty`, `size` -- with its two

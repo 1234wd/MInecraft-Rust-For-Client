@@ -75,7 +75,10 @@ impl Fraction {
     fn reduce(numerator: i32, denominator: i32) -> Self {
         if numerator == 0 {
             // commons-lang3 short-circuits to 0/1.
-            return Self { numerator: 0, denominator: 1 };
+            return Self {
+                numerator: 0,
+                denominator: 1,
+            };
         }
         let gcd = Self::greatest_common_divisor(numerator.wrapping_abs(), denominator);
         Self {
@@ -156,7 +159,10 @@ impl Fraction {
         if power == 0 {
             return Fraction::new(1, 1);
         }
-        assert!(power != i32::MIN, "Unable to multiply Fraction with unbounded exponent");
+        assert!(
+            power != i32::MIN,
+            "Unable to multiply Fraction with unbounded exponent"
+        );
         let multiplier = Fraction::new(power, 1);
         if power < 0 {
             Fraction::new(multiplier.denominator, multiplier.numerator)

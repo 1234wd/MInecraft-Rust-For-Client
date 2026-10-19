@@ -5481,6 +5481,417 @@ RECDEV	-1	999999999	0	-1	999999999	true	0	true
 RECDEV	-1	999999999	20	-1	999999999	true	20	true
 RECDEV	-1	999999999	-1	-1	999999999	true	-1	true
 RECDEV	-1	999999999	2147483647	-1	999999999	true	2147483647	true
+S25_CUBERANGE	-2147483648	EX:java.lang.IllegalArgumentException: Need at least 1 part
+S25_CUBERANGE	-1	EX:java.lang.IllegalArgumentException: Need at least 1 part
+S25_CUBERANGE	0	EX:java.lang.IllegalArgumentException: Need at least 1 part
+S25_CUBERANGE	1	2|c1e0000000000000|bff0000000000000|0|3ff0000000000000|0|3ff0000000000000|41dfffffffc00000
+S25_CUBERANGE	2	3|c1d0000000000000|bfe0000000000000|0|3fe0000000000000|3fe0000000000000|3ff0000000000000|41cfffffffc00000
+S25_CUBERANGE	3	4|c1c5555555555555|bfd5555555555555|0|3fd5555555555555|3fe5555555555555|3ff0000000000000|41c55555552aaaab
+S25_CUBERANGE	7	8|c1b2492492492492|bfc2492492492492|0|3fc2492492492492|3feb6db6db6db6db|3ff0000000000000|41b2492492249249
+S25_CUBERANGE	2147483647	-2147483648|bff0000000200000|be00000000200000|0|3e00000000200000|3fefffffffc00000|3ff0000000000000|3ff0000000000000
+S25_OFFSET	0	0	size	0
+S25_OFFSET	0	0	-1	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 0
+S25_OFFSET	0	0	0	EX:java.lang.IndexOutOfBoundsException: Index (0) is greater than or equal to list size (0)
+S25_OFFSET	0	0	1	EX:java.lang.IndexOutOfBoundsException: Index (1) is greater than or equal to list size (0)
+S25_OFFSET	0	1	size	0
+S25_OFFSET	0	1	-1	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 0
+S25_OFFSET	0	1	0	EX:java.lang.IndexOutOfBoundsException: Index (0) is greater than or equal to list size (0)
+S25_OFFSET	0	1	1	EX:java.lang.IndexOutOfBoundsException: Index (1) is greater than or equal to list size (0)
+S25_OFFSET	0	2	size	0
+S25_OFFSET	0	2	-1	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 0
+S25_OFFSET	0	2	0	EX:java.lang.IndexOutOfBoundsException: Index (0) is greater than or equal to list size (0)
+S25_OFFSET	0	2	1	EX:java.lang.IndexOutOfBoundsException: Index (1) is greater than or equal to list size (0)
+S25_OFFSET	0	3	size	0
+S25_OFFSET	0	3	-1	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 0
+S25_OFFSET	0	3	0	EX:java.lang.IndexOutOfBoundsException: Index (0) is greater than or equal to list size (0)
+S25_OFFSET	0	3	1	EX:java.lang.IndexOutOfBoundsException: Index (1) is greater than or equal to list size (0)
+S25_OFFSET	0	4	size	0
+S25_OFFSET	0	4	-1	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 0
+S25_OFFSET	0	4	0	EX:java.lang.IndexOutOfBoundsException: Index (0) is greater than or equal to list size (0)
+S25_OFFSET	0	4	1	EX:java.lang.IndexOutOfBoundsException: Index (1) is greater than or equal to list size (0)
+S25_OFFSET	0	5	size	0
+S25_OFFSET	0	5	-1	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 0
+S25_OFFSET	0	5	0	EX:java.lang.IndexOutOfBoundsException: Index (0) is greater than or equal to list size (0)
+S25_OFFSET	0	5	1	EX:java.lang.IndexOutOfBoundsException: Index (1) is greater than or equal to list size (0)
+S25_OFFSET	1	0	size	4
+S25_OFFSET	1	0	-1	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 4
+S25_OFFSET	1	0	0	0
+S25_OFFSET	1	0	1	0
+S25_OFFSET	1	0	2	3ff4000000000000
+S25_OFFSET	1	0	3	c00c000000000000
+S25_OFFSET	1	0	4	EX:java.lang.IndexOutOfBoundsException: Index (4) is greater than or equal to list size (4)
+S25_OFFSET	1	0	5	EX:java.lang.IndexOutOfBoundsException: Index (5) is greater than or equal to list size (4)
+S25_OFFSET	1	1	size	4
+S25_OFFSET	1	1	-1	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 4
+S25_OFFSET	1	1	0	8000000000000000
+S25_OFFSET	1	1	1	0
+S25_OFFSET	1	1	2	3ff4000000000000
+S25_OFFSET	1	1	3	c00c000000000000
+S25_OFFSET	1	1	4	EX:java.lang.IndexOutOfBoundsException: Index (4) is greater than or equal to list size (4)
+S25_OFFSET	1	1	5	EX:java.lang.IndexOutOfBoundsException: Index (5) is greater than or equal to list size (4)
+S25_OFFSET	1	2	size	4
+S25_OFFSET	1	2	-1	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 4
+S25_OFFSET	1	2	0	3fd0000000000000
+S25_OFFSET	1	2	1	3fd0000000000000
+S25_OFFSET	1	2	2	3ff8000000000000
+S25_OFFSET	1	2	3	c00a000000000000
+S25_OFFSET	1	2	4	EX:java.lang.IndexOutOfBoundsException: Index (4) is greater than or equal to list size (4)
+S25_OFFSET	1	2	5	EX:java.lang.IndexOutOfBoundsException: Index (5) is greater than or equal to list size (4)
+S25_OFFSET	1	3	size	4
+S25_OFFSET	1	3	-1	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 4
+S25_OFFSET	1	3	0	7ff8000000000000
+S25_OFFSET	1	3	1	7ff8000000000000
+S25_OFFSET	1	3	2	7ff8000000000000
+S25_OFFSET	1	3	3	7ff8000000000000
+S25_OFFSET	1	3	4	EX:java.lang.IndexOutOfBoundsException: Index (4) is greater than or equal to list size (4)
+S25_OFFSET	1	3	5	EX:java.lang.IndexOutOfBoundsException: Index (5) is greater than or equal to list size (4)
+S25_OFFSET	1	4	size	4
+S25_OFFSET	1	4	-1	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 4
+S25_OFFSET	1	4	0	7ff0000000000000
+S25_OFFSET	1	4	1	7ff0000000000000
+S25_OFFSET	1	4	2	7ff0000000000000
+S25_OFFSET	1	4	3	7ff0000000000000
+S25_OFFSET	1	4	4	EX:java.lang.IndexOutOfBoundsException: Index (4) is greater than or equal to list size (4)
+S25_OFFSET	1	4	5	EX:java.lang.IndexOutOfBoundsException: Index (5) is greater than or equal to list size (4)
+S25_OFFSET	1	5	size	4
+S25_OFFSET	1	5	-1	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 4
+S25_OFFSET	1	5	0	fff0000000000000
+S25_OFFSET	1	5	1	fff0000000000000
+S25_OFFSET	1	5	2	fff0000000000000
+S25_OFFSET	1	5	3	fff0000000000000
+S25_OFFSET	1	5	4	EX:java.lang.IndexOutOfBoundsException: Index (4) is greater than or equal to list size (4)
+S25_OFFSET	1	5	5	EX:java.lang.IndexOutOfBoundsException: Index (5) is greater than or equal to list size (4)
+S25_OFFSET	2	0	size	5
+S25_OFFSET	2	0	-1	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 5
+S25_OFFSET	2	0	0	7ff8000000000000
+S25_OFFSET	2	0	1	7ff0000000000000
+S25_OFFSET	2	0	2	fff0000000000000
+S25_OFFSET	2	0	3	1
+S25_OFFSET	2	0	4	7fefffffffffffff
+S25_OFFSET	2	0	5	EX:java.lang.IndexOutOfBoundsException: Index (5) is greater than or equal to list size (5)
+S25_OFFSET	2	0	6	EX:java.lang.IndexOutOfBoundsException: Index (6) is greater than or equal to list size (5)
+S25_OFFSET	2	1	size	5
+S25_OFFSET	2	1	-1	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 5
+S25_OFFSET	2	1	0	7ff8000000000000
+S25_OFFSET	2	1	1	7ff0000000000000
+S25_OFFSET	2	1	2	fff0000000000000
+S25_OFFSET	2	1	3	1
+S25_OFFSET	2	1	4	7fefffffffffffff
+S25_OFFSET	2	1	5	EX:java.lang.IndexOutOfBoundsException: Index (5) is greater than or equal to list size (5)
+S25_OFFSET	2	1	6	EX:java.lang.IndexOutOfBoundsException: Index (6) is greater than or equal to list size (5)
+S25_OFFSET	2	2	size	5
+S25_OFFSET	2	2	-1	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 5
+S25_OFFSET	2	2	0	7ff8000000000000
+S25_OFFSET	2	2	1	7ff0000000000000
+S25_OFFSET	2	2	2	fff0000000000000
+S25_OFFSET	2	2	3	3fd0000000000000
+S25_OFFSET	2	2	4	7fefffffffffffff
+S25_OFFSET	2	2	5	EX:java.lang.IndexOutOfBoundsException: Index (5) is greater than or equal to list size (5)
+S25_OFFSET	2	2	6	EX:java.lang.IndexOutOfBoundsException: Index (6) is greater than or equal to list size (5)
+S25_OFFSET	2	3	size	5
+S25_OFFSET	2	3	-1	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 5
+S25_OFFSET	2	3	0	7ff8000000000000
+S25_OFFSET	2	3	1	7ff8000000000000
+S25_OFFSET	2	3	2	7ff8000000000000
+S25_OFFSET	2	3	3	7ff8000000000000
+S25_OFFSET	2	3	4	7ff8000000000000
+S25_OFFSET	2	3	5	EX:java.lang.IndexOutOfBoundsException: Index (5) is greater than or equal to list size (5)
+S25_OFFSET	2	3	6	EX:java.lang.IndexOutOfBoundsException: Index (6) is greater than or equal to list size (5)
+S25_OFFSET	2	4	size	5
+S25_OFFSET	2	4	-1	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 5
+S25_OFFSET	2	4	0	7ff8000000000000
+S25_OFFSET	2	4	1	7ff0000000000000
+S25_OFFSET	2	4	2	fff8000000000000
+S25_OFFSET	2	4	3	7ff0000000000000
+S25_OFFSET	2	4	4	7ff0000000000000
+S25_OFFSET	2	4	5	EX:java.lang.IndexOutOfBoundsException: Index (5) is greater than or equal to list size (5)
+S25_OFFSET	2	4	6	EX:java.lang.IndexOutOfBoundsException: Index (6) is greater than or equal to list size (5)
+S25_OFFSET	2	5	size	5
+S25_OFFSET	2	5	-1	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 5
+S25_OFFSET	2	5	0	7ff8000000000000
+S25_OFFSET	2	5	1	fff8000000000000
+S25_OFFSET	2	5	2	fff0000000000000
+S25_OFFSET	2	5	3	fff0000000000000
+S25_OFFSET	2	5	4	fff0000000000000
+S25_OFFSET	2	5	5	EX:java.lang.IndexOutOfBoundsException: Index (5) is greater than or equal to list size (5)
+S25_OFFSET	2	5	6	EX:java.lang.IndexOutOfBoundsException: Index (6) is greater than or equal to list size (5)
+S25_OFFSETNULL	get	EX:java.lang.NullPointerException: Cannot invoke "it.unimi.dsi.fastutil.doubles.DoubleList.getDouble(int)" because "this.delegate" is null
+S25_OFFSETNULL	size	EX:java.lang.NullPointerException: Cannot invoke "it.unimi.dsi.fastutil.doubles.DoubleList.size()" because "this.delegate" is null
+S25_OFFSETALIAS	2|3ffc000000000000|3fe0000000000000	3|4012000000000000|3fe0000000000000|4023000000000000
+S25_IDENTICAL	0	-1	0	true	true|
+S25_IDENTICAL	0	1	0	true	true|
+S25_IDENTICAL	0	2	0	true	true|
+S25_IDENTICALNULLCALL	0	true|
+S25_IDENTICAL	1	-1	1	true	true|
+S25_IDENTICAL	1	1	1	true	true|
+S25_IDENTICAL	1	2	1	true	true|
+S25_IDENTICALNULLCALL	1	true|
+S25_IDENTICAL	2	-1	4	true	true|0,0,0;1,1,1;2,2,2
+S25_IDENTICAL	2	1	4	true	false|0,0,0
+S25_IDENTICAL	2	2	4	true	false|0,0,0;1,1,1
+S25_IDENTICALNULLCALL	2	EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_IDENTICALNULL	getList	true
+S25_IDENTICALNULL	size	EX:java.lang.NullPointerException: Cannot invoke "it.unimi.dsi.fastutil.doubles.DoubleList.size()" because "this.coords" is null
+S25_IDENTICALNULL	merge	EX:java.lang.NullPointerException: Cannot invoke "it.unimi.dsi.fastutil.doubles.DoubleList.size()" because "this.coords" is null
+S25_NONOVERLAP	0	0	false	0	true	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 0;EX:java.lang.IndexOutOfBoundsException: Index (0) is greater than or equal to list size (0);EX:java.lang.IndexOutOfBoundsException: Index (1) is greater than or equal to list size (0)	true|	true|	true|
+S25_NONOVERLAP	0	0	true	0	true	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 0;EX:java.lang.IndexOutOfBoundsException: Index (0) is greater than or equal to list size (0);EX:java.lang.IndexOutOfBoundsException: Index (1) is greater than or equal to list size (0)	true|	true|	true|
+S25_NONOVERLAP	0	1	false	1	true	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 0;401e000000000000;EX:java.lang.IndexOutOfBoundsException: Index (1) is greater than or equal to list size (1);EX:java.lang.IndexOutOfBoundsException: Index (2) is greater than or equal to list size (1)	true|	true|	true|
+S25_NONOVERLAP	0	1	true	1	true	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 0;401e000000000000;EX:java.lang.IndexOutOfBoundsException: Index (1) is greater than or equal to list size (1);EX:java.lang.IndexOutOfBoundsException: Index (2) is greater than or equal to list size (1)	true|	true|	true|
+S25_NONOVERLAP	0	2	false	3	true	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 0;8000000000000000;0;3ff4000000000000;EX:java.lang.IndexOutOfBoundsException: Index (3) is greater than or equal to list size (3);EX:java.lang.IndexOutOfBoundsException: Index (4) is greater than or equal to list size (3)	true|-1,0,0;-1,1,1	false|-1,0,0	EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_NONOVERLAP	0	2	true	3	true	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 0;8000000000000000;0;3ff4000000000000;EX:java.lang.IndexOutOfBoundsException: Index (3) is greater than or equal to list size (3);EX:java.lang.IndexOutOfBoundsException: Index (4) is greater than or equal to list size (3)	true|0,-1,0;1,-1,1	false|0,-1,0	EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_NONOVERLAP	0	3	false	4	true	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 0;7ff8000000000000;7ff0000000000000;1;7fefffffffffffff;EX:java.lang.IndexOutOfBoundsException: Index (4) is greater than or equal to list size (4);EX:java.lang.IndexOutOfBoundsException: Index (5) is greater than or equal to list size (4)	true|-1,0,0;-1,1,1;-1,2,2	false|-1,0,0	EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_NONOVERLAP	0	3	true	4	true	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 0;7ff8000000000000;7ff0000000000000;1;7fefffffffffffff;EX:java.lang.IndexOutOfBoundsException: Index (4) is greater than or equal to list size (4);EX:java.lang.IndexOutOfBoundsException: Index (5) is greater than or equal to list size (4)	true|0,-1,0;1,-1,1;2,-1,2	false|0,-1,0	EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_NONOVERLAP	1	0	false	1	true	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 1;401e000000000000;EX:java.lang.IndexOutOfBoundsException: Index (0) is greater than or equal to list size (0);EX:java.lang.IndexOutOfBoundsException: Index (1) is greater than or equal to list size (0)	true|0,-1,0	false|0,-1,0	EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_NONOVERLAP	1	0	true	1	true	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 1;401e000000000000;EX:java.lang.IndexOutOfBoundsException: Index (0) is greater than or equal to list size (0);EX:java.lang.IndexOutOfBoundsException: Index (1) is greater than or equal to list size (0)	true|-1,0,0	false|-1,0,0	EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_NONOVERLAP	1	1	false	2	true	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 1;401e000000000000;401e000000000000;EX:java.lang.IndexOutOfBoundsException: Index (1) is greater than or equal to list size (1);EX:java.lang.IndexOutOfBoundsException: Index (2) is greater than or equal to list size (1)	true|0,-1,0	false|0,-1,0	EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_NONOVERLAP	1	1	true	2	true	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 1;401e000000000000;401e000000000000;EX:java.lang.IndexOutOfBoundsException: Index (1) is greater than or equal to list size (1);EX:java.lang.IndexOutOfBoundsException: Index (2) is greater than or equal to list size (1)	true|-1,0,0	false|-1,0,0	EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_NONOVERLAP	1	2	false	4	true	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 1;401e000000000000;8000000000000000;0;3ff4000000000000;EX:java.lang.IndexOutOfBoundsException: Index (3) is greater than or equal to list size (3);EX:java.lang.IndexOutOfBoundsException: Index (4) is greater than or equal to list size (3)	true|0,-1,0;0,0,1;0,1,2	false|0,-1,0	EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_NONOVERLAP	1	2	true	4	true	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 1;401e000000000000;8000000000000000;0;3ff4000000000000;EX:java.lang.IndexOutOfBoundsException: Index (3) is greater than or equal to list size (3);EX:java.lang.IndexOutOfBoundsException: Index (4) is greater than or equal to list size (3)	true|-1,0,0;0,0,1;1,0,2	false|-1,0,0	EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_NONOVERLAP	1	3	false	5	true	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 1;401e000000000000;7ff8000000000000;7ff0000000000000;1;7fefffffffffffff;EX:java.lang.IndexOutOfBoundsException: Index (4) is greater than or equal to list size (4);EX:java.lang.IndexOutOfBoundsException: Index (5) is greater than or equal to list size (4)	true|0,-1,0;0,0,1;0,1,2;0,2,3	false|0,-1,0	EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_NONOVERLAP	1	3	true	5	true	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 1;401e000000000000;7ff8000000000000;7ff0000000000000;1;7fefffffffffffff;EX:java.lang.IndexOutOfBoundsException: Index (4) is greater than or equal to list size (4);EX:java.lang.IndexOutOfBoundsException: Index (5) is greater than or equal to list size (4)	true|-1,0,0;0,0,1;1,0,2;2,0,3	false|-1,0,0	EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_NONOVERLAP	2	0	false	3	true	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 3;8000000000000000;0;3ff4000000000000;EX:java.lang.IndexOutOfBoundsException: Index (0) is greater than or equal to list size (0);EX:java.lang.IndexOutOfBoundsException: Index (1) is greater than or equal to list size (0)	true|0,-1,0;1,-1,1;2,-1,2	false|0,-1,0	EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_NONOVERLAP	2	0	true	3	true	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 3;8000000000000000;0;3ff4000000000000;EX:java.lang.IndexOutOfBoundsException: Index (0) is greater than or equal to list size (0);EX:java.lang.IndexOutOfBoundsException: Index (1) is greater than or equal to list size (0)	true|-1,0,0;-1,1,1;-1,2,2	false|-1,0,0	EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_NONOVERLAP	2	1	false	4	true	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 3;8000000000000000;0;3ff4000000000000;401e000000000000;EX:java.lang.IndexOutOfBoundsException: Index (1) is greater than or equal to list size (1);EX:java.lang.IndexOutOfBoundsException: Index (2) is greater than or equal to list size (1)	true|0,-1,0;1,-1,1;2,-1,2	false|0,-1,0	EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_NONOVERLAP	2	1	true	4	true	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 3;8000000000000000;0;3ff4000000000000;401e000000000000;EX:java.lang.IndexOutOfBoundsException: Index (1) is greater than or equal to list size (1);EX:java.lang.IndexOutOfBoundsException: Index (2) is greater than or equal to list size (1)	true|-1,0,0;-1,1,1;-1,2,2	false|-1,0,0	EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_NONOVERLAP	2	2	false	6	true	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 3;8000000000000000;0;3ff4000000000000;8000000000000000;0;3ff4000000000000;EX:java.lang.IndexOutOfBoundsException: Index (3) is greater than or equal to list size (3);EX:java.lang.IndexOutOfBoundsException: Index (4) is greater than or equal to list size (3)	true|0,-1,0;1,-1,1;2,-1,2;2,0,3;2,1,4	false|0,-1,0	EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_NONOVERLAP	2	2	true	6	true	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 3;8000000000000000;0;3ff4000000000000;8000000000000000;0;3ff4000000000000;EX:java.lang.IndexOutOfBoundsException: Index (3) is greater than or equal to list size (3);EX:java.lang.IndexOutOfBoundsException: Index (4) is greater than or equal to list size (3)	true|-1,0,0;-1,1,1;-1,2,2;0,2,3;1,2,4	false|-1,0,0	EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_NONOVERLAP	2	3	false	7	true	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 3;8000000000000000;0;3ff4000000000000;7ff8000000000000;7ff0000000000000;1;7fefffffffffffff;EX:java.lang.IndexOutOfBoundsException: Index (4) is greater than or equal to list size (4);EX:java.lang.IndexOutOfBoundsException: Index (5) is greater than or equal to list size (4)	true|0,-1,0;1,-1,1;2,-1,2;2,0,3;2,1,4;2,2,5	false|0,-1,0	EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_NONOVERLAP	2	3	true	7	true	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 3;8000000000000000;0;3ff4000000000000;7ff8000000000000;7ff0000000000000;1;7fefffffffffffff;EX:java.lang.IndexOutOfBoundsException: Index (4) is greater than or equal to list size (4);EX:java.lang.IndexOutOfBoundsException: Index (5) is greater than or equal to list size (4)	true|-1,0,0;-1,1,1;-1,2,2;0,2,3;1,2,4;2,2,5	false|-1,0,0	EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_NONOVERLAP	3	0	false	4	true	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 4;7ff8000000000000;7ff0000000000000;1;7fefffffffffffff;EX:java.lang.IndexOutOfBoundsException: Index (0) is greater than or equal to list size (0);EX:java.lang.IndexOutOfBoundsException: Index (1) is greater than or equal to list size (0)	true|0,-1,0;1,-1,1;2,-1,2;3,-1,3	false|0,-1,0	EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_NONOVERLAP	3	0	true	4	true	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 4;7ff8000000000000;7ff0000000000000;1;7fefffffffffffff;EX:java.lang.IndexOutOfBoundsException: Index (0) is greater than or equal to list size (0);EX:java.lang.IndexOutOfBoundsException: Index (1) is greater than or equal to list size (0)	true|-1,0,0;-1,1,1;-1,2,2;-1,3,3	false|-1,0,0	EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_NONOVERLAP	3	1	false	5	true	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 4;7ff8000000000000;7ff0000000000000;1;7fefffffffffffff;401e000000000000;EX:java.lang.IndexOutOfBoundsException: Index (1) is greater than or equal to list size (1);EX:java.lang.IndexOutOfBoundsException: Index (2) is greater than or equal to list size (1)	true|0,-1,0;1,-1,1;2,-1,2;3,-1,3	false|0,-1,0	EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_NONOVERLAP	3	1	true	5	true	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 4;7ff8000000000000;7ff0000000000000;1;7fefffffffffffff;401e000000000000;EX:java.lang.IndexOutOfBoundsException: Index (1) is greater than or equal to list size (1);EX:java.lang.IndexOutOfBoundsException: Index (2) is greater than or equal to list size (1)	true|-1,0,0;-1,1,1;-1,2,2;-1,3,3	false|-1,0,0	EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_NONOVERLAP	3	2	false	7	true	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 4;7ff8000000000000;7ff0000000000000;1;7fefffffffffffff;8000000000000000;0;3ff4000000000000;EX:java.lang.IndexOutOfBoundsException: Index (3) is greater than or equal to list size (3);EX:java.lang.IndexOutOfBoundsException: Index (4) is greater than or equal to list size (3)	true|0,-1,0;1,-1,1;2,-1,2;3,-1,3;3,0,4;3,1,5	false|0,-1,0	EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_NONOVERLAP	3	2	true	7	true	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 4;7ff8000000000000;7ff0000000000000;1;7fefffffffffffff;8000000000000000;0;3ff4000000000000;EX:java.lang.IndexOutOfBoundsException: Index (3) is greater than or equal to list size (3);EX:java.lang.IndexOutOfBoundsException: Index (4) is greater than or equal to list size (3)	true|-1,0,0;-1,1,1;-1,2,2;-1,3,3;0,3,4;1,3,5	false|-1,0,0	EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_NONOVERLAP	3	3	false	8	true	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 4;7ff8000000000000;7ff0000000000000;1;7fefffffffffffff;7ff8000000000000;7ff0000000000000;1;7fefffffffffffff;EX:java.lang.IndexOutOfBoundsException: Index (4) is greater than or equal to list size (4);EX:java.lang.IndexOutOfBoundsException: Index (5) is greater than or equal to list size (4)	true|0,-1,0;1,-1,1;2,-1,2;3,-1,3;3,0,4;3,1,5;3,2,6	false|0,-1,0	EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_NONOVERLAP	3	3	true	8	true	EX:java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 4;7ff8000000000000;7ff0000000000000;1;7fefffffffffffff;7ff8000000000000;7ff0000000000000;1;7fefffffffffffff;EX:java.lang.IndexOutOfBoundsException: Index (4) is greater than or equal to list size (4);EX:java.lang.IndexOutOfBoundsException: Index (5) is greater than or equal to list size (4)	true|-1,0,0;-1,1,1;-1,2,2;-1,3,3;0,3,4;1,3,5;2,3,6	false|-1,0,0	EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_NONOVERLAPNULL	lower	size	EX:java.lang.NullPointerException: Cannot invoke "it.unimi.dsi.fastutil.doubles.DoubleList.size()" because "this.lower" is null
+S25_NONOVERLAPNULL	lower	get	EX:java.lang.NullPointerException: Cannot invoke "it.unimi.dsi.fastutil.doubles.DoubleList.size()" because "this.lower" is null
+S25_NONOVERLAPNULL	lower	merge	EX:java.lang.NullPointerException: Cannot invoke "it.unimi.dsi.fastutil.doubles.DoubleList.size()" because "this.lower" is null
+S25_NONOVERLAPNULL	upper	size	EX:java.lang.NullPointerException: Cannot invoke "it.unimi.dsi.fastutil.doubles.DoubleList.size()" because "this.upper" is null
+S25_NONOVERLAPNULL	upper	get	EX:java.lang.NullPointerException: Cannot invoke "it.unimi.dsi.fastutil.doubles.DoubleList.getDouble(int)" because "this.upper" is null
+S25_NONOVERLAPNULL	upper	merge	EX:java.lang.NullPointerException: Cannot invoke "it.unimi.dsi.fastutil.doubles.DoubleList.size()" because "this.upper" is null
+S25_GCD	0	0	0
+S25_GCD	0	1	1
+S25_GCD	1	0	1
+S25_GCD	1	1	1
+S25_GCD	2	3	1
+S25_GCD	12	18	6
+S25_GCD	48	18	6
+S25_GCD	1073741824	536870912	536870912
+S25_GCD	2147483647	2147483646	1
+S25_GCD	2147483647	0	2147483647
+S25_GCD	-1	3	EX:java.lang.IllegalArgumentException: a (-1) must be >= 0
+S25_GCD	3	-1	EX:java.lang.IllegalArgumentException: b (-1) must be >= 0
+S25_GCD	-2147483648	1	EX:java.lang.IllegalArgumentException: a (-2147483648) must be >= 0
+S25_GCD	1	-2147483648	EX:java.lang.IllegalArgumentException: b (-2147483648) must be >= 0
+S25_GCD	-2147483648	-2147483648	EX:java.lang.IllegalArgumentException: a (-2147483648) must be >= 0
+S25_DISCRETE	1	1	2|true|0,3ff0000000000000|true|0,0,0|false|0,0,0|EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_DISCRETE	1	2	3|true|0,3fe0000000000000,3ff0000000000000|true|0,0,0;0,1,1|false|0,0,0|EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_DISCRETE	2	1	3|true|0,3fe0000000000000,3ff0000000000000|true|0,0,0;1,0,1|false|0,0,0|EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_DISCRETE	2	3	7|true|0,3fc5555555555555,3fd5555555555555,3fe0000000000000,3fe5555555555555,3feaaaaaaaaaaaab,3ff0000000000000|true|0,0,0;0,0,1;0,1,2;1,1,3;1,2,4;1,2,5|false|0,0,0|EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_DISCRETE	3	4	13|true|0,3fb5555555555555,3fc5555555555555,3fd0000000000000,3fd5555555555555,3fdaaaaaaaaaaaab,3fe0000000000000,3fe2aaaaaaaaaaab,3fe5555555555555,3fe8000000000000,3feaaaaaaaaaaaab,3fed555555555555,3ff0000000000000|true|0,0,0;0,0,1;0,0,2;0,1,3;1,1,4;1,1,5;1,2,6;1,2,7;2,2,8;2,3,9;2,3,10;2,3,11|false|0,0,0|EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_DISCRETE	4	6	13|true|0,3fb5555555555555,3fc5555555555555,3fd0000000000000,3fd5555555555555,3fdaaaaaaaaaaaab,3fe0000000000000,3fe2aaaaaaaaaaab,3fe5555555555555,3fe8000000000000,3feaaaaaaaaaaaab,3fed555555555555,3ff0000000000000|true|0,0,0;0,0,1;0,1,2;1,1,3;1,2,4;1,2,5;2,3,6;2,3,7;2,4,8;3,4,9;3,5,10;3,5,11|false|0,0,0|EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_DISCRETE	6	4	13|true|0,3fb5555555555555,3fc5555555555555,3fd0000000000000,3fd5555555555555,3fdaaaaaaaaaaaab,3fe0000000000000,3fe2aaaaaaaaaaab,3fe5555555555555,3fe8000000000000,3feaaaaaaaaaaaab,3fed555555555555,3ff0000000000000|true|0,0,0;0,0,1;1,0,2;1,1,3;2,1,4;2,1,5;3,2,6;3,2,7;4,2,8;4,3,9;5,3,10;5,3,11|false|0,0,0|EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_DISCRETE	3	9	10|true|0,3fbc71c71c71c71c,3fcc71c71c71c71c,3fd5555555555555,3fdc71c71c71c71c,3fe1c71c71c71c72,3fe5555555555555,3fe8e38e38e38e39,3fec71c71c71c71c,3ff0000000000000|true|0,0,0;0,1,1;0,2,2;1,3,3;1,4,4;1,5,5;2,6,6;2,7,7;2,8,8|false|0,0,0|EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_DISCRETE	5	7	36|true|0,3f9d41d41d41d41d,3fad41d41d41d41d,3fb5f15f15f15f16,3fbd41d41d41d41d,3fc2492492492492,3fc5f15f15f15f16,3fc999999999999a,3fcd41d41d41d41d,3fd0750750750750,3fd2492492492492,3fd41d41d41d41d4,3fd5f15f15f15f16,3fd7c57c57c57c58,3fd999999999999a,3fdb6db6db6db6db,3fdd41d41d41d41d,3fdf15f15f15f15f,3fe0750750750750,3fe15f15f15f15f1,3fe2492492492492,3fe3333333333333,3fe41d41d41d41d4,3fe5075075075075,3fe5f15f15f15f16,3fe6db6db6db6db7,3fe7c57c57c57c58,3fe8af8af8af8af9,3fe999999999999a,3fea83a83a83a83b,3feb6db6db6db6db,3fec57c57c57c57c,3fed41d41d41d41d,3fee2be2be2be2be,3fef15f15f15f15f,3ff0000000000000|true|0,0,0;0,0,1;0,0,2;0,0,3;0,0,4;0,1,5;0,1,6;1,1,7;1,1,8;1,1,9;1,2,10;1,2,11;1,2,12;1,2,13;2,2,14;2,3,15;2,3,16;2,3,17;2,3,18;2,3,19;2,4,20;3,4,21;3,4,22;3,4,23;3,4,24;3,5,25;3,5,26;3,5,27;4,5,28;4,5,29;4,6,30;4,6,31;4,6,32;4,6,33;4,6,34|false|0,0,0|EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_DISCRETE	7	5	36|true|0,3f9d41d41d41d41d,3fad41d41d41d41d,3fb5f15f15f15f16,3fbd41d41d41d41d,3fc2492492492492,3fc5f15f15f15f16,3fc999999999999a,3fcd41d41d41d41d,3fd0750750750750,3fd2492492492492,3fd41d41d41d41d4,3fd5f15f15f15f16,3fd7c57c57c57c58,3fd999999999999a,3fdb6db6db6db6db,3fdd41d41d41d41d,3fdf15f15f15f15f,3fe0750750750750,3fe15f15f15f15f1,3fe2492492492492,3fe3333333333333,3fe41d41d41d41d4,3fe5075075075075,3fe5f15f15f15f16,3fe6db6db6db6db7,3fe7c57c57c57c58,3fe8af8af8af8af9,3fe999999999999a,3fea83a83a83a83b,3feb6db6db6db6db,3fec57c57c57c57c,3fed41d41d41d41d,3fee2be2be2be2be,3fef15f15f15f15f,3ff0000000000000|true|0,0,0;0,0,1;0,0,2;0,0,3;0,0,4;1,0,5;1,0,6;1,1,7;1,1,8;1,1,9;2,1,10;2,1,11;2,1,12;2,1,13;2,2,14;3,2,15;3,2,16;3,2,17;3,2,18;3,2,19;4,2,20;4,3,21;4,3,22;4,3,23;4,3,24;5,3,25;5,3,26;5,3,27;5,4,28;5,4,29;6,4,30;6,4,31;6,4,32;6,4,33;6,4,34|false|0,0,0|EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_DISCRETE	8	12	25|true|0,3fa5555555555555,3fb5555555555555,3fc0000000000000,3fc5555555555555,3fcaaaaaaaaaaaab,3fd0000000000000,3fd2aaaaaaaaaaab,3fd5555555555555,3fd8000000000000,3fdaaaaaaaaaaaab,3fdd555555555555,3fe0000000000000,3fe1555555555555,3fe2aaaaaaaaaaab,3fe4000000000000,3fe5555555555555,3fe6aaaaaaaaaaab,3fe8000000000000,3fe9555555555555,3feaaaaaaaaaaaab,3fec000000000000,3fed555555555555,3feeaaaaaaaaaaab,3ff0000000000000|true|0,0,0;0,0,1;0,1,2;1,1,3;1,2,4;1,2,5;2,3,6;2,3,7;2,4,8;3,4,9;3,5,10;3,5,11;4,6,12;4,6,13;4,7,14;5,7,15;5,8,16;5,8,17;6,9,18;6,9,19;6,10,20;7,10,21;7,11,22;7,11,23|false|0,0,0|EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_DISCRETE	9	15	46|true|0,3f96c16c16c16c17,3fa6c16c16c16c17,3fb1111111111111,3fb6c16c16c16c17,3fbc71c71c71c71c,3fc1111111111111,3fc3e93e93e93e94,3fc6c16c16c16c17,3fc999999999999a,3fcc71c71c71c71c,3fcf49f49f49f49f,3fd1111111111111,3fd27d27d27d27d2,3fd3e93e93e93e94,3fd5555555555555,3fd6c16c16c16c17,3fd82d82d82d82d8,3fd999999999999a,3fdb05b05b05b05b,3fdc71c71c71c71c,3fddddddddddddde,3fdf49f49f49f49f,3fe05b05b05b05b0,3fe1111111111111,3fe1c71c71c71c72,3fe27d27d27d27d2,3fe3333333333333,3fe3e93e93e93e94,3fe49f49f49f49f5,3fe5555555555555,3fe60b60b60b60b6,3fe6c16c16c16c17,3fe7777777777777,3fe82d82d82d82d8,3fe8e38e38e38e39,3fe999999999999a,3fea4fa4fa4fa4fa,3feb05b05b05b05b,3febbbbbbbbbbbbc,3fec71c71c71c71c,3fed27d27d27d27d,3fedddddddddddde,3fee93e93e93e93f,3fef49f49f49f49f,3ff0000000000000|true|0,0,0;0,0,1;0,0,2;0,1,3;0,1,4;1,1,5;1,2,6;1,2,7;1,2,8;1,3,9;2,3,10;2,3,11;2,4,12;2,4,13;2,4,14;3,5,15;3,5,16;3,5,17;3,6,18;3,6,19;4,6,20;4,7,21;4,7,22;4,7,23;4,8,24;5,8,25;5,8,26;5,9,27;5,9,28;5,9,29;6,10,30;6,10,31;6,10,32;6,11,33;6,11,34;7,11,35;7,12,36;7,12,37;7,12,38;7,13,39;8,13,40;8,13,41;8,14,42;8,14,43;8,14,44|false|0,0,0|EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_DISCRETE	10	25	51|true|0,3f947ae147ae147b,3fa47ae147ae147b,3faeb851eb851eb8,3fb47ae147ae147b,3fb999999999999a,3fbeb851eb851eb8,3fc1eb851eb851ec,3fc47ae147ae147b,3fc70a3d70a3d70a,3fc999999999999a,3fcc28f5c28f5c29,3fceb851eb851eb8,3fd0a3d70a3d70a4,3fd1eb851eb851ec,3fd3333333333333,3fd47ae147ae147b,3fd5c28f5c28f5c3,3fd70a3d70a3d70a,3fd851eb851eb852,3fd999999999999a,3fdae147ae147ae1,3fdc28f5c28f5c29,3fdd70a3d70a3d71,3fdeb851eb851eb8,3fe0000000000000,3fe0a3d70a3d70a4,3fe147ae147ae148,3fe1eb851eb851ec,3fe28f5c28f5c28f,3fe3333333333333,3fe3d70a3d70a3d7,3fe47ae147ae147b,3fe51eb851eb851f,3fe5c28f5c28f5c3,3fe6666666666666,3fe70a3d70a3d70a,3fe7ae147ae147ae,3fe851eb851eb852,3fe8f5c28f5c28f6,3fe999999999999a,3fea3d70a3d70a3d,3feae147ae147ae1,3feb851eb851eb85,3fec28f5c28f5c29,3feccccccccccccd,3fed70a3d70a3d71,3fee147ae147ae14,3feeb851eb851eb8,3fef5c28f5c28f5c,3ff0000000000000|true|0,0,0;0,0,1;0,1,2;0,1,3;0,2,4;1,2,5;1,3,6;1,3,7;1,4,8;1,4,9;2,5,10;2,5,11;2,6,12;2,6,13;2,7,14;3,7,15;3,8,16;3,8,17;3,9,18;3,9,19;4,10,20;4,10,21;4,11,22;4,11,23;4,12,24;5,12,25;5,13,26;5,13,27;5,14,28;5,14,29;6,15,30;6,15,31;6,16,32;6,16,33;6,17,34;7,17,35;7,18,36;7,18,37;7,19,38;7,19,39;8,20,40;8,20,41;8,21,42;8,21,43;8,22,44;9,22,45;9,23,46;9,23,47;9,24,48;9,24,49|false|0,0,0|EX:java.lang.NullPointerException: Cannot invoke "net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer.merge(int, int, int)" because "consumer" is null
+S25_DISCRETE	0	0	EX:java.lang.ArithmeticException: / by zero
+S25_DISCRETE	0	2	EX:java.lang.IllegalArgumentException: Need at least 1 part
+S25_DISCRETE	2	0	EX:java.lang.IllegalArgumentException: Need at least 1 part
+S25_DISCRETE	-1	2	EX:java.lang.IllegalArgumentException: a (-1) must be >= 0
+S25_DISCRETE	2	-1	EX:java.lang.IllegalArgumentException: b (-1) must be >= 0
+S25_DISCRETE	-2147483648	1	EX:java.lang.IllegalArgumentException: a (-2147483648) must be >= 0
+S25_DISCRETE	2147483647	1	-2147483648|large
+S25_DISCRETE	2147483647	2	EX:java.lang.IllegalArgumentException: Need at least 1 part
+S25_DISCRETE	46341	46349	EX:java.lang.IllegalArgumentException: Need at least 1 part
+S25_DIVISOR	-2147483648	-3	|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	-2147483648	-1	|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	-2147483648	0	|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	-2147483648	1	-2147483648|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	-2147483648	2	-1073741824,-1073741824|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	-2147483648	3	-715827882,-715827882,-715827882|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	-2147483648	7	-306783378,-306783378,-306783378,-306783378,-306783378,-306783378,-306783378|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	-10	-3	|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	-10	-1	|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	-10	0	|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	-10	1	-10|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	-10	2	-5,-5|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	-10	3	-3,-3,-3|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	-10	7	-1,-1,-1,-1,-1,-1,-1|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	-5	-3	|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	-5	-1	|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	-5	0	|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	-5	1	-5|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	-5	2	-2,-2|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	-5	3	-1,-1,-1|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	-5	7	0,0,0,0,0,0,0|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	-1	-3	|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	-1	-1	|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	-1	0	|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	-1	1	-1|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	-1	2	0,0|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	-1	3	0,0,0|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	-1	7	0,0,0,0,0,0,0|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	0	-3	|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	0	-1	|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	0	0	|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	0	1	0|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	0	2	0,0|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	0	3	0,0,0|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	0	7	0,0,0,0,0,0,0|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	1	-3	|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	1	-1	|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	1	0	|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	1	1	1|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	1	2	0,1|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	1	3	0,0,1|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	1	7	0,0,0,0,0,0,1|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	5	-3	|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	5	-1	|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	5	0	|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	5	1	5|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	5	2	2,3|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	5	3	1,2,2|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	5	7	0,1,1,0,1,1,1|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	10	-3	|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	10	-1	|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	10	0	|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	10	1	10|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	10	2	5,5|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	10	3	3,3,4|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	10	7	1,1,2,1,2,1,2|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	2147483647	-3	|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	2147483647	-1	|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	2147483647	0	|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	2147483647	1	2147483647|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	2147483647	2	1073741823,1073741824|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	2147483647	3	715827882,715827882,715827883|false|EX:java.util.NoSuchElementException
+S25_DIVISOR	2147483647	7	306783378,306783378,306783378,306783378,306783378,306783378,306783379|false|EX:java.util.NoSuchElementException
+S25_DIVISORSKIP	10	3	0	0	3,3,4|false|EX:java.util.NoSuchElementException
+S25_DIVISORSKIP	10	3	1	1	3,4|false|EX:java.util.NoSuchElementException
+S25_DIVISORSKIP	10	3	3	3	|false|EX:java.util.NoSuchElementException
+S25_DIVISORSKIP	10	3	8	3	|false|EX:java.util.NoSuchElementException
+S25_DIVISORSKIP	-10	3	1	1	-3,-3|false|EX:java.util.NoSuchElementException
+S25_DIVISORSKIP	-5	2	5	2	|false|EX:java.util.NoSuchElementException
+S25_DIVISORSKIP	8	0	2	0	|false|EX:java.util.NoSuchElementException
+S25_DIVISORSKIP	8	-2	2	0	|false|EX:java.util.NoSuchElementException
+S25_DIVISORSKIP	8	3	-1	EX:java.lang.IllegalArgumentException: Argument must be nonnegative: -1
+S25_DIVISORITER	10	3	3	3	3,4|false|EX:java.util.NoSuchElementException	3,4|false|EX:java.util.NoSuchElementException
+S25_DIVISORITER	-10	3	-3	-3	-3,-3|false|EX:java.util.NoSuchElementException	-3,-3|false|EX:java.util.NoSuchElementException
+S25_DIVISORITER	5	0	none	none	|false|EX:java.util.NoSuchElementException	|false|EX:java.util.NoSuchElementException
+S25_DIVISORFOREACH	10	3	ok	3,3,4	false
+S25_DIVISORFOREACH	5	0	ok		false
+S25_DIVISORNULL	0	EX:java.lang.NullPointerException	false
+S25_DIVISORNULL	1	EX:java.lang.NullPointerException	true
+S25_DIVISORPREFIX	2147483647	1500000000	6	1,1,2,1,2,1	true
+S25_LINK	GDPR	java.net.URI	https://aka.ms/MinecraftGDPR
+S25_LINK	EULA	java.net.URI	https://aka.ms/MinecraftEULA
+S25_LINK	PRIVACY_STATEMENT	java.net.URI	http://go.microsoft.com/fwlink/?LinkId=521839
+S25_LINK	ATTRIBUTION	java.net.URI	https://aka.ms/MinecraftJavaAttribution
+S25_LINK	LICENSES	java.net.URI	https://aka.ms/MinecraftJavaLicenses
+S25_LINK	BUY_MINECRAFT_JAVA	java.net.URI	https://aka.ms/BuyMinecraftJava
+S25_LINK	ACCOUNT_SETTINGS	java.net.URI	https://aka.ms/JavaAccountSettings
+S25_LINK	SNAPSHOT_FEEDBACK	java.net.URI	https://aka.ms/snapshotfeedback?ref=game
+S25_LINK	RELEASE_FEEDBACK	java.net.URI	https://aka.ms/javafeedback?ref=game
+S25_LINK	SNAPSHOT_BUGS_FEEDBACK	java.net.URI	https://aka.ms/snapshotbugs?ref=game
+S25_LINK	GENERAL_HELP	java.net.URI	https://aka.ms/Minecraft-Support
+S25_LINK	ACCESSIBILITY_HELP	java.net.URI	https://aka.ms/MinecraftJavaAccessibility
+S25_LINK	REPORTING_HELP	java.net.URI	https://aka.ms/aboutjavareporting
+S25_LINK	SUSPENSION_HELP	java.net.URI	https://aka.ms/mcjavamoderation
+S25_LINK	BLOCKING_HELP	java.net.URI	https://aka.ms/javablocking
+S25_LINK	SYMLINK_HELP	java.net.URI	https://aka.ms/MinecraftSymLinks
+S25_LINK	PRIVACY_AND_ONLINE_SETTINGS	java.net.URI	https://aka.ms/MinecraftJavaXboxPrivacyAndSafety
+S25_LINK	START_REALMS_TRIAL	java.net.URI	https://aka.ms/startjavarealmstrial
+S25_LINK	BUY_REALMS	java.net.URI	https://aka.ms/BuyJavaRealms
+S25_LINK	REALMS_TERMS	java.net.URI	https://aka.ms/MinecraftRealmsTerms
+S25_LINK	REALMS_CONTENT_CREATION	java.net.URI	https://aka.ms/MinecraftRealmsContentCreator
+S25_LINK	EXTEND_REALMS_LINK	java.lang.String	https://aka.ms/ExtendJavaRealms
+S25_LINK	INTENTIONAL_GAME_DESIGN_BUG_ID	java.lang.String	MCPE-28723
+S25_LINK	INTENTIONAL_GAME_DESIGN_BUG	java.net.URI	https://bugs.mojang.com/browse/MCPE-28723
+S25_UUID	0	0	00000000-0000-0000-0000-000000000000	00000000000000000000000000000000
+S25_UUID	-1	-1	ffffffff-ffff-ffff-ffff-ffffffffffff	ffffffffffffffffffffffffffffffff
+S25_UUID	-9223372036854775808	-9223372036854775808	80000000-0000-0000-8000-000000000000	80000000000000008000000000000000
+S25_UUID	9223372036854775807	9223372036854775807	7fffffff-ffff-ffff-7fff-ffffffffffff	7fffffffffffffff7fffffffffffffff
+S25_UUID	81985529216486895	-81985529216486896	01234567-89ab-cdef-fedc-ba9876543210	0123456789abcdeffedcba9876543210
+S25_UUID	1	1	00000000-0000-0001-0000-000000000001	00000000000000010000000000000001
+S25_EXTREALM	0	-1	https://aka.ms/ExtendJavaRealms	https://aka.ms/ExtendJavaRealms	https://aka.ms/ExtendJavaRealms
+S25_EXTREALM	0	0	https://aka.ms/ExtendJavaRealms	https://aka.ms/ExtendJavaRealms	https://aka.ms/ExtendJavaRealms
+S25_EXTREALM	0	1	https://aka.ms/ExtendJavaRealms	https://aka.ms/ExtendJavaRealms	https://aka.ms/ExtendJavaRealms
+S25_EXTREALM	0	2	https://aka.ms/ExtendJavaRealms	https://aka.ms/ExtendJavaRealms	https://aka.ms/ExtendJavaRealms
+S25_EXTREALM	0	3	https://aka.ms/ExtendJavaRealms	https://aka.ms/ExtendJavaRealms	https://aka.ms/ExtendJavaRealms
+S25_EXTREALM	0	4	https://aka.ms/ExtendJavaRealms	https://aka.ms/ExtendJavaRealms	https://aka.ms/ExtendJavaRealms
+S25_EXTREALM	0	5	https://aka.ms/ExtendJavaRealms	https://aka.ms/ExtendJavaRealms	https://aka.ms/ExtendJavaRealms
+S25_EXTREALM	1	-1	EX:java.lang.NullPointerException: Cannot invoke "java.util.UUID.toString()" because "uuid" is null	EX:java.lang.NullPointerException: Cannot invoke "java.util.UUID.toString()" because "uuid" is null	EX:java.lang.NullPointerException: Cannot invoke "java.util.UUID.toString()" because "uuid" is null
+S25_EXTREALM	1	0	https://aka.ms/ExtendJavaRealms?subscriptionId=&profileId=00000000000000000000000000000000	https://aka.ms/ExtendJavaRealms?subscriptionId=&profileId=00000000000000000000000000000000&ref=expiredTrial	https://aka.ms/ExtendJavaRealms?subscriptionId=&profileId=00000000000000000000000000000000&ref=expiredRealm
+S25_EXTREALM	1	1	https://aka.ms/ExtendJavaRealms?subscriptionId=&profileId=ffffffffffffffffffffffffffffffff	https://aka.ms/ExtendJavaRealms?subscriptionId=&profileId=ffffffffffffffffffffffffffffffff&ref=expiredTrial	https://aka.ms/ExtendJavaRealms?subscriptionId=&profileId=ffffffffffffffffffffffffffffffff&ref=expiredRealm
+S25_EXTREALM	1	2	https://aka.ms/ExtendJavaRealms?subscriptionId=&profileId=80000000000000008000000000000000	https://aka.ms/ExtendJavaRealms?subscriptionId=&profileId=80000000000000008000000000000000&ref=expiredTrial	https://aka.ms/ExtendJavaRealms?subscriptionId=&profileId=80000000000000008000000000000000&ref=expiredRealm
+S25_EXTREALM	1	3	https://aka.ms/ExtendJavaRealms?subscriptionId=&profileId=7fffffffffffffff7fffffffffffffff	https://aka.ms/ExtendJavaRealms?subscriptionId=&profileId=7fffffffffffffff7fffffffffffffff&ref=expiredTrial	https://aka.ms/ExtendJavaRealms?subscriptionId=&profileId=7fffffffffffffff7fffffffffffffff&ref=expiredRealm
+S25_EXTREALM	1	4	https://aka.ms/ExtendJavaRealms?subscriptionId=&profileId=0123456789abcdeffedcba9876543210	https://aka.ms/ExtendJavaRealms?subscriptionId=&profileId=0123456789abcdeffedcba9876543210&ref=expiredTrial	https://aka.ms/ExtendJavaRealms?subscriptionId=&profileId=0123456789abcdeffedcba9876543210&ref=expiredRealm
+S25_EXTREALM	1	5	https://aka.ms/ExtendJavaRealms?subscriptionId=&profileId=00000000000000010000000000000001	https://aka.ms/ExtendJavaRealms?subscriptionId=&profileId=00000000000000010000000000000001&ref=expiredTrial	https://aka.ms/ExtendJavaRealms?subscriptionId=&profileId=00000000000000010000000000000001&ref=expiredRealm
+S25_EXTREALM	2	-1	EX:java.lang.NullPointerException: Cannot invoke "java.util.UUID.toString()" because "uuid" is null	EX:java.lang.NullPointerException: Cannot invoke "java.util.UUID.toString()" because "uuid" is null	EX:java.lang.NullPointerException: Cannot invoke "java.util.UUID.toString()" because "uuid" is null
+S25_EXTREALM	2	0	https://aka.ms/ExtendJavaRealms?subscriptionId=realm-123&profileId=00000000000000000000000000000000	https://aka.ms/ExtendJavaRealms?subscriptionId=realm-123&profileId=00000000000000000000000000000000&ref=expiredTrial	https://aka.ms/ExtendJavaRealms?subscriptionId=realm-123&profileId=00000000000000000000000000000000&ref=expiredRealm
+S25_EXTREALM	2	1	https://aka.ms/ExtendJavaRealms?subscriptionId=realm-123&profileId=ffffffffffffffffffffffffffffffff	https://aka.ms/ExtendJavaRealms?subscriptionId=realm-123&profileId=ffffffffffffffffffffffffffffffff&ref=expiredTrial	https://aka.ms/ExtendJavaRealms?subscriptionId=realm-123&profileId=ffffffffffffffffffffffffffffffff&ref=expiredRealm
+S25_EXTREALM	2	2	https://aka.ms/ExtendJavaRealms?subscriptionId=realm-123&profileId=80000000000000008000000000000000	https://aka.ms/ExtendJavaRealms?subscriptionId=realm-123&profileId=80000000000000008000000000000000&ref=expiredTrial	https://aka.ms/ExtendJavaRealms?subscriptionId=realm-123&profileId=80000000000000008000000000000000&ref=expiredRealm
+S25_EXTREALM	2	3	https://aka.ms/ExtendJavaRealms?subscriptionId=realm-123&profileId=7fffffffffffffff7fffffffffffffff	https://aka.ms/ExtendJavaRealms?subscriptionId=realm-123&profileId=7fffffffffffffff7fffffffffffffff&ref=expiredTrial	https://aka.ms/ExtendJavaRealms?subscriptionId=realm-123&profileId=7fffffffffffffff7fffffffffffffff&ref=expiredRealm
+S25_EXTREALM	2	4	https://aka.ms/ExtendJavaRealms?subscriptionId=realm-123&profileId=0123456789abcdeffedcba9876543210	https://aka.ms/ExtendJavaRealms?subscriptionId=realm-123&profileId=0123456789abcdeffedcba9876543210&ref=expiredTrial	https://aka.ms/ExtendJavaRealms?subscriptionId=realm-123&profileId=0123456789abcdeffedcba9876543210&ref=expiredRealm
+S25_EXTREALM	2	5	https://aka.ms/ExtendJavaRealms?subscriptionId=realm-123&profileId=00000000000000010000000000000001	https://aka.ms/ExtendJavaRealms?subscriptionId=realm-123&profileId=00000000000000010000000000000001&ref=expiredTrial	https://aka.ms/ExtendJavaRealms?subscriptionId=realm-123&profileId=00000000000000010000000000000001&ref=expiredRealm
+S25_EXTREALM	3	-1	EX:java.lang.NullPointerException: Cannot invoke "java.util.UUID.toString()" because "uuid" is null	EX:java.lang.NullPointerException: Cannot invoke "java.util.UUID.toString()" because "uuid" is null	EX:java.lang.NullPointerException: Cannot invoke "java.util.UUID.toString()" because "uuid" is null
+S25_EXTREALM	3	0	https://aka.ms/ExtendJavaRealms?subscriptionId=id &ref?=x&profileId=00000000000000000000000000000000	https://aka.ms/ExtendJavaRealms?subscriptionId=id &ref?=x&profileId=00000000000000000000000000000000&ref=expiredTrial	https://aka.ms/ExtendJavaRealms?subscriptionId=id &ref?=x&profileId=00000000000000000000000000000000&ref=expiredRealm
+S25_EXTREALM	3	1	https://aka.ms/ExtendJavaRealms?subscriptionId=id &ref?=x&profileId=ffffffffffffffffffffffffffffffff	https://aka.ms/ExtendJavaRealms?subscriptionId=id &ref?=x&profileId=ffffffffffffffffffffffffffffffff&ref=expiredTrial	https://aka.ms/ExtendJavaRealms?subscriptionId=id &ref?=x&profileId=ffffffffffffffffffffffffffffffff&ref=expiredRealm
+S25_EXTREALM	3	2	https://aka.ms/ExtendJavaRealms?subscriptionId=id &ref?=x&profileId=80000000000000008000000000000000	https://aka.ms/ExtendJavaRealms?subscriptionId=id &ref?=x&profileId=80000000000000008000000000000000&ref=expiredTrial	https://aka.ms/ExtendJavaRealms?subscriptionId=id &ref?=x&profileId=80000000000000008000000000000000&ref=expiredRealm
+S25_EXTREALM	3	3	https://aka.ms/ExtendJavaRealms?subscriptionId=id &ref?=x&profileId=7fffffffffffffff7fffffffffffffff	https://aka.ms/ExtendJavaRealms?subscriptionId=id &ref?=x&profileId=7fffffffffffffff7fffffffffffffff&ref=expiredTrial	https://aka.ms/ExtendJavaRealms?subscriptionId=id &ref?=x&profileId=7fffffffffffffff7fffffffffffffff&ref=expiredRealm
+S25_EXTREALM	3	4	https://aka.ms/ExtendJavaRealms?subscriptionId=id &ref?=x&profileId=0123456789abcdeffedcba9876543210	https://aka.ms/ExtendJavaRealms?subscriptionId=id &ref?=x&profileId=0123456789abcdeffedcba9876543210&ref=expiredTrial	https://aka.ms/ExtendJavaRealms?subscriptionId=id &ref?=x&profileId=0123456789abcdeffedcba9876543210&ref=expiredRealm
+S25_EXTREALM	3	5	https://aka.ms/ExtendJavaRealms?subscriptionId=id &ref?=x&profileId=00000000000000010000000000000001	https://aka.ms/ExtendJavaRealms?subscriptionId=id &ref?=x&profileId=00000000000000010000000000000001&ref=expiredTrial	https://aka.ms/ExtendJavaRealms?subscriptionId=id &ref?=x&profileId=00000000000000010000000000000001&ref=expiredRealm
+S25_EXTREALM	4	-1	EX:java.lang.NullPointerException: Cannot invoke "java.util.UUID.toString()" because "uuid" is null	EX:java.lang.NullPointerException: Cannot invoke "java.util.UUID.toString()" because "uuid" is null	EX:java.lang.NullPointerException: Cannot invoke "java.util.UUID.toString()" because "uuid" is null
+S25_EXTREALM	4	0	https://aka.ms/ExtendJavaRealms?subscriptionId=\u00e9 realm/\u4e00&profileId=00000000000000000000000000000000	https://aka.ms/ExtendJavaRealms?subscriptionId=\u00e9 realm/\u4e00&profileId=00000000000000000000000000000000&ref=expiredTrial	https://aka.ms/ExtendJavaRealms?subscriptionId=\u00e9 realm/\u4e00&profileId=00000000000000000000000000000000&ref=expiredRealm
+S25_EXTREALM	4	1	https://aka.ms/ExtendJavaRealms?subscriptionId=\u00e9 realm/\u4e00&profileId=ffffffffffffffffffffffffffffffff	https://aka.ms/ExtendJavaRealms?subscriptionId=\u00e9 realm/\u4e00&profileId=ffffffffffffffffffffffffffffffff&ref=expiredTrial	https://aka.ms/ExtendJavaRealms?subscriptionId=\u00e9 realm/\u4e00&profileId=ffffffffffffffffffffffffffffffff&ref=expiredRealm
+S25_EXTREALM	4	2	https://aka.ms/ExtendJavaRealms?subscriptionId=\u00e9 realm/\u4e00&profileId=80000000000000008000000000000000	https://aka.ms/ExtendJavaRealms?subscriptionId=\u00e9 realm/\u4e00&profileId=80000000000000008000000000000000&ref=expiredTrial	https://aka.ms/ExtendJavaRealms?subscriptionId=\u00e9 realm/\u4e00&profileId=80000000000000008000000000000000&ref=expiredRealm
+S25_EXTREALM	4	3	https://aka.ms/ExtendJavaRealms?subscriptionId=\u00e9 realm/\u4e00&profileId=7fffffffffffffff7fffffffffffffff	https://aka.ms/ExtendJavaRealms?subscriptionId=\u00e9 realm/\u4e00&profileId=7fffffffffffffff7fffffffffffffff&ref=expiredTrial	https://aka.ms/ExtendJavaRealms?subscriptionId=\u00e9 realm/\u4e00&profileId=7fffffffffffffff7fffffffffffffff&ref=expiredRealm
+S25_EXTREALM	4	4	https://aka.ms/ExtendJavaRealms?subscriptionId=\u00e9 realm/\u4e00&profileId=0123456789abcdeffedcba9876543210	https://aka.ms/ExtendJavaRealms?subscriptionId=\u00e9 realm/\u4e00&profileId=0123456789abcdeffedcba9876543210&ref=expiredTrial	https://aka.ms/ExtendJavaRealms?subscriptionId=\u00e9 realm/\u4e00&profileId=0123456789abcdeffedcba9876543210&ref=expiredRealm
+S25_EXTREALM	4	5	https://aka.ms/ExtendJavaRealms?subscriptionId=\u00e9 realm/\u4e00&profileId=00000000000000010000000000000001	https://aka.ms/ExtendJavaRealms?subscriptionId=\u00e9 realm/\u4e00&profileId=00000000000000010000000000000001&ref=expiredTrial	https://aka.ms/ExtendJavaRealms?subscriptionId=\u00e9 realm/\u4e00&profileId=00000000000000010000000000000001&ref=expiredRealm
+S25_EXCCOLL	empty	ok	true	true
+S25_EXCCOLL	ordered	true	true	2	true	true	first suppressed	second suppressed
+S25_EXCCOLL	null-first	true	0
+S25_EXCCOLL	null-suppressed	java.lang.NullPointerException|Cannot suppress a null exception.|true	0	true
+S25_EXCCOLL	self	java.lang.IllegalArgumentException|Self-suppression not permitted|true	0	true
+S25_EXCCOLL	disabled	ok	0	true
+S25_EXCCOLL	disabled-self	java.lang.IllegalArgumentException|Self-suppression not permitted|true	0	true
+S25_NIOENUM	link-values	NOFOLLOW_LINKS:0
+S25_NIOENUM	copy-values	REPLACE_EXISTING:0,COPY_ATTRIBUTES:1,ATOMIC_MOVE:2
+S25_NIOENUM	link-valueOf	NOFOLLOW_LINKS	NOFOLLOW_LINKS
+S25_NIOENUM	link-valueOf	bad	EX:java.lang.IllegalArgumentException: No enum constant java.nio.file.LinkOption.bad
+S25_NIOENUM	link-valueOf	\N	EX:java.lang.NullPointerException: Name is null
+S25_NIOENUM	copy-valueOf	ATOMIC_MOVE	ATOMIC_MOVE
+S25_NIOENUM	copy-valueOf	bad	EX:java.lang.IllegalArgumentException: No enum constant java.nio.file.StandardCopyOption.bad
+S25_NIOENUM	copy-valueOf	\N	EX:java.lang.NullPointerException: Name is null
+S25_FSCAP	false	false	39584	FileSystemCapabilities[atomicMove=false, hardLinks=false]	true	false
+S25_FSMOVE	false	false	java.nio.file.LinkOption:NOFOLLOW_LINKS	true	1
+S25_FSCAP	false	true	39578	FileSystemCapabilities[atomicMove=false, hardLinks=true]	true	false
+S25_FSMOVE	false	true	java.nio.file.LinkOption:NOFOLLOW_LINKS	true	1
+S25_FSCAP	true	false	39398	FileSystemCapabilities[atomicMove=true, hardLinks=false]	true	false
+S25_FSMOVE	true	false	java.nio.file.StandardCopyOption:ATOMIC_MOVE,java.nio.file.LinkOption:NOFOLLOW_LINKS	true	2
+S25_FSCAP	true	true	39392	FileSystemCapabilities[atomicMove=true, hardLinks=true]	true	false
+S25_FSMOVE	true	true	java.nio.file.StandardCopyOption:ATOMIC_MOVE,java.nio.file.LinkOption:NOFOLLOW_LINKS	true	2
+S25_JFRSTAT	chunk	minecraft:overworld	minecraft:overworld	-123	456	665329923	ChunkIdentification[level=minecraft:overworld, dimension=minecraft:overworld, x=-123, z=456]
+S25_JFRSTAT	cpu	3fe0000000000000	8000000000000000	3fc0000000000000	-2019557376	CpuLoadStat[jvm=0.5, userJvm=-0.0, system=0.125]
+S25_JFRSTAT	fps	144	144	FpsStat[fps=144]
+S25_JFRSTAT	packet	PLAY_TO_SERVER	minecraft:game	minecraft:chat_command	2050228110	PacketIdentification[direction=PLAY_TO_SERVER, protocolId=minecraft:game, packetId=minecraft:chat_command]
+S25_JFRSTAT	bad-int-field	EX:java.lang.IllegalArgumentException: Could not find field with name missing
+S25_JFRSTAT	wrong-int-type	EX:java.lang.IllegalArgumentException: Attempt to get field "level" with illegal data type conversion int
+S25_JFRSTAT	wrong-string-type	EX:java.lang.IllegalArgumentException: Attempt to get int field "fps" with illegal data type conversion java.lang.String
+S25_JFRSTAT	null-event	EX:java.lang.NullPointerException: Cannot invoke "jdk.jfr.consumer.RecordedEvent.getString(String)" because "event" is null
+S25_JFRSTAT	null-fps-event	EX:java.lang.NullPointerException: Cannot invoke "jdk.jfr.consumer.RecordedEvent.getInt(String)" because "event" is null
+S25_JFRSTAT	null-fps-field	EX:java.lang.NullPointerException: name
+S25_JFRSTAT	missing-fps	EX:java.lang.IllegalArgumentException: Could not find field with name missing
+S25_JFRSTAT	null-chunk	ChunkIdentification[level=null, dimension=null, x=-1, z=2]	-29	true
+S25_JFRSTAT	null-packet	PacketIdentification[direction=null, protocolId=null, packetId=null]	0	true
+S25_JFRSTAT	cpu-ieee	true	false	568852480
+S25_UUIDLOOKUP	hit	true
+S25_UUIDLOOKUP	miss	true
 API24	CowFSCreationException	ctor	<init>(java.lang.String)	public
 API24SUP	CowFSCreationException	extends net.minecraft.util.filefix.virtualfilesystem.exception.CowFSFileSystemException	class
 API24	CowFSSymlinkException	ctor	<init>(java.lang.String)	public
@@ -5916,3 +6327,162 @@ API24	RecordedDeviation	field	profilerResultAtTick:net.minecraft.util.profiling.
 API24	RecordedDeviation	field	tick:int	public final
 API24	RecordedDeviation	field	timestamp:java.time.Instant	public final
 API24SUP	RecordedDeviation	-	class
+S25_API	CubePointRange	ctor	<init>(int)	public
+S25_API	CubePointRange	field	parts:int	private final
+S25_API	CubePointRange	method	getDouble(int)double	public
+S25_API	CubePointRange	method	size()int	public
+S25_SUP	CubePointRange	extends it.unimi.dsi.fastutil.doubles.AbstractDoubleList	class
+S25_API	OffsetDoubleList	ctor	<init>(it.unimi.dsi.fastutil.doubles.DoubleList,double)	public
+S25_API	OffsetDoubleList	field	delegate:it.unimi.dsi.fastutil.doubles.DoubleList	private final
+S25_API	OffsetDoubleList	field	offset:double	private final
+S25_API	OffsetDoubleList	method	getDouble(int)double	public
+S25_API	OffsetDoubleList	method	size()int	public
+S25_SUP	OffsetDoubleList	extends it.unimi.dsi.fastutil.doubles.AbstractDoubleList	class
+S25_API	IndexMerger	method	forMergedIndexes(net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer)boolean	public abstract
+S25_API	IndexMerger	method	getList()it.unimi.dsi.fastutil.doubles.DoubleList	public abstract
+S25_API	IndexMerger	method	size()int	public abstract
+S25_SUP	IndexMerger	-	interface
+S25_API	IndexMerger$IndexConsumer	method	merge(int,int,int)boolean	public abstract
+S25_SUP	IndexMerger$IndexConsumer	-	interface
+S25_API	IdenticalMerger	ctor	<init>(it.unimi.dsi.fastutil.doubles.DoubleList)	public
+S25_API	IdenticalMerger	field	coords:it.unimi.dsi.fastutil.doubles.DoubleList	private final
+S25_API	IdenticalMerger	method	forMergedIndexes(net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer)boolean	public
+S25_API	IdenticalMerger	method	getList()it.unimi.dsi.fastutil.doubles.DoubleList	public
+S25_API	IdenticalMerger	method	size()int	public
+S25_SUP	IdenticalMerger	net.minecraft.world.phys.shapes.IndexMerger	class
+S25_API	NonOverlappingMerger	ctor	<init>(it.unimi.dsi.fastutil.doubles.DoubleList,it.unimi.dsi.fastutil.doubles.DoubleList,boolean)	protected
+S25_API	NonOverlappingMerger	field	lower:it.unimi.dsi.fastutil.doubles.DoubleList	private final
+S25_API	NonOverlappingMerger	field	swap:boolean	private final
+S25_API	NonOverlappingMerger	field	upper:it.unimi.dsi.fastutil.doubles.DoubleList	private final
+S25_API	NonOverlappingMerger	method	forMergedIndexes(net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer)boolean	public
+S25_API	NonOverlappingMerger	method	forNonSwappedIndexes(net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer)boolean	private
+S25_API	NonOverlappingMerger	method	getDouble(int)double	public
+S25_API	NonOverlappingMerger	method	getList()it.unimi.dsi.fastutil.doubles.DoubleList	public
+S25_API	NonOverlappingMerger	method	size()int	public
+S25_SUP	NonOverlappingMerger	net.minecraft.world.phys.shapes.IndexMerger,extends it.unimi.dsi.fastutil.doubles.AbstractDoubleList	class
+S25_API	DiscreteCubeMerger	ctor	<init>(int,int)	package
+S25_API	DiscreteCubeMerger	field	firstDiv:int	private final
+S25_API	DiscreteCubeMerger	field	result:net.minecraft.world.phys.shapes.CubePointRange	private final
+S25_API	DiscreteCubeMerger	field	secondDiv:int	private final
+S25_API	DiscreteCubeMerger	method	forMergedIndexes(net.minecraft.world.phys.shapes.IndexMerger$IndexConsumer)boolean	public
+S25_API	DiscreteCubeMerger	method	getList()it.unimi.dsi.fastutil.doubles.DoubleList	public
+S25_API	DiscreteCubeMerger	method	size()int	public
+S25_SUP	DiscreteCubeMerger	net.minecraft.world.phys.shapes.IndexMerger	class
+S25_API	Divisor	ctor	<init>(int,int)	public
+S25_API	Divisor	field	denominator:int	private final
+S25_API	Divisor	field	mod:int	private final
+S25_API	Divisor	field	quotient:int	private final
+S25_API	Divisor	field	remainder:int	private
+S25_API	Divisor	field	returnedParts:int	private
+S25_API	Divisor	method	asIterable(int,int)java.lang.Iterable<java.lang.Integer>	public static
+S25_API	Divisor	method	hasNext()boolean	public
+S25_API	Divisor	method	nextInt()int	public
+S25_SUP	Divisor	it.unimi.dsi.fastutil.ints.IntIterator	class
+S25_API	CommonLinks	ctor	<init>()	public
+S25_API	CommonLinks	field	ACCESSIBILITY_HELP:java.net.URI	public static final
+S25_API	CommonLinks	field	ACCOUNT_SETTINGS:java.net.URI	public static final
+S25_API	CommonLinks	field	ATTRIBUTION:java.net.URI	public static final
+S25_API	CommonLinks	field	BLOCKING_HELP:java.net.URI	public static final
+S25_API	CommonLinks	field	BUY_MINECRAFT_JAVA:java.net.URI	public static final
+S25_API	CommonLinks	field	BUY_REALMS:java.net.URI	public static final
+S25_API	CommonLinks	field	EULA:java.net.URI	public static final
+S25_API	CommonLinks	field	EXTEND_REALMS_LINK:java.lang.String	public static final
+S25_API	CommonLinks	field	GDPR:java.net.URI	public static final
+S25_API	CommonLinks	field	GENERAL_HELP:java.net.URI	public static final
+S25_API	CommonLinks	field	INTENTIONAL_GAME_DESIGN_BUG:java.net.URI	public static final
+S25_API	CommonLinks	field	INTENTIONAL_GAME_DESIGN_BUG_ID:java.lang.String	public static final
+S25_API	CommonLinks	field	LICENSES:java.net.URI	public static final
+S25_API	CommonLinks	field	PRIVACY_AND_ONLINE_SETTINGS:java.net.URI	public static final
+S25_API	CommonLinks	field	PRIVACY_STATEMENT:java.net.URI	public static final
+S25_API	CommonLinks	field	REALMS_CONTENT_CREATION:java.net.URI	public static final
+S25_API	CommonLinks	field	REALMS_TERMS:java.net.URI	public static final
+S25_API	CommonLinks	field	RELEASE_FEEDBACK:java.net.URI	public static final
+S25_API	CommonLinks	field	REPORTING_HELP:java.net.URI	public static final
+S25_API	CommonLinks	field	SNAPSHOT_BUGS_FEEDBACK:java.net.URI	public static final
+S25_API	CommonLinks	field	SNAPSHOT_FEEDBACK:java.net.URI	public static final
+S25_API	CommonLinks	field	START_REALMS_TRIAL:java.net.URI	public static final
+S25_API	CommonLinks	field	SUSPENSION_HELP:java.net.URI	public static final
+S25_API	CommonLinks	field	SYMLINK_HELP:java.net.URI	public static final
+S25_API	CommonLinks	method	extendRealms(java.lang.String,java.util.UUID)java.lang.String	public static
+S25_API	CommonLinks	method	extendRealms(java.lang.String,java.util.UUID,boolean)java.lang.String	public static
+S25_SUP	CommonLinks	-	class
+S25_API	UniquelyIdentifyable	method	getUUID()java.util.UUID	public abstract
+S25_API	UniquelyIdentifyable	method	isRemoved()boolean	public abstract
+S25_SUP	UniquelyIdentifyable	-	interface
+S25_API	ExceptionCollector	ctor	<init>()	public
+S25_API	ExceptionCollector	field	result:T	private
+S25_API	ExceptionCollector	method	add(T)void	public
+S25_API	ExceptionCollector	method	throwIfPresent()void	public
+S25_SUP	ExceptionCollector	-	class
+S25_API	FileSystemCapabilities	ctor	<init>(boolean,boolean)	public
+S25_API	FileSystemCapabilities	field	atomicMove:boolean	private final
+S25_API	FileSystemCapabilities	field	hardLinks:boolean	private final
+S25_API	FileSystemCapabilities	method	atomicMove()boolean	public
+S25_API	FileSystemCapabilities	method	equals(java.lang.Object)boolean	public
+S25_API	FileSystemCapabilities	method	getMoveOptions()java.nio.file.CopyOption[]	public
+S25_API	FileSystemCapabilities	method	hardLinks()boolean	public
+S25_API	FileSystemCapabilities	method	hashCode()int	public
+S25_API	FileSystemCapabilities	method	toString()java.lang.String	public
+S25_SUP	FileSystemCapabilities	extends java.lang.Record	record
+S25_SUP	CopyOption	-	interface
+S25_API	LinkOption	ctor	<init>()	private
+S25_API	LinkOption	field	NOFOLLOW_LINKS:java.nio.file.LinkOption	public static final
+S25_API	LinkOption	method	valueOf(java.lang.String)java.nio.file.LinkOption	public static
+S25_API	LinkOption	method	values()java.nio.file.LinkOption[]	public static
+S25_SUP	LinkOption	java.nio.file.OpenOption,java.nio.file.CopyOption,extends java.lang.Enum<java.nio.file.LinkOption>	enum
+S25_API	StandardCopyOption	ctor	<init>()	private
+S25_API	StandardCopyOption	field	ATOMIC_MOVE:java.nio.file.StandardCopyOption	public static final
+S25_API	StandardCopyOption	field	COPY_ATTRIBUTES:java.nio.file.StandardCopyOption	public static final
+S25_API	StandardCopyOption	field	REPLACE_EXISTING:java.nio.file.StandardCopyOption	public static final
+S25_API	StandardCopyOption	method	valueOf(java.lang.String)java.nio.file.StandardCopyOption	public static
+S25_API	StandardCopyOption	method	values()java.nio.file.StandardCopyOption[]	public static
+S25_SUP	StandardCopyOption	java.nio.file.CopyOption,extends java.lang.Enum<java.nio.file.StandardCopyOption>	enum
+S25_SUP	CrashReportDetail	java.util.concurrent.Callable<V>	interface
+S25_API	ChunkIdentification	ctor	<init>(java.lang.String,java.lang.String,int,int)	public
+S25_API	ChunkIdentification	field	dimension:java.lang.String	private final
+S25_API	ChunkIdentification	field	level:java.lang.String	private final
+S25_API	ChunkIdentification	field	x:int	private final
+S25_API	ChunkIdentification	field	z:int	private final
+S25_API	ChunkIdentification	method	dimension()java.lang.String	public
+S25_API	ChunkIdentification	method	equals(java.lang.Object)boolean	public
+S25_API	ChunkIdentification	method	from(jdk.jfr.consumer.RecordedEvent)net.minecraft.util.profiling.jfr.stats.ChunkIdentification	public static
+S25_API	ChunkIdentification	method	hashCode()int	public
+S25_API	ChunkIdentification	method	level()java.lang.String	public
+S25_API	ChunkIdentification	method	toString()java.lang.String	public
+S25_API	ChunkIdentification	method	x()int	public
+S25_API	ChunkIdentification	method	z()int	public
+S25_SUP	ChunkIdentification	extends java.lang.Record	record
+S25_API	CpuLoadStat	ctor	<init>(double,double,double)	public
+S25_API	CpuLoadStat	field	jvm:double	private final
+S25_API	CpuLoadStat	field	system:double	private final
+S25_API	CpuLoadStat	field	userJvm:double	private final
+S25_API	CpuLoadStat	method	equals(java.lang.Object)boolean	public
+S25_API	CpuLoadStat	method	from(jdk.jfr.consumer.RecordedEvent)net.minecraft.util.profiling.jfr.stats.CpuLoadStat	public static
+S25_API	CpuLoadStat	method	hashCode()int	public
+S25_API	CpuLoadStat	method	jvm()double	public
+S25_API	CpuLoadStat	method	system()double	public
+S25_API	CpuLoadStat	method	toString()java.lang.String	public
+S25_API	CpuLoadStat	method	userJvm()double	public
+S25_SUP	CpuLoadStat	extends java.lang.Record	record
+S25_API	FpsStat	ctor	<init>(int)	public
+S25_API	FpsStat	field	fps:int	private final
+S25_API	FpsStat	method	equals(java.lang.Object)boolean	public
+S25_API	FpsStat	method	fps()int	public
+S25_API	FpsStat	method	from(jdk.jfr.consumer.RecordedEvent,java.lang.String)net.minecraft.util.profiling.jfr.stats.FpsStat	public static
+S25_API	FpsStat	method	hashCode()int	public
+S25_API	FpsStat	method	toString()java.lang.String	public
+S25_SUP	FpsStat	extends java.lang.Record	record
+S25_API	PacketIdentification	ctor	<init>(java.lang.String,java.lang.String,java.lang.String)	public
+S25_API	PacketIdentification	field	direction:java.lang.String	private final
+S25_API	PacketIdentification	field	packetId:java.lang.String	private final
+S25_API	PacketIdentification	field	protocolId:java.lang.String	private final
+S25_API	PacketIdentification	method	direction()java.lang.String	public
+S25_API	PacketIdentification	method	equals(java.lang.Object)boolean	public
+S25_API	PacketIdentification	method	from(jdk.jfr.consumer.RecordedEvent)net.minecraft.util.profiling.jfr.stats.PacketIdentification	public static
+S25_API	PacketIdentification	method	hashCode()int	public
+S25_API	PacketIdentification	method	packetId()java.lang.String	public
+S25_API	PacketIdentification	method	protocolId()java.lang.String	public
+S25_API	PacketIdentification	method	toString()java.lang.String	public
+S25_SUP	PacketIdentification	extends java.lang.Record	record
+S25_API	UUIDLookup	method	lookup(java.util.UUID)IdentifiedType	public abstract
+S25_SUP	UUIDLookup	-	interface

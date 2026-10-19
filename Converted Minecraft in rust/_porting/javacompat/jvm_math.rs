@@ -411,7 +411,7 @@ pub fn atan2(y: f64, x: f64) -> f64 {
     if (iy | ly) == 0 {
         // y == 0 (either sign)
         return match m {
-            0 | 1 => y,                     // atan(+-0, +anything) = +-0
+            0 | 1 => y,                              // atan(+-0, +anything) = +-0
             2 => std::f64::consts::PI + ATAN2_TINY,  // atan(+0, -anything) = pi
             _ => -std::f64::consts::PI - ATAN2_TINY, // atan(-0, -anything) = -pi
         };
@@ -428,10 +428,10 @@ pub fn atan2(y: f64, x: f64) -> f64 {
         // x is infinite
         if iy == 0x7ff0_0000 {
             return match m {
-                0 => PI_O_4 + ATAN2_TINY,             // atan(+Inf, +Inf)
-                1 => -PI_O_4 - ATAN2_TINY,            // atan(-Inf, +Inf)
-                2 => 3.0 * PI_O_4 + ATAN2_TINY,      // atan(+Inf, -Inf)
-                _ => -3.0 * PI_O_4 - ATAN2_TINY,     // atan(-Inf, -Inf)
+                0 => PI_O_4 + ATAN2_TINY,        // atan(+Inf, +Inf)
+                1 => -PI_O_4 - ATAN2_TINY,       // atan(-Inf, +Inf)
+                2 => 3.0 * PI_O_4 + ATAN2_TINY,  // atan(+Inf, -Inf)
+                _ => -3.0 * PI_O_4 - ATAN2_TINY, // atan(-Inf, -Inf)
             };
         }
         return match m {
@@ -848,7 +848,10 @@ mod tests {
     fn atan2_argument_order_is_y_then_x() {
         // Java atan2(1.0, -1.0) = 3*pi/4, i.e. the point is in the SECOND quadrant.
         let v = atan2(1.0, -1.0);
-        assert!(v > std::f64::consts::PI / 2.0, "got {v}: second quadrant expected");
+        assert!(
+            v > std::f64::consts::PI / 2.0,
+            "got {v}: second quadrant expected"
+        );
         // Rust's own f64::atan2 takes the receiver as y, so `1.0f64.atan2(-1.0)` agrees --
         // which is exactly why the wrapper exists and why the call site must be written
         // jvm_math::atan2(y, x) and not receiver style.

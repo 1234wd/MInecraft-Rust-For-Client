@@ -1,6 +1,6 @@
 //! Port of: com/mojang/blaze3d/pipeline/BlendFunction.java
 //! Java class(es): com.mojang.blaze3d.pipeline.BlendFunction
-//! Status: VERIFIED
+//! Status: PARTIAL
 //!
 //! Session 24. `public record BlendFunction(BlendEquation color, BlendEquation alpha)`: the colour
 //! and alpha blend equations of a render pipeline, eight named presets, and five convenience

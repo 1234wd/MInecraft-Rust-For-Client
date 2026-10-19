@@ -1020,3 +1020,18 @@ payloads. `f64_bits_match` / `f32_bits_match` treat any two NaNs as equal while
 allowlist is load-bearing for exactly this reason, not decorative. A group whose NaN bits
 genuinely matter must be opted in by name, with the observable site written down, and it will
 then be non-reproducible until the payload is pinned deliberately.
+
+
+## Session 25 Java compatibility subsets
+
+These helpers represent only the API surface used by verified ports; they are not claims of full library implementations.
+
+* `fastutil::DoubleList` provides indexed double access, Java-compatible size/error behavior, and the delegation surface needed by the shape mergers. `OffsetDoubleList` retains its source alias and its null/delegate failure behavior.
+* `guava::IntMath.gcd` preserves the pinned Guava 33.6 integer and exception behavior used by `DiscreteCubeMerger`.
+* `java_net::Uri` stores only the fixed Java-validated URI constants used by `CommonLinks`; it does not parse arbitrary inputs. `java_util::Uuid` preserves the two signed 64-bit UUID fields and authlib's lowercase undashed spelling.
+* `java_nio` represents `CopyOption`/`OpenOption` marker relationships and the JDK 25 `LinkOption` and `StandardCopyOption` enum order, names, ordinals, and `valueOf` failures. It intentionally does not emulate filesystem operations.
+* `java_concurrent::Callable<V>` maps a call result to `Result<V, ThrowableRef>` so thrown Java throwables remain explicit.
+* `java_jfr::RecordedEvent` models named nullable String, int, and float fields plus observed JDK 25 missing-field, type-conversion, and null-name errors. It does not model recording, event time/duration, or the complete JFR API.
+* `JavaThrowable::add_suppressed` models null/self-suppression checks, suppression-disabled throwables, reference identity, and ordered suppressed values for `ExceptionCollector`.
+
+The oracle tests include null, wrong-type, missing-value, enum-order, edge-index, signed-zero/NaN, aliasing, iterator, and exception cases where applicable. Extend a subset only when a caller requires more; preserve the scope limitation in its module documentation.

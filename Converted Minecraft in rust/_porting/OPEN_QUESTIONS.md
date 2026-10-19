@@ -828,3 +828,30 @@ IOException as the cause, which is what `getMessage`/`getCause` return (probed: 
 c_invalid_child`) -- but carries no report, so nothing can ask it for `getReport()`. Porting
 `CrashReport` (and `CrashReportCategory`, `ReportedException`) would complete `CompoundTag` apart
 from its codec methods, unblock `ReportedNbtException`, and is one of `NbtIo`'s dependencies.
+
+
+---
+
+## Session 25 small-file inventory and dependency blockers (2026-10-19)
+
+The complete current source of truth is the regenerated `_porting/MANIFEST.csv`, not the ready-queue's heading. Snapshot: 7,055 Java rows; 326 `VERIFIED`, 55 `PORTED`, 6,591 `SKELETON`, 83 `PARTIAL`; 4,828 small files (Java LOC <=100) remain `SKELETON`/`PARTIAL`, split into 4,760/68. Of those, the internal Minecraft dependency-only queue flags 234 small candidates (91 common, 16 server, 127 client). `ready_queue.py` intentionally drops JDK and third-party types, so a queue result alone is not a portability claim.
+
+### Concrete remaining blocker families
+
+| Blocker | Examples among small files / consumers |
+|---|---|
+| Missing large internal Minecraft foundations | `StreamCodec` (398 small dependents), `BlockState` (387), `Component` (367), `ItemStack` (365), `ServerLevel` (297), `Level` (291), `References` (259), `Packet` (248), `LivingEntity` (243), `PacketType` (230), `Holder`/`Registries` (228 each), `Entity` (206), `Block` (200). Counts are direct references among remaining small files, not transitive class counts. |
+| DataFixerUpper / codec contracts | `KeyDispatchDataCodec`, `DamageImmunity`, `FloatWithAlpha`, `DataPackConfig`, `GeodeLayerSettings`, `ExpirableValue` codecs, `GenerationStep.Decoration.CODEC`, and the NBT codec family. Requires exact `Codec`, `DataResult`, and record-codec behavior; no broad fake DFU layer was added. |
+| Brigadier | `SignedArgument`, `InCommandFunction`, and parser/visitor types depend on Brigadier argument parsing contracts. |
+| Java filesystem | `ForbiddenSymlinkInfo`, `FileSystemUtil`, `IoSupplier` and NBT I/O need `Path`, `Files`, link attributes and/or stream operations. Session25's `java_nio` helper only covers option markers and enum constants. |
+| Java asynchronous APIs | `ChunkScanAccess`, `TaskChainer`, scheduler code, and reload paths need `CompletableFuture`/`Executor` completion and error semantics. Only `Callable<V>` is currently modeled. |
+| Full JFR and `Duration` | `TimedStat`, `TickTimeStat`, other event consumers need durations and more `RecordedEvent` field types. Session25 models only the String/int/float fields read by four records. |
+| JSON libraries | `LenientJsonParser`, `StrictJsonParser`, and serializers need Gson's parsing/error behavior. |
+| Java formatting and date/time | `StatFormatter` needs `Formatter`/`DecimalFormat`; `FileNameDateFormatter` needs Java's year sign-width formatter; `SpecialDates` uses the system-zone `ZonedDateTime.now()`. |
+| Fabric API | `TooltipFlag` depends on Fabric's tooltip contract. |
+| JVM object identity | Seven Session24 files remain PARTIAL for the exact methods listed in the Session24 audit above; `RecipeBookCategory` also requires identity-aware treatment. |
+| External type signatures | `ProfilerPathEntry` exposes fastutil `Object2LongMap`; `EntityTypeTest` exposes Java `Class`/runtime assignability. A declaration-only Rust shape must not be called verified until those semantics are represented. |
+
+### Screened but correctly left pending
+
+`GeodeLayerSettings`, `GenerationStep`, and `ExpirableValue` have required DFU codecs in their Java declarations. `AttributeRange` requires `DataResult` success/error semantics as well as float clamp behavior. `SpecialDates` requires system-zone date behavior. These were read but not marked complete or given guessed defaults. The existing Session23 NBT aliasing decision (#34), crash-report dependency (#35), and DataFixerUpper plan remain open.

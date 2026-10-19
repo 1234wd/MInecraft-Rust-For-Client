@@ -31,7 +31,9 @@ pub struct JavaRandom {
 impl JavaRandom {
     /// Port of `java.util.Random#setSeed(long)`: scramble, then mask to 48 bits.
     pub fn new(seed: i64) -> Self {
-        Self { seed: (seed ^ JAVA_MULTIPLIER) & JAVA_MASK }
+        Self {
+            seed: (seed ^ JAVA_MULTIPLIER) & JAVA_MASK,
+        }
     }
 
     /// The raw 48-bit state, as `java.util.Random` would report it internally.
@@ -47,7 +49,11 @@ impl JavaRandom {
     /// not reproduced here (it would panic in Rust anyway).
     #[inline]
     pub fn next(&mut self, bits: i32) -> i32 {
-        self.seed = self.seed.wrapping_mul(JAVA_MULTIPLIER).wrapping_add(JAVA_INCREMENT) & JAVA_MASK;
+        self.seed = self
+            .seed
+            .wrapping_mul(JAVA_MULTIPLIER)
+            .wrapping_add(JAVA_INCREMENT)
+            & JAVA_MASK;
         (self.seed >> (48 - bits)) as i32
     }
 
