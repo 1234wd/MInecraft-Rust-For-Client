@@ -744,6 +744,33 @@ pub fn round_f32(a: f32) -> i32 {
     }
 }
 
+/// Port of `Math.round(double)`: the nearest `long`, ties toward positive infinity, NaN to 0,
+/// saturating at the `long` range. Session 24, for `VecDeltaCodec`.
+///
+/// The JDK's bit-level body, as for [`round_f32`] (and for the same reason: `(a + 0.5).floor()`
+/// is wrong for `0.49999999999999994`), with the `double` constants `SIGNIFICAND_WIDTH = 53`,
+/// `EXP_BIAS = 1023`, `EXP_BIT_MASK = 0x7FF0000000000000L`, `SIGNIF_BIT_MASK =
+/// 0x000FFFFFFFFFFFFFL`, and `shift & -64` in place of `& -32`. The `else` branch is `(long) a`,
+/// which Rust's `as i64` matches.
+pub fn round_f64(a: f64) -> i64 {
+    const SIGNIFICAND_WIDTH: i64 = 53;
+    const EXP_BIAS: i64 = 1023;
+    const EXP_BIT_MASK: i64 = 0x7FF0_0000_0000_0000;
+    const SIGNIF_BIT_MASK: i64 = 0x000F_FFFF_FFFF_FFFF;
+    let long_bits = a.to_bits() as i64;
+    let biased_exp = (long_bits & EXP_BIT_MASK) >> (SIGNIFICAND_WIDTH - 1);
+    let shift = (SIGNIFICAND_WIDTH - 2 + EXP_BIAS) - biased_exp;
+    if (shift & -64) == 0 {
+        let mut r = (long_bits & SIGNIF_BIT_MASK) | (SIGNIF_BIT_MASK + 1);
+        if long_bits < 0 {
+            r = -r;
+        }
+        ((r >> shift) + 1) >> 1
+    } else {
+        a as i64
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -100,6 +100,7 @@ public class SweepProbe {
 			batchA1();
 			batchB();
 			batchC();
+			batchD();
 			apiShapes();
 		}
 		System.err.println("sweep_probe: " + rows + " rows -> " + target);
@@ -1053,6 +1054,355 @@ public class SweepProbe {
 		}
 	}
 
+	// ================================================================== sub-batch D
+
+	static void batchD() throws Exception {
+		renameMaps();
+		searchIterators();
+		potentialCalculator();
+		vecDeltaCodec();
+		graph();
+		strictQueue();
+	}
+
+	// ---- RENAMEMAP / RENAMEMAPE: the datafix ImmutableMap tables
+
+	static final String[][] RENAME_FIELDS = {
+		{"DyeItemRenameFix", "RENAMED_IDS"}, {"RenamedCoralFansFix", "RENAMED_IDS"}, {"RecipesRenameningFix", "RECIPES"},
+		{"RenamedCoralFix", "RENAMED_IDS"}, {"CavesAndCliffsRenames", "RENAMES"}, {"StonecutterRecipeRenameFix", "RECIPE_RENAMES"},
+		{"StonecutterRecipeRenameFix", "ADVANCEMENT_RENAMES"}, {"BiomeFix", "BIOMES"}, {"RecipesFix", "RECIPES"},
+	};
+
+	@SuppressWarnings("unchecked")
+	static void renameMaps() throws Exception {
+		java.util.List<java.util.Map<String, String>> maps = new java.util.ArrayList<>();
+		for (String[] cf : RENAME_FIELDS) {
+			Class<?> c = Class.forName("net.minecraft.util.datafix.fixes." + cf[0]);
+			java.util.Map<String, String> m = (java.util.Map<String, String>) c.getField(cf[1]).get(null);
+			maps.add(m);
+			row("RENAMEMAP", cf[0], cf[1], m.getClass().getSuperclass().getName(), i(m.size()), b(m.isEmpty()), i(m.hashCode()),
+				esc(m.toString()), esc(String.valueOf(m.get("minecraft:no_such_id"))), b(m.containsKey("minecraft:no_such_id")),
+				b(m.containsKey(null == null ? "" : "")));
+			int k = 0;
+			for (java.util.Map.Entry<String, String> e : m.entrySet()) {
+				row("RENAMEMAPE", cf[0], cf[1], i(k++), esc(e.getKey()), esc(e.getValue()), esc(m.get(e.getKey())),
+					b(m.containsKey(e.getKey())), b(m.containsValue(e.getValue())), b(m.containsValue(e.getKey())));
+			}
+		}
+		StringBuilder eq = new StringBuilder();
+		for (java.util.Map<String, String> a : maps) {
+			eq.append(eq.length() > 0 ? "," : "");
+			for (java.util.Map<String, String> c : maps) {
+				eq.append(a.equals(c) ? '1' : '0');
+			}
+		}
+		row("RENAMEMAP", "equals", eq.toString());
+	}
+
+	// ---- SEARCHIT: IntersectionIterator and MergingUniqueIterator
+
+	static java.util.List<Integer> ints(String csv) {
+		java.util.List<Integer> r = new java.util.ArrayList<>();
+		if (!csv.isEmpty()) {
+			for (String s : csv.split(",")) {
+				r.add(Integer.parseInt(s));
+			}
+		}
+		return r;
+	}
+
+	/** An iterator over {@code src} that counts the elements it hands out. */
+	static java.util.Iterator<Integer> counting(java.util.List<Integer> src, int[] count) {
+		java.util.Iterator<Integer> it = src.iterator();
+		return new java.util.Iterator<Integer>() {
+			public boolean hasNext() {
+				return it.hasNext();
+			}
+
+			public Integer next() {
+				count[0]++;
+				return it.next();
+			}
+		};
+	}
+
+	static java.util.Comparator<Integer> comparator(String kind, StringBuilder calls) {
+		return switch (kind) {
+			case "nat" -> (x, y) -> {
+				calls.append('c');
+				return Integer.compare(x, y);
+			};
+			case "abs" -> (x, y) -> {
+				calls.append('c');
+				return Integer.compare(Math.abs(x), Math.abs(y));
+			};
+			default -> (x, y) -> {
+				calls.append('c');
+				if (x == 13 || y == 13) {
+					throw new IllegalArgumentException("boom");
+				}
+				return Integer.compare(x, y);
+			};
+		};
+	}
+
+	static String drain(java.util.Iterator<Integer> it) {
+		StringBuilder o = new StringBuilder();
+		while (true) {
+			try {
+				if (!it.hasNext()) {
+					break;
+				}
+				o.append(o.length() > 0 ? "," : "").append(it.next());
+			} catch (RuntimeException e) {
+				o.append(o.length() > 0 ? "," : "").append(ex(e));
+				try {
+					it.hasNext();
+					o.append(",hasNext-ok");
+				} catch (RuntimeException e2) {
+					o.append(",").append(ex(e2));
+				}
+				break;
+			}
+		}
+		return o.toString();
+	}
+
+	static void searchIterators() {
+		String[][] cases = {
+			{"", "", "nat"}, {"1,2,3", "", "nat"}, {"", "1,2,3", "nat"}, {"1,2,3", "1,2,3", "nat"},
+			{"1,3,5,7,9", "2,3,4,5,6,9,10", "nat"}, {"1,1,2,2,3", "1,2,2,2,4", "nat"}, {"-3,1,-5", "3,-1,5", "abs"},
+			{"5,6,7", "1,2,3", "nat"}, {"1,2,3", "5,6,7", "nat"}, {"1,2,13,20", "2,13,20", "boom"}, {"13", "", "boom"},
+			{"", "13", "boom"}, {"-2,-1,0,1,2", "-2,2", "abs"}, {"0,0,0", "0", "nat"},
+		};
+		for (String[] cs : cases) {
+			for (String which : new String[]{"inter", "merge"}) {
+				int[] c1 = {0};
+				int[] c2 = {0};
+				StringBuilder calls = new StringBuilder();
+				java.util.Iterator<Integer> a = counting(ints(cs[0]), c1);
+				java.util.Iterator<Integer> b2 = counting(ints(cs[1]), c2);
+				com.google.common.collect.AbstractIterator<Integer> it = which.equals("inter")
+					? new net.minecraft.client.searchtree.IntersectionIterator<>(a, b2, comparator(cs[2], calls))
+					: new net.minecraft.client.searchtree.MergingUniqueIterator<>(a, b2, comparator(cs[2], calls));
+				String out = drain(it);
+				String after;
+				try {
+					after = String.valueOf(it.peek());
+				} catch (RuntimeException e) {
+					after = ex(e);
+				}
+				row("SEARCHIT", which, cs[0], cs[1], cs[2], out, i(c1[0]), i(c2[0]), i(calls.length()), after);
+			}
+		}
+		// peek/next interleaving on one iterator
+		java.util.Iterator<Integer> a = ints("1,2,4,8").iterator();
+		java.util.Iterator<Integer> b2 = ints("2,4,6,8").iterator();
+		com.google.common.collect.AbstractIterator<Integer> it = new net.minecraft.client.searchtree.IntersectionIterator<>(a, b2,
+			Integer::compare);
+		StringBuilder o = new StringBuilder();
+		o.append(it.peek()).append(',').append(it.peek()).append(',').append(it.next()).append(',').append(it.hasNext()).append(',')
+			.append(it.peek()).append(',').append(it.next()).append(',').append(it.next()).append(',').append(it.hasNext());
+		try {
+			it.next();
+		} catch (RuntimeException e) {
+			o.append(',').append(ex(e));
+		}
+		row("SEARCHIT", "peek", o.toString());
+	}
+
+	// ---- POTCALC: PotentialCalculator
+
+	static void potentialCalculator() {
+		String[] chargeSets = {
+			"",
+			"0,0,0,1",
+			"0,0,0,1;3,4,0,2",
+			"0,0,0,-1;10,0,0,0.5;0,-7,2,0.15",
+			"0,0,0,0;1,1,1,-0.0",
+			"1,2,3,NaN",
+			"5,5,5,Infinity;6,5,5,-Infinity",
+			"2147483647,-2147483648,0,1e300;-2147483648,2147483647,0,-1e-300",
+			"0,64,0,0.1;0,64,0,0.1;0,64,0,0.1",
+		};
+		String[] queries = {
+			"0,0,0,1", "0,0,0,0", "0,0,0,-0.0", "1,0,0,1", "3,4,0,-2.5", "100,100,100,0.15", "0,64,0,1", "0,63,0,1",
+			"5,5,5,1", "6,5,5,-1", "-2147483648,2147483647,0,1", "1,2,3,1", "0,0,0,NaN",
+		};
+		for (String cs : chargeSets) {
+			net.minecraft.world.level.PotentialCalculator pc = new net.minecraft.world.level.PotentialCalculator();
+			if (!cs.isEmpty()) {
+				for (String ch : cs.split(";")) {
+					String[] p = ch.split(",");
+					pc.addCharge(new net.minecraft.core.BlockPos(Integer.parseInt(p[0]), Integer.parseInt(p[1]), Integer.parseInt(p[2])),
+						Double.parseDouble(p[3]));
+				}
+			}
+			StringBuilder o = new StringBuilder();
+			for (String q : queries) {
+				String[] p = q.split(",");
+				double e = pc.getPotentialEnergyChange(
+					new net.minecraft.core.BlockPos(Integer.parseInt(p[0]), Integer.parseInt(p[1]), Integer.parseInt(p[2])), Double.parseDouble(p[3]));
+				o.append(o.length() > 0 ? "," : "").append(d(e));
+			}
+			row("POTCALC", cs, String.join(" ", queries), o.toString());
+		}
+	}
+
+	// ---- VECDELTA: VecDeltaCodec
+
+	static void vecDeltaCodec() throws Exception {
+		java.lang.reflect.Method enc = net.minecraft.network.protocol.game.VecDeltaCodec.class.getDeclaredMethod("encode", double.class);
+		java.lang.reflect.Method dec = net.minecraft.network.protocol.game.VecDeltaCodec.class.getDeclaredMethod("decode", long.class);
+		enc.setAccessible(true);
+		dec.setAccessible(true);
+		double[] ins = {0.0, -0.0, 1.0, -1.0, 0.5 / 4096, -0.5 / 4096, 1.5 / 4096, -1.5 / 4096, 0.49999999999999994 / 4096, 0.49999999999999994,
+			123.456, -98765.4321, 3.0e7, -3.0e7, 2.251799813685248E15, 2.251799813685249E15, 1.0e300, -1.0e300, Double.MAX_VALUE,
+			Double.MIN_VALUE, Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 4503599627370495.5, -4503599627370495.5};
+		for (double x : ins) {
+			row("VECDELTA", "encode", d(x), l((Long) enc.invoke(null, x)));
+		}
+		long[] longs = {0L, 1L, -1L, 4096L, -4096L, 123456789L, Long.MAX_VALUE, Long.MIN_VALUE, (1L << 53) + 1, -(1L << 53) - 1};
+		for (long v : longs) {
+			row("VECDELTA", "decode", l(v), d((Double) dec.invoke(null, v)));
+		}
+		double[][] bases = {{0, 0, 0}, {10.3, 64.0, -5.75}, {1.0e-5, -1.0e-5, 123456.789}, {Double.NaN, Double.POSITIVE_INFINITY, -0.0},
+			{1.0e300, -1.0e300, 0.25}};
+		long[][] deltas = {{0, 0, 0}, {1, 0, 0}, {0, -1, 0}, {0, 0, 4096}, {100, -200, 300}, {Long.MAX_VALUE, Long.MIN_VALUE, 1}, {-1, -1, -1}};
+		double[][] poss = {{0, 0, 0}, {10.3, 64.0, -5.75}, {10.30001, 63.9999, -5.7501}, {-1.0e6, 2.0e6, 0.5 / 4096},
+			{Double.NaN, 1.0, -1.0}, {Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 1.0e300}};
+		for (double[] bs : bases) {
+			net.minecraft.network.protocol.game.VecDeltaCodec c = new net.minecraft.network.protocol.game.VecDeltaCodec();
+			String before = vec(c.getBase());
+			c.setBase(new net.minecraft.world.phys.Vec3(bs[0], bs[1], bs[2]));
+			StringBuilder dd = new StringBuilder();
+			for (long[] dl : deltas) {
+				dd.append(dd.length() > 0 ? ";" : "").append(vec(c.decode(dl[0], dl[1], dl[2])));
+			}
+			StringBuilder ee = new StringBuilder();
+			for (double[] p : poss) {
+				net.minecraft.world.phys.Vec3 v = new net.minecraft.world.phys.Vec3(p[0], p[1], p[2]);
+				ee.append(ee.length() > 0 ? ";" : "").append(c.encodeX(v)).append('/').append(c.encodeY(v)).append('/').append(c.encodeZ(v))
+					.append('/').append(vec(c.delta(v)));
+			}
+			row("VECDELTA", "codec", before, vec(c.getBase()), dd.toString(), ee.toString());
+		}
+	}
+
+	static String vec(net.minecraft.world.phys.Vec3 v) {
+		return d(v.x) + "/" + d(v.y) + "/" + d(v.z);
+	}
+
+	// ---- GRAPH: Graph.depthFirstSearch
+
+	static void graph() {
+		// edges: "a:b,c;b:c;c:" -- node:successors, successors in that order (LinkedHashSet)
+		String[][] cases = {
+			{"a:b,c;b:c;c:", "a"},
+			{"a:b,c;b:c;c:", "c b a"},
+			{"a:b;b:c;c:a", "a"},
+			{"a:b;b:c;c:b", "a"},
+			{"a:b,c;b:d;c:d;d:", "a"},
+			{"a:c,b;b:d;c:d;d:", "a"},
+			{"x:y", "x y z"},
+			{"a:a", "a"},
+			{"a:b,c,d;c:b;d:c;b:", "a d"},
+			{"a:b;b:c;c:d;d:b;e:a", "e a"},
+			{"", "q"},
+		};
+		for (String[] cs : cases) {
+			java.util.Map<String, java.util.Set<String>> edges = new java.util.LinkedHashMap<>();
+			if (!cs[0].isEmpty()) {
+				for (String e : cs[0].split(";")) {
+					String[] kv = e.split(":", -1);
+					java.util.Set<String> succ = new java.util.LinkedHashSet<>();
+					if (!kv[1].isEmpty()) {
+						succ.addAll(java.util.Arrays.asList(kv[1].split(",")));
+					}
+					edges.put(kv[0], succ);
+				}
+			}
+			java.util.Set<String> discovered = new java.util.HashSet<>();
+			java.util.Set<String> visiting = new java.util.HashSet<>();
+			java.util.List<String> order = new java.util.ArrayList<>();
+			StringBuilder o = new StringBuilder();
+			for (String start : cs[1].split(" ")) {
+				boolean cyc = net.minecraft.util.Graph.depthFirstSearch(edges, discovered, visiting, order::add, start);
+				o.append(o.length() > 0 ? " " : "").append(start).append('=').append(cyc).append('[').append(String.join(",", order))
+					.append("]{").append(String.join(",", new java.util.TreeSet<>(discovered))).append("}{")
+					.append(String.join(",", new java.util.TreeSet<>(visiting))).append('}');
+			}
+			row("GRAPH", cs[0], cs[1], o.toString());
+		}
+	}
+
+	// ---- STRICTQ: StrictQueue's two queues and RunnableWithPriority
+
+	/** Ops: pP:L push a task labelled L (priority P for the fixed queue); o pop+run; z size; e isEmpty. */
+	static String runQueue(net.minecraft.util.thread.StrictQueue<?> q, boolean fixed, String script) {
+		StringBuilder log = new StringBuilder();
+		StringBuilder o = new StringBuilder();
+		for (String op : script.split(" ")) {
+			String r;
+			try {
+				char k = op.charAt(0);
+				if (k == 'p') {
+					String[] pl = op.substring(1).split(":");
+					String label = pl[1];
+					Runnable task = () -> log.append(label);
+					boolean ok;
+					if (fixed) {
+						ok = ((net.minecraft.util.thread.StrictQueue<net.minecraft.util.thread.StrictQueue.RunnableWithPriority>) q).push(
+							new net.minecraft.util.thread.StrictQueue.RunnableWithPriority(Integer.parseInt(pl[0]), task));
+					} else {
+						ok = ((net.minecraft.util.thread.StrictQueue<Runnable>) q).push(task);
+					}
+					r = b(ok);
+				} else if (k == 'o') {
+					Runnable t = q.pop();
+					if (t == null) {
+						r = "null";
+					} else {
+						log.setLength(0);
+						t.run();
+						r = log.toString();
+					}
+				} else if (k == 'z') {
+					r = i(q.size());
+				} else {
+					r = b(q.isEmpty());
+				}
+			} catch (RuntimeException e) {
+				r = ex(e);
+			}
+			o.append(o.length() > 0 ? "," : "").append(r);
+		}
+		return o.toString();
+	}
+
+	@SuppressWarnings("unchecked")
+	static void strictQueue() {
+		String fixedScript = "e z o p0:a p2:b p1:c p0:d z e o o o o o z e p3:x p-1:y p2147483647:w p-2147483648:v z o";
+		for (int n : new int[]{0, 1, 3, 4, -1}) {
+			String r;
+			try {
+				r = runQueue(new net.minecraft.util.thread.StrictQueue.FixedPriorityQueue(n), true, fixedScript);
+			} catch (RuntimeException e) {
+				r = ex(e);
+			}
+			row("STRICTQ", "fixed", i(n), fixedScript, r);
+		}
+		String plainScript = "e z o p0:a p0:b p0:c z e o p0:d o o o o z e";
+		row("STRICTQ", "plain", "-", plainScript,
+			runQueue(new net.minecraft.util.thread.StrictQueue.QueueStrictQueue(new java.util.concurrent.ConcurrentLinkedQueue<>()), false, plainScript));
+		StringBuilder log = new StringBuilder();
+		net.minecraft.util.thread.StrictQueue.RunnableWithPriority rp = new net.minecraft.util.thread.StrictQueue.RunnableWithPriority(7,
+			() -> log.append('r'));
+		rp.run();
+		rp.run();
+		row("STRICTQ", "record", i(rp.priority()), log.toString());
+	}
+
 	// ================================================================== API24: member accounting
 
 	static final String[] API_CLASSES = {
@@ -1082,6 +1432,24 @@ public class SweepProbe {
 		"net.minecraft.util.profiling.EmptyProfileResults",
 		"com.mojang.blaze3d.resource.GraphicsResourceAllocator",
 		"net.minecraft.util.valueproviders.MultipliedFloats",
+		"net.minecraft.util.datafix.fixes.DyeItemRenameFix",
+		"net.minecraft.util.datafix.fixes.RenamedCoralFansFix",
+		"net.minecraft.util.datafix.fixes.RecipesRenameningFix",
+		"net.minecraft.util.datafix.fixes.RenamedCoralFix",
+		"net.minecraft.util.datafix.fixes.CavesAndCliffsRenames",
+		"net.minecraft.util.datafix.fixes.StonecutterRecipeRenameFix",
+		"net.minecraft.util.datafix.fixes.BiomeFix",
+		"net.minecraft.util.datafix.fixes.RecipesFix",
+		"net.minecraft.client.searchtree.IntersectionIterator",
+		"net.minecraft.client.searchtree.MergingUniqueIterator",
+		"net.minecraft.world.level.PotentialCalculator",
+		"net.minecraft.world.level.PotentialCalculator$PointCharge",
+		"net.minecraft.network.protocol.game.VecDeltaCodec",
+		"net.minecraft.util.Graph",
+		"net.minecraft.util.thread.StrictQueue",
+		"net.minecraft.util.thread.StrictQueue$FixedPriorityQueue",
+		"net.minecraft.util.thread.StrictQueue$QueueStrictQueue",
+		"net.minecraft.util.thread.StrictQueue$RunnableWithPriority",
 	};
 
 	static String vis(int mod) {
