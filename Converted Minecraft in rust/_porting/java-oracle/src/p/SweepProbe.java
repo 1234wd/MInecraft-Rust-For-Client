@@ -101,6 +101,7 @@ public class SweepProbe {
 			batchB();
 			batchC();
 			batchD();
+			batchE();
 			apiShapes();
 		}
 		System.err.println("sweep_probe: " + rows + " rows -> " + target);
@@ -1403,6 +1404,251 @@ public class SweepProbe {
 		row("STRICTQ", "record", i(rp.priority()), log.toString());
 	}
 
+	// ================================================================== sub-batch E
+
+	static void batchE() throws Exception {
+		gpuTextureViews();
+		glyphBitmaps();
+		colorTargets();
+		deviceInfos();
+		instants();
+		recordedDeviation();
+	}
+
+	static com.mojang.blaze3d.textures.GpuTexture texture(int w, int h) {
+		return new com.mojang.blaze3d.textures.GpuTexture(15, "t", com.mojang.blaze3d.GpuFormat.RGBA8_UNORM, w, h, 1, 8) {
+			public void close() {
+			}
+
+			public boolean isClosed() {
+				return false;
+			}
+		};
+	}
+
+	// ---- GPUTEXVIEW
+
+	static void gpuTextureViews() {
+		int[][] specs = {{256, 128, 0, 9}, {256, 128, 2, 3}, {256, 128, -1, 1}, {1024, 1024, 31, 1}, {-1024, MAX, 1, 0},
+			{MIN, 3, MAX, -5}, {64, 64, MIN, 2}};
+		int[] mips = {-33, -2, -1, 0, 1, 2, 5, 30, 31, 32, MAX, MIN};
+		for (int[] sp : specs) {
+			com.mojang.blaze3d.textures.GpuTexture tex = texture(sp[0], sp[1]);
+			boolean[] closed = {false};
+			com.mojang.blaze3d.textures.GpuTextureView v = new com.mojang.blaze3d.textures.GpuTextureView(tex, sp[2], sp[3]) {
+				public void close() {
+					closed[0] = true;
+				}
+
+				public boolean isClosed() {
+					return closed[0];
+				}
+			};
+			StringBuilder w = new StringBuilder();
+			StringBuilder h = new StringBuilder();
+			for (int m : mips) {
+				w.append(w.length() > 0 ? "," : "").append(v.getWidth(m));
+				h.append(h.length() > 0 ? "," : "").append(v.getHeight(m));
+			}
+			boolean before = v.isClosed();
+			v.close();
+			row("GPUTEXVIEW", i(sp[0]), i(sp[1]), i(sp[2]), i(sp[3]), i(v.baseMipLevel()), i(v.mipLevels()), b(v.texture() == tex),
+				w.toString(), h.toString(), b(before), b(v.isClosed()));
+		}
+	}
+
+	// ---- GLYPHBMP
+
+	/** Spec: w,h,oversample[,bearingLeft,bearingTop][;left=L] -- bearings and getLeft overridden when given. */
+	static com.mojang.blaze3d.font.GlyphBitmap glyph(String spec) {
+		String[] main = spec.split(";");
+		String[] p = main[0].split(",");
+		int w = Integer.parseInt(p[0]);
+		int h = Integer.parseInt(p[1]);
+		float over = Float.parseFloat(p[2]);
+		boolean bearings = p.length > 3;
+		float bl = bearings ? Float.parseFloat(p[3]) : 0;
+		float bt = bearings ? Float.parseFloat(p[4]) : 0;
+		boolean leftOverride = main.length > 1;
+		float left = leftOverride ? Float.parseFloat(main[1].substring(5)) : 0;
+		return new com.mojang.blaze3d.font.GlyphBitmap() {
+			public int getPixelWidth() {
+				return w;
+			}
+
+			public int getPixelHeight() {
+				return h;
+			}
+
+			public void upload(int x, int y, com.mojang.blaze3d.textures.GpuTexture t) {
+			}
+
+			public boolean isColored() {
+				return w % 2 == 0;
+			}
+
+			public float getOversample() {
+				return over;
+			}
+
+			public float getBearingLeft() {
+				return bearings ? bl : com.mojang.blaze3d.font.GlyphBitmap.super.getBearingLeft();
+			}
+
+			public float getBearingTop() {
+				return bearings ? bt : com.mojang.blaze3d.font.GlyphBitmap.super.getBearingTop();
+			}
+
+			public float getLeft() {
+				return leftOverride ? left : com.mojang.blaze3d.font.GlyphBitmap.super.getLeft();
+			}
+		};
+	}
+
+	static void glyphBitmaps() {
+		String[] specs = {"8,8,1.0", "5,9,2.0", "16,16,0.5", "0,0,1.0", "0,0,0.0", "3,4,0.0", "3,4,-0.0", "7,7,NaN", "7,7,Infinity",
+			"-3,-5,2.0", "2147483647,16777217,3.0", "8,8,1.0,1.5,6.0", "8,8,2.0,-0.0,NaN", "10,10,1.0,0.25,7.0;left=3.5",
+			"10,10,1.0;left=-1.0", "9,11,3.0,Infinity,-Infinity"};
+		for (String sp : specs) {
+			com.mojang.blaze3d.font.GlyphBitmap g = glyph(sp);
+			row("GLYPHBMP", sp, f(g.getLeft()), f(g.getRight()), f(g.getTop()), f(g.getBottom()), f(g.getBearingLeft()),
+				f(g.getBearingTop()), b(g.isColored()), i(g.getPixelWidth()), i(g.getPixelHeight()), f(g.getOversample()));
+		}
+	}
+
+	// ---- COLORTGT
+
+	static void colorTargets() {
+		java.util.List<com.mojang.blaze3d.pipeline.ColorTargetState> cs = new java.util.ArrayList<>();
+		java.util.List<String> labels = new java.util.ArrayList<>();
+		cs.add(com.mojang.blaze3d.pipeline.ColorTargetState.DEFAULT);
+		labels.add("DEFAULT");
+		cs.add(new com.mojang.blaze3d.pipeline.ColorTargetState(com.mojang.blaze3d.pipeline.BlendFunction.TRANSLUCENT));
+		labels.add("blend:TRANSLUCENT");
+		cs.add(new com.mojang.blaze3d.pipeline.ColorTargetState(com.mojang.blaze3d.pipeline.BlendFunction.ADDITIVE));
+		labels.add("blend:ADDITIVE");
+		cs.add(new com.mojang.blaze3d.pipeline.ColorTargetState(java.util.Optional.empty(), com.mojang.blaze3d.GpuFormat.RGBA8_UNORM, 15));
+		labels.add("canon:empty:RGBA8_UNORM:15");
+		cs.add(new com.mojang.blaze3d.pipeline.ColorTargetState(java.util.Optional.of(com.mojang.blaze3d.pipeline.BlendFunction.TRANSLUCENT),
+			com.mojang.blaze3d.GpuFormat.RGBA8_UNORM, 15));
+		labels.add("canon:TRANSLUCENT:RGBA8_UNORM:15");
+		for (int mask : new int[]{0, 1, 2, 4, 8, 7, 16, 31, -1, MIN, 5, 10}) {
+			cs.add(new com.mojang.blaze3d.pipeline.ColorTargetState(java.util.Optional.empty(), com.mojang.blaze3d.GpuFormat.R32_FLOAT, mask));
+			labels.add("canon:empty:R32_FLOAT:" + mask);
+		}
+		row("COLORTGT", "consts", i(com.mojang.blaze3d.pipeline.ColorTargetState.WRITE_RED), i(com.mojang.blaze3d.pipeline.ColorTargetState.WRITE_GREEN),
+			i(com.mojang.blaze3d.pipeline.ColorTargetState.WRITE_BLUE), i(com.mojang.blaze3d.pipeline.ColorTargetState.WRITE_ALPHA),
+			i(com.mojang.blaze3d.pipeline.ColorTargetState.WRITE_COLOR), i(com.mojang.blaze3d.pipeline.ColorTargetState.WRITE_ALL),
+			i(com.mojang.blaze3d.pipeline.ColorTargetState.WRITE_NONE), i(com.mojang.blaze3d.pipeline.ColorTargetState.MAX_COLOR_TARGETS));
+		for (int k = 0; k < cs.size(); k++) {
+			com.mojang.blaze3d.pipeline.ColorTargetState c = cs.get(k);
+			StringBuilder eq = new StringBuilder();
+			for (com.mojang.blaze3d.pipeline.ColorTargetState o : cs) {
+				eq.append(c.equals(o) ? '1' : '0');
+			}
+			row("COLORTGT", labels.get(k), esc(c.toString()), c.blendFunction().map(Object::toString).orElse("none"), c.format().name(),
+				i(c.writeMask()), b(c.writeRed()), b(c.writeGreen()), b(c.writeBlue()), b(c.writeAlpha()), eq.toString());
+		}
+	}
+
+	// ---- DEVINFO
+
+	static com.mojang.blaze3d.systems.DeviceInfo devInfo(String name, float period, java.util.Set<String> ext, int typeOrd, boolean zz) {
+		return new com.mojang.blaze3d.systems.DeviceInfo(name, "Vendor é", "driver 1.2", zz, "OpenGL", period,
+			new com.mojang.blaze3d.systems.DeviceLimits(16, 256, 16384, Long.MAX_VALUE, 0, 8),
+			new com.mojang.blaze3d.systems.DeviceFeatures(true, false, true, false, true, false, true), ext,
+			new com.mojang.blaze3d.systems.HintsAndWorkarounds(false, true), com.mojang.blaze3d.systems.DeviceType.values()[typeOrd]);
+	}
+
+	static java.util.Set<String> linked(String... xs) {
+		return new java.util.LinkedHashSet<>(java.util.Arrays.asList(xs));
+	}
+
+	static void deviceInfos() {
+		java.util.List<com.mojang.blaze3d.systems.DeviceInfo> ds = new java.util.ArrayList<>();
+		java.util.List<String> labels = new java.util.ArrayList<>();
+		ds.add(devInfo("GPU", 1.0F, linked("GL_ARB_a", "GL_ARB_b"), 2, true));
+		labels.add("GPU|1.0|a,b|2|true");
+		ds.add(devInfo("GPU", 1.0F, linked("GL_ARB_b", "GL_ARB_a"), 2, true));
+		labels.add("GPU|1.0|b,a|2|true");
+		ds.add(devInfo("GPU", 1.0F, linked("GL_ARB_a"), 2, true));
+		labels.add("GPU|1.0|a|2|true");
+		ds.add(devInfo("GPU", -0.0F, linked(), 0, false));
+		labels.add("GPU|-0.0||0|false");
+		ds.add(devInfo("GPU", 0.0F, linked(), 0, false));
+		labels.add("GPU|0.0||0|false");
+		ds.add(devInfo("GPU", Float.NaN, linked("x"), 4, true));
+		labels.add("GPU|NaN|x|4|true");
+		ds.add(devInfo("GPU", Float.NaN, linked("x"), 4, true));
+		labels.add("GPU|NaN|x|4|true#2");
+		ds.add(devInfo("Other 😀", 52.083332F, linked("e1", "e2", "e3"), 1, true));
+		labels.add("Other|52.083332|e1,e2,e3|1|true");
+		ds.add(devInfo("GPU", 1.0E-7F, linked("GL_ARB_a", "GL_ARB_b"), 3, true));
+		labels.add("GPU|1.0E-7|a,b|3|true");
+		for (int k = 0; k < ds.size(); k++) {
+			com.mojang.blaze3d.systems.DeviceInfo d = ds.get(k);
+			StringBuilder eq = new StringBuilder();
+			for (com.mojang.blaze3d.systems.DeviceInfo o : ds) {
+				eq.append(d.equals(o) ? '1' : '0');
+			}
+			row("DEVINFO", labels.get(k), esc(d.toString()), f(d.timestampPeriod()), d.type().name(), b(d.isZZeroToOne()),
+				esc(String.join("|", d.underlyingExtensions())), eq.toString());
+		}
+	}
+
+	// ---- INSTANT / RECDEV
+
+	static void instants() {
+		long[][] ins = {{0, 0}, {1, 0}, {-1, 0}, {0, 1}, {0, -1}, {0, 999999999}, {0, 1000000000}, {0, -1000000000}, {5, 2500000000L},
+			{5, -2500000000L}, {1700000000, 123456789}, {-31557014167219200L, 0}, {-31557014167219201L, 0}, {31556889864403199L, 999999999},
+			{31556889864403199L, 1000000000}, {Long.MAX_VALUE, 0}, {Long.MAX_VALUE, Long.MAX_VALUE}, {Long.MIN_VALUE, Long.MIN_VALUE},
+			{0, Long.MIN_VALUE}, {0, Long.MAX_VALUE}, {-5, 999999999}};
+		java.util.List<java.time.Instant> ok = new java.util.ArrayList<>();
+		java.util.List<String> okLabels = new java.util.ArrayList<>();
+		for (long[] p : ins) {
+			String r;
+			try {
+				java.time.Instant t = java.time.Instant.ofEpochSecond(p[0], p[1]);
+				ok.add(t);
+				okLabels.add(p[0] + ":" + p[1]);
+				r = l(t.getEpochSecond()) + "|" + t.getNano() + "|" + t.hashCode() + "|" + b(t.equals(java.time.Instant.ofEpochSecond(t.getEpochSecond())));
+			} catch (RuntimeException e) {
+				r = ex(e);
+			}
+			row("INSTANT", "of", l(p[0]), l(p[1]), r);
+		}
+		for (long s : new long[]{0, -7, 123, -31557014167219200L, 31556889864403200L}) {
+			String r;
+			try {
+				java.time.Instant t = java.time.Instant.ofEpochSecond(s);
+				r = l(t.getEpochSecond()) + "|" + t.getNano();
+			} catch (RuntimeException e) {
+				r = ex(e);
+			}
+			row("INSTANT", "of1", l(s), r);
+		}
+		for (int a = 0; a < ok.size(); a++) {
+			StringBuilder c = new StringBuilder();
+			for (int k = 0; k < ok.size(); k++) {
+				c.append(k > 0 ? "," : "").append(ok.get(a).compareTo(ok.get(k)));
+			}
+			row("INSTANT", "cmp", okLabels.get(a), c.toString());
+		}
+	}
+
+	static void recordedDeviation() {
+		net.minecraft.util.profiling.ProfileResults res = net.minecraft.util.profiling.EmptyProfileResults.EMPTY;
+		for (long[] p : new long[][]{{1700000000, 5}, {0, 0}, {-1, 999999999}}) {
+			java.time.Instant t = java.time.Instant.ofEpochSecond(p[0], p[1]);
+			for (int tick : new int[]{0, 20, -1, MAX}) {
+				net.minecraft.util.profiling.metrics.storage.RecordedDeviation d = new net.minecraft.util.profiling.metrics.storage.RecordedDeviation(
+					t, tick, res);
+				row("RECDEV", l(p[0]), l(p[1]), i(tick), l(d.timestamp.getEpochSecond()), i(d.timestamp.getNano()), b(d.timestamp == t),
+					i(d.tick), b(d.profilerResultAtTick == res));
+			}
+		}
+	}
+
 	// ================================================================== API24: member accounting
 
 	static final String[] API_CLASSES = {
@@ -1450,6 +1696,12 @@ public class SweepProbe {
 		"net.minecraft.util.thread.StrictQueue$FixedPriorityQueue",
 		"net.minecraft.util.thread.StrictQueue$QueueStrictQueue",
 		"net.minecraft.util.thread.StrictQueue$RunnableWithPriority",
+		"com.mojang.blaze3d.textures.GpuTextureView",
+		"com.mojang.blaze3d.font.GlyphBitmap",
+		"com.mojang.blaze3d.pipeline.ColorTargetState",
+		"com.mojang.blaze3d.pipeline.ColorTargetState$WriteMask",
+		"com.mojang.blaze3d.systems.DeviceInfo",
+		"net.minecraft.util.profiling.metrics.storage.RecordedDeviation",
 	};
 
 	static String vis(int mod) {

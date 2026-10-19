@@ -87,7 +87,11 @@ pub trait GpuTexture {
     fn state(&self) -> &GpuTextureState;
 
     /// Port of `public abstract void close()`.
-    fn close(&mut self);
+    ///
+    /// `&self`: a texture is shared -- by its views ([`GpuTextureView`](super::GpuTextureView)), by
+    /// render targets -- and closed through any of those references, so a backend keeps its
+    /// closed flag (and its handle) behind interior mutability, as `GlTexture` keeps a field.
+    fn close(&self);
 
     /// Port of `public abstract boolean isClosed()`.
     fn is_closed(&self) -> bool;

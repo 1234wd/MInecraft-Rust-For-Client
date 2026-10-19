@@ -5377,6 +5377,110 @@ STRICTQ	fixed	4	e z o p0:a p2:b p1:c p0:d z e o o o o o z e p3:x p-1:y p21474836
 STRICTQ	fixed	-1	e z o p0:a p2:b p1:c p0:d z e o o o o o z e p3:x p-1:y p2147483647:w p-2147483648:v z o	EX:java.lang.NegativeArraySizeException: -1
 STRICTQ	plain	-	e z o p0:a p0:b p0:c z e o p0:d o o o o z e	true,0,null,true,true,true,3,false,a,true,b,c,d,null,0,true
 STRICTQ	record	7	rr
+GPUTEXVIEW	256	128	0	9	0	9	true	0,0,0,256,128,64,8,0,0,256,0,256	0,0,0,128,64,32,4,0,0,128,0,128	false	true
+GPUTEXVIEW	256	128	2	3	2	3	true	128,256,128,64,32,16,2,256,128,64,128,64	64,128,64,32,16,8,1,128,64,32,64,32	false	true
+GPUTEXVIEW	256	128	-1	1	-1	1	true	0,0,0,0,256,128,16,0,0,0,0,0	0,0,0,0,128,64,8,0,0,0,0,0	false	true
+GPUTEXVIEW	1024	1024	31	1	31	1	true	0,0,0,0,1024,512,64,0,0,0,0,0	0,0,0,0,1024,512,64,0,0,0,0,0	false	true
+GPUTEXVIEW	-1024	2147483647	1	0	1	0	true	-1024,-1,-1024,-512,-256,-128,-16,-1,-1024,-512,-1024,-512	2147483647,0,2147483647,1073741823,536870911,268435455,33554431,0,2147483647,1073741823,2147483647,1073741823	false	true
+GPUTEXVIEW	-2147483648	3	2147483647	-5	2147483647	-5	true	-2,-4,-2,-1,-2147483648,-1073741824,-134217728,-4,-2,-1,-2,-1	0,0,0,0,3,1,0,0,0,0,0,0	false	true
+GPUTEXVIEW	64	64	-2147483648	2	-2147483648	2	true	0,0,0,64,32,16,2,0,0,64,0,64	0,0,0,64,32,16,2,0,0,64,0,64	false	true
+GLYPHBMP	8,8,1.0	0	41000000	0	41000000	0	40e00000	true	8	8	3f800000
+GLYPHBMP	5,9,2.0	0	40200000	0	40900000	0	40e00000	false	5	9	40000000
+GLYPHBMP	16,16,0.5	0	42000000	0	42000000	0	40e00000	true	16	16	3f000000
+GLYPHBMP	0,0,1.0	0	0	0	0	0	40e00000	true	0	0	3f800000
+GLYPHBMP	0,0,0.0	0	ffc00000	0	ffc00000	0	40e00000	true	0	0	0
+GLYPHBMP	3,4,0.0	0	7f800000	0	7f800000	0	40e00000	false	3	4	0
+GLYPHBMP	3,4,-0.0	0	ff800000	0	ff800000	0	40e00000	false	3	4	80000000
+GLYPHBMP	7,7,NaN	0	7fc00000	0	7fc00000	0	40e00000	false	7	7	7fc00000
+GLYPHBMP	7,7,Infinity	0	0	0	0	0	40e00000	false	7	7	7f800000
+GLYPHBMP	-3,-5,2.0	0	bfc00000	0	c0200000	0	40e00000	false	-3	-5	40000000
+GLYPHBMP	2147483647,16777217,3.0	0	4e2aaaab	0	4aaaaaab	0	40e00000	false	2147483647	16777217	40400000
+GLYPHBMP	8,8,1.0,1.5,6.0	3fc00000	41180000	3f800000	41100000	3fc00000	40c00000	true	8	8	3f800000
+GLYPHBMP	8,8,2.0,-0.0,NaN	80000000	40800000	7fc00000	7fc00000	80000000	7fc00000	true	8	8	40000000
+GLYPHBMP	10,10,1.0,0.25,7.0;left=3.5	40600000	41580000	0	41200000	3e800000	40e00000	true	10	10	3f800000
+GLYPHBMP	10,10,1.0;left=-1.0	bf800000	41100000	0	41200000	0	40e00000	true	10	10	3f800000
+GLYPHBMP	9,11,3.0,Infinity,-Infinity	7f800000	7f800000	7f800000	7f800000	7f800000	ff800000	false	9	11	40400000
+COLORTGT	consts	1	2	4	8	7	15	0	8
+COLORTGT	DEFAULT	ColorTargetState[blendFunction=Optional.empty, format=RGBA8_UNORM, writeMask=15]	none	RGBA8_UNORM	15	true	true	true	true	10010000000000000
+COLORTGT	blend:TRANSLUCENT	ColorTargetState[blendFunction=Optional[BlendFunction[color=BlendEquation[sourceFactor=SRC_ALPHA, destFactor=ONE_MINUS_SRC_ALPHA, op=ADD], alpha=BlendEquation[sourceFactor=ONE, destFactor=ONE_MINUS_SRC_ALPHA, op=ADD]]], format=RGBA8_UNORM, writeMask=15]	BlendFunction[color=BlendEquation[sourceFactor=SRC_ALPHA, destFactor=ONE_MINUS_SRC_ALPHA, op=ADD], alpha=BlendEquation[sourceFactor=ONE, destFactor=ONE_MINUS_SRC_ALPHA, op=ADD]]	RGBA8_UNORM	15	true	true	true	true	01001000000000000
+COLORTGT	blend:ADDITIVE	ColorTargetState[blendFunction=Optional[BlendFunction[color=BlendEquation[sourceFactor=ONE, destFactor=ONE, op=ADD], alpha=BlendEquation[sourceFactor=ONE, destFactor=ONE, op=ADD]]], format=RGBA8_UNORM, writeMask=15]	BlendFunction[color=BlendEquation[sourceFactor=ONE, destFactor=ONE, op=ADD], alpha=BlendEquation[sourceFactor=ONE, destFactor=ONE, op=ADD]]	RGBA8_UNORM	15	true	true	true	true	00100000000000000
+COLORTGT	canon:empty:RGBA8_UNORM:15	ColorTargetState[blendFunction=Optional.empty, format=RGBA8_UNORM, writeMask=15]	none	RGBA8_UNORM	15	true	true	true	true	10010000000000000
+COLORTGT	canon:TRANSLUCENT:RGBA8_UNORM:15	ColorTargetState[blendFunction=Optional[BlendFunction[color=BlendEquation[sourceFactor=SRC_ALPHA, destFactor=ONE_MINUS_SRC_ALPHA, op=ADD], alpha=BlendEquation[sourceFactor=ONE, destFactor=ONE_MINUS_SRC_ALPHA, op=ADD]]], format=RGBA8_UNORM, writeMask=15]	BlendFunction[color=BlendEquation[sourceFactor=SRC_ALPHA, destFactor=ONE_MINUS_SRC_ALPHA, op=ADD], alpha=BlendEquation[sourceFactor=ONE, destFactor=ONE_MINUS_SRC_ALPHA, op=ADD]]	RGBA8_UNORM	15	true	true	true	true	01001000000000000
+COLORTGT	canon:empty:R32_FLOAT:0	ColorTargetState[blendFunction=Optional.empty, format=R32_FLOAT, writeMask=0]	none	R32_FLOAT	0	false	false	false	false	00000100000000000
+COLORTGT	canon:empty:R32_FLOAT:1	ColorTargetState[blendFunction=Optional.empty, format=R32_FLOAT, writeMask=1]	none	R32_FLOAT	1	true	false	false	false	00000010000000000
+COLORTGT	canon:empty:R32_FLOAT:2	ColorTargetState[blendFunction=Optional.empty, format=R32_FLOAT, writeMask=2]	none	R32_FLOAT	2	false	true	false	false	00000001000000000
+COLORTGT	canon:empty:R32_FLOAT:4	ColorTargetState[blendFunction=Optional.empty, format=R32_FLOAT, writeMask=4]	none	R32_FLOAT	4	false	false	true	false	00000000100000000
+COLORTGT	canon:empty:R32_FLOAT:8	ColorTargetState[blendFunction=Optional.empty, format=R32_FLOAT, writeMask=8]	none	R32_FLOAT	8	false	false	false	true	00000000010000000
+COLORTGT	canon:empty:R32_FLOAT:7	ColorTargetState[blendFunction=Optional.empty, format=R32_FLOAT, writeMask=7]	none	R32_FLOAT	7	true	true	true	false	00000000001000000
+COLORTGT	canon:empty:R32_FLOAT:16	ColorTargetState[blendFunction=Optional.empty, format=R32_FLOAT, writeMask=16]	none	R32_FLOAT	16	false	false	false	false	00000000000100000
+COLORTGT	canon:empty:R32_FLOAT:31	ColorTargetState[blendFunction=Optional.empty, format=R32_FLOAT, writeMask=31]	none	R32_FLOAT	31	true	true	true	true	00000000000010000
+COLORTGT	canon:empty:R32_FLOAT:-1	ColorTargetState[blendFunction=Optional.empty, format=R32_FLOAT, writeMask=-1]	none	R32_FLOAT	-1	true	true	true	true	00000000000001000
+COLORTGT	canon:empty:R32_FLOAT:-2147483648	ColorTargetState[blendFunction=Optional.empty, format=R32_FLOAT, writeMask=-2147483648]	none	R32_FLOAT	-2147483648	false	false	false	false	00000000000000100
+COLORTGT	canon:empty:R32_FLOAT:5	ColorTargetState[blendFunction=Optional.empty, format=R32_FLOAT, writeMask=5]	none	R32_FLOAT	5	true	false	true	false	00000000000000010
+COLORTGT	canon:empty:R32_FLOAT:10	ColorTargetState[blendFunction=Optional.empty, format=R32_FLOAT, writeMask=10]	none	R32_FLOAT	10	false	true	false	true	00000000000000001
+DEVINFO	GPU|1.0|a,b|2|true	DeviceInfo[name=GPU, vendorName=Vendor \u00e9, driverInfo=driver 1.2, isZZeroToOne=true, backendName=OpenGL, timestampPeriod=1.0, limits=DeviceLimits[maxAnisotropy=16, minUniformOffsetAlignment=256, maxTextureSize=16384, maxMemoryAllocationSize=9223372036854775807, maxMultiDrawDirectInterleavedDrawCount=0, maxColorAttachments=8], features=DeviceFeatures[shaderDrawParameters=true, multiDrawDirectInterleaved=false, multiDrawDirectSeparate=true, multiDrawIndirect=false, drawIndirect=true, nonZeroFirstInstance=false, persistentMapping=true], underlyingExtensions=[GL_ARB_a, GL_ARB_b], hintsAndWorkarounds=HintsAndWorkarounds[writeToBufferIsSlow=false, anisotropyHasKnownIssues=true], type=DISCRETE]	3f800000	DISCRETE	true	GL_ARB_a|GL_ARB_b	110000000
+DEVINFO	GPU|1.0|b,a|2|true	DeviceInfo[name=GPU, vendorName=Vendor \u00e9, driverInfo=driver 1.2, isZZeroToOne=true, backendName=OpenGL, timestampPeriod=1.0, limits=DeviceLimits[maxAnisotropy=16, minUniformOffsetAlignment=256, maxTextureSize=16384, maxMemoryAllocationSize=9223372036854775807, maxMultiDrawDirectInterleavedDrawCount=0, maxColorAttachments=8], features=DeviceFeatures[shaderDrawParameters=true, multiDrawDirectInterleaved=false, multiDrawDirectSeparate=true, multiDrawIndirect=false, drawIndirect=true, nonZeroFirstInstance=false, persistentMapping=true], underlyingExtensions=[GL_ARB_b, GL_ARB_a], hintsAndWorkarounds=HintsAndWorkarounds[writeToBufferIsSlow=false, anisotropyHasKnownIssues=true], type=DISCRETE]	3f800000	DISCRETE	true	GL_ARB_b|GL_ARB_a	110000000
+DEVINFO	GPU|1.0|a|2|true	DeviceInfo[name=GPU, vendorName=Vendor \u00e9, driverInfo=driver 1.2, isZZeroToOne=true, backendName=OpenGL, timestampPeriod=1.0, limits=DeviceLimits[maxAnisotropy=16, minUniformOffsetAlignment=256, maxTextureSize=16384, maxMemoryAllocationSize=9223372036854775807, maxMultiDrawDirectInterleavedDrawCount=0, maxColorAttachments=8], features=DeviceFeatures[shaderDrawParameters=true, multiDrawDirectInterleaved=false, multiDrawDirectSeparate=true, multiDrawIndirect=false, drawIndirect=true, nonZeroFirstInstance=false, persistentMapping=true], underlyingExtensions=[GL_ARB_a], hintsAndWorkarounds=HintsAndWorkarounds[writeToBufferIsSlow=false, anisotropyHasKnownIssues=true], type=DISCRETE]	3f800000	DISCRETE	true	GL_ARB_a	001000000
+DEVINFO	GPU|-0.0||0|false	DeviceInfo[name=GPU, vendorName=Vendor \u00e9, driverInfo=driver 1.2, isZZeroToOne=false, backendName=OpenGL, timestampPeriod=-0.0, limits=DeviceLimits[maxAnisotropy=16, minUniformOffsetAlignment=256, maxTextureSize=16384, maxMemoryAllocationSize=9223372036854775807, maxMultiDrawDirectInterleavedDrawCount=0, maxColorAttachments=8], features=DeviceFeatures[shaderDrawParameters=true, multiDrawDirectInterleaved=false, multiDrawDirectSeparate=true, multiDrawIndirect=false, drawIndirect=true, nonZeroFirstInstance=false, persistentMapping=true], underlyingExtensions=[], hintsAndWorkarounds=HintsAndWorkarounds[writeToBufferIsSlow=false, anisotropyHasKnownIssues=true], type=OTHER]	80000000	OTHER	false		000100000
+DEVINFO	GPU|0.0||0|false	DeviceInfo[name=GPU, vendorName=Vendor \u00e9, driverInfo=driver 1.2, isZZeroToOne=false, backendName=OpenGL, timestampPeriod=0.0, limits=DeviceLimits[maxAnisotropy=16, minUniformOffsetAlignment=256, maxTextureSize=16384, maxMemoryAllocationSize=9223372036854775807, maxMultiDrawDirectInterleavedDrawCount=0, maxColorAttachments=8], features=DeviceFeatures[shaderDrawParameters=true, multiDrawDirectInterleaved=false, multiDrawDirectSeparate=true, multiDrawIndirect=false, drawIndirect=true, nonZeroFirstInstance=false, persistentMapping=true], underlyingExtensions=[], hintsAndWorkarounds=HintsAndWorkarounds[writeToBufferIsSlow=false, anisotropyHasKnownIssues=true], type=OTHER]	0	OTHER	false		000010000
+DEVINFO	GPU|NaN|x|4|true	DeviceInfo[name=GPU, vendorName=Vendor \u00e9, driverInfo=driver 1.2, isZZeroToOne=true, backendName=OpenGL, timestampPeriod=NaN, limits=DeviceLimits[maxAnisotropy=16, minUniformOffsetAlignment=256, maxTextureSize=16384, maxMemoryAllocationSize=9223372036854775807, maxMultiDrawDirectInterleavedDrawCount=0, maxColorAttachments=8], features=DeviceFeatures[shaderDrawParameters=true, multiDrawDirectInterleaved=false, multiDrawDirectSeparate=true, multiDrawIndirect=false, drawIndirect=true, nonZeroFirstInstance=false, persistentMapping=true], underlyingExtensions=[x], hintsAndWorkarounds=HintsAndWorkarounds[writeToBufferIsSlow=false, anisotropyHasKnownIssues=true], type=CPU]	7fc00000	CPU	true	x	000001100
+DEVINFO	GPU|NaN|x|4|true#2	DeviceInfo[name=GPU, vendorName=Vendor \u00e9, driverInfo=driver 1.2, isZZeroToOne=true, backendName=OpenGL, timestampPeriod=NaN, limits=DeviceLimits[maxAnisotropy=16, minUniformOffsetAlignment=256, maxTextureSize=16384, maxMemoryAllocationSize=9223372036854775807, maxMultiDrawDirectInterleavedDrawCount=0, maxColorAttachments=8], features=DeviceFeatures[shaderDrawParameters=true, multiDrawDirectInterleaved=false, multiDrawDirectSeparate=true, multiDrawIndirect=false, drawIndirect=true, nonZeroFirstInstance=false, persistentMapping=true], underlyingExtensions=[x], hintsAndWorkarounds=HintsAndWorkarounds[writeToBufferIsSlow=false, anisotropyHasKnownIssues=true], type=CPU]	7fc00000	CPU	true	x	000001100
+DEVINFO	Other|52.083332|e1,e2,e3|1|true	DeviceInfo[name=Other \ud83d\ude00, vendorName=Vendor \u00e9, driverInfo=driver 1.2, isZZeroToOne=true, backendName=OpenGL, timestampPeriod=52.083332, limits=DeviceLimits[maxAnisotropy=16, minUniformOffsetAlignment=256, maxTextureSize=16384, maxMemoryAllocationSize=9223372036854775807, maxMultiDrawDirectInterleavedDrawCount=0, maxColorAttachments=8], features=DeviceFeatures[shaderDrawParameters=true, multiDrawDirectInterleaved=false, multiDrawDirectSeparate=true, multiDrawIndirect=false, drawIndirect=true, nonZeroFirstInstance=false, persistentMapping=true], underlyingExtensions=[e1, e2, e3], hintsAndWorkarounds=HintsAndWorkarounds[writeToBufferIsSlow=false, anisotropyHasKnownIssues=true], type=INTEGRATED]	42505555	INTEGRATED	true	e1|e2|e3	000000010
+DEVINFO	GPU|1.0E-7|a,b|3|true	DeviceInfo[name=GPU, vendorName=Vendor \u00e9, driverInfo=driver 1.2, isZZeroToOne=true, backendName=OpenGL, timestampPeriod=1.0E-7, limits=DeviceLimits[maxAnisotropy=16, minUniformOffsetAlignment=256, maxTextureSize=16384, maxMemoryAllocationSize=9223372036854775807, maxMultiDrawDirectInterleavedDrawCount=0, maxColorAttachments=8], features=DeviceFeatures[shaderDrawParameters=true, multiDrawDirectInterleaved=false, multiDrawDirectSeparate=true, multiDrawIndirect=false, drawIndirect=true, nonZeroFirstInstance=false, persistentMapping=true], underlyingExtensions=[GL_ARB_a, GL_ARB_b], hintsAndWorkarounds=HintsAndWorkarounds[writeToBufferIsSlow=false, anisotropyHasKnownIssues=true], type=VIRTUAL]	33d6bf95	VIRTUAL	true	GL_ARB_a|GL_ARB_b	000000001
+INSTANT	of	0	0	0|0|0|true
+INSTANT	of	1	0	1|0|1|true
+INSTANT	of	-1	0	-1|0|0|true
+INSTANT	of	0	1	0|1|51|false
+INSTANT	of	0	-1	-1|999999999|-539607603|false
+INSTANT	of	0	999999999	0|999999999|-539607603|false
+INSTANT	of	0	1000000000	1|0|1|true
+INSTANT	of	0	-1000000000	-1|0|0|true
+INSTANT	of	5	2500000000	7|500000000|-269803769|false
+INSTANT	of	5	-2500000000	2|500000000|-269803774|false
+INSTANT	of	1700000000	123456789	1700000000|123456789|-593638353|false
+INSTANT	of	-31557014167219200	0	-31557014167219200|0|-336857328|true
+INSTANT	of	-31557014167219201	0	EX:java.time.DateTimeException: Instant exceeds minimum or maximum instant
+INSTANT	of	31556889864403199	999999999	31556889864403199|999999999|-625237510|false
+INSTANT	of	31556889864403199	1000000000	EX:java.time.DateTimeException: Instant exceeds minimum or maximum instant
+INSTANT	of	9223372036854775807	0	EX:java.time.DateTimeException: Instant exceeds minimum or maximum instant
+INSTANT	of	9223372036854775807	9223372036854775807	EX:java.lang.ArithmeticException: long overflow
+INSTANT	of	-9223372036854775808	-9223372036854775808	EX:java.lang.ArithmeticException: long overflow
+INSTANT	of	0	-9223372036854775808	-9223372037|145224192|-550063354|false
+INSTANT	of	0	9223372036854775807	9223372036|854775807|1277330643|false
+INSTANT	of	-5	999999999	-5|999999999|-539607599|false
+INSTANT	of1	0	0|0
+INSTANT	of1	-7	-7|0
+INSTANT	of1	123	123|0
+INSTANT	of1	-31557014167219200	-31557014167219200|0
+INSTANT	of1	31556889864403200	EX:java.time.DateTimeException: Instant exceeds minimum or maximum instant
+INSTANT	cmp	0:0	0,-1,1,-1,1,-999999999,-1,1,-1,-1,-1,1,-1,1,-1,1
+INSTANT	cmp	1:0	1,0,1,1,1,1,0,1,-1,-1,-1,1,-1,1,-1,1
+INSTANT	cmp	-1:0	-1,-1,0,-1,-999999999,-1,-1,0,-1,-1,-1,1,-1,1,-1,1
+INSTANT	cmp	0:1	1,-1,1,0,1,-999999998,-1,1,-1,-1,-1,1,-1,1,-1,1
+INSTANT	cmp	0:-1	-1,-1,999999999,-1,0,-1,-1,999999999,-1,-1,-1,1,-1,1,-1,1
+INSTANT	cmp	0:999999999	999999999,-1,1,999999998,1,0,-1,1,-1,-1,-1,1,-1,1,-1,1
+INSTANT	cmp	0:1000000000	1,0,1,1,1,1,0,1,-1,-1,-1,1,-1,1,-1,1
+INSTANT	cmp	0:-1000000000	-1,-1,0,-1,-999999999,-1,-1,0,-1,-1,-1,1,-1,1,-1,1
+INSTANT	cmp	5:2500000000	1,1,1,1,1,1,1,1,0,1,-1,1,-1,1,-1,1
+INSTANT	cmp	5:-2500000000	1,1,1,1,1,1,1,1,-1,0,-1,1,-1,1,-1,1
+INSTANT	cmp	1700000000:123456789	1,1,1,1,1,1,1,1,1,1,0,1,-1,1,-1,1
+INSTANT	cmp	-31557014167219200:0	-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,0,-1,-1,-1,-1
+INSTANT	cmp	31556889864403199:999999999	1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1
+INSTANT	cmp	0:-9223372036854775808	-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,1,-1,0,-1,-1
+INSTANT	cmp	0:9223372036854775807	1,1,1,1,1,1,1,1,1,1,1,1,-1,1,0,1
+INSTANT	cmp	-5:999999999	-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,1,-1,1,-1,0
+RECDEV	1700000000	5	0	1700000000	5	true	0	true
+RECDEV	1700000000	5	20	1700000000	5	true	20	true
+RECDEV	1700000000	5	-1	1700000000	5	true	-1	true
+RECDEV	1700000000	5	2147483647	1700000000	5	true	2147483647	true
+RECDEV	0	0	0	0	0	true	0	true
+RECDEV	0	0	20	0	0	true	20	true
+RECDEV	0	0	-1	0	0	true	-1	true
+RECDEV	0	0	2147483647	0	0	true	2147483647	true
+RECDEV	-1	999999999	0	-1	999999999	true	0	true
+RECDEV	-1	999999999	20	-1	999999999	true	20	true
+RECDEV	-1	999999999	-1	-1	999999999	true	-1	true
+RECDEV	-1	999999999	2147483647	-1	999999999	true	2147483647	true
 API24	CowFSCreationException	ctor	<init>(java.lang.String)	public
 API24SUP	CowFSCreationException	extends net.minecraft.util.filefix.virtualfilesystem.exception.CowFSFileSystemException	class
 API24	CowFSSymlinkException	ctor	<init>(java.lang.String)	public
@@ -5730,3 +5834,85 @@ API24	StrictQueue$RunnableWithPriority	method	run()void	public
 API24	StrictQueue$RunnableWithPriority	method	task()java.lang.Runnable	public
 API24	StrictQueue$RunnableWithPriority	method	toString()java.lang.String	public
 API24SUP	StrictQueue$RunnableWithPriority	java.lang.Runnable,extends java.lang.Record	record
+API24	GpuTextureView	ctor	<init>(com.mojang.blaze3d.textures.GpuTexture,int,int)	protected
+API24	GpuTextureView	field	baseMipLevel:int	private final
+API24	GpuTextureView	field	mipLevels:int	private final
+API24	GpuTextureView	field	texture:com.mojang.blaze3d.textures.GpuTexture	private final
+API24	GpuTextureView	method	baseMipLevel()int	public
+API24	GpuTextureView	method	close()void	public abstract
+API24	GpuTextureView	method	getHeight(int)int	public
+API24	GpuTextureView	method	getWidth(int)int	public
+API24	GpuTextureView	method	isClosed()boolean	public abstract
+API24	GpuTextureView	method	mipLevels()int	public
+API24	GpuTextureView	method	texture()com.mojang.blaze3d.textures.GpuTexture	public
+API24SUP	GpuTextureView	java.lang.AutoCloseable	abstract class
+API24	GlyphBitmap	method	getBearingLeft()float	public default
+API24	GlyphBitmap	method	getBearingTop()float	public default
+API24	GlyphBitmap	method	getBottom()float	public default
+API24	GlyphBitmap	method	getLeft()float	public default
+API24	GlyphBitmap	method	getOversample()float	public abstract
+API24	GlyphBitmap	method	getPixelHeight()int	public abstract
+API24	GlyphBitmap	method	getPixelWidth()int	public abstract
+API24	GlyphBitmap	method	getRight()float	public default
+API24	GlyphBitmap	method	getTop()float	public default
+API24	GlyphBitmap	method	isColored()boolean	public abstract
+API24	GlyphBitmap	method	upload(int,int,com.mojang.blaze3d.textures.GpuTexture)void	public abstract
+API24SUP	GlyphBitmap	-	interface
+API24	ColorTargetState	ctor	<init>(com.mojang.blaze3d.pipeline.BlendFunction)	public
+API24	ColorTargetState	ctor	<init>(java.util.Optional<com.mojang.blaze3d.pipeline.BlendFunction>,com.mojang.blaze3d.GpuFormat,int)	public
+API24	ColorTargetState	field	DEFAULT:com.mojang.blaze3d.pipeline.ColorTargetState	public static final
+API24	ColorTargetState	field	MAX_COLOR_TARGETS:int	public static final
+API24	ColorTargetState	field	WRITE_ALL:int	public static final
+API24	ColorTargetState	field	WRITE_ALPHA:int	public static final
+API24	ColorTargetState	field	WRITE_BLUE:int	public static final
+API24	ColorTargetState	field	WRITE_COLOR:int	public static final
+API24	ColorTargetState	field	WRITE_GREEN:int	public static final
+API24	ColorTargetState	field	WRITE_NONE:int	public static final
+API24	ColorTargetState	field	WRITE_RED:int	public static final
+API24	ColorTargetState	field	blendFunction:java.util.Optional<com.mojang.blaze3d.pipeline.BlendFunction>	private final
+API24	ColorTargetState	field	format:com.mojang.blaze3d.GpuFormat	private final
+API24	ColorTargetState	field	writeMask:int	private final
+API24	ColorTargetState	method	blendFunction()java.util.Optional<com.mojang.blaze3d.pipeline.BlendFunction>	public
+API24	ColorTargetState	method	equals(java.lang.Object)boolean	public
+API24	ColorTargetState	method	format()com.mojang.blaze3d.GpuFormat	public
+API24	ColorTargetState	method	hashCode()int	public
+API24	ColorTargetState	method	toString()java.lang.String	public
+API24	ColorTargetState	method	writeAlpha()boolean	public
+API24	ColorTargetState	method	writeBlue()boolean	public
+API24	ColorTargetState	method	writeGreen()boolean	public
+API24	ColorTargetState	method	writeMask()int	public
+API24	ColorTargetState	method	writeRed()boolean	public
+API24SUP	ColorTargetState	extends java.lang.Record	record
+API24SUP	ColorTargetState$WriteMask	java.lang.annotation.Annotation	annotation
+API24	DeviceInfo	ctor	<init>(java.lang.String,java.lang.String,java.lang.String,boolean,java.lang.String,float,com.mojang.blaze3d.systems.DeviceLimits,com.mojang.blaze3d.systems.DeviceFeatures,java.util.Set<java.lang.String>,com.mojang.blaze3d.systems.HintsAndWorkarounds,com.mojang.blaze3d.systems.DeviceType)	public
+API24	DeviceInfo	field	backendName:java.lang.String	private final
+API24	DeviceInfo	field	driverInfo:java.lang.String	private final
+API24	DeviceInfo	field	features:com.mojang.blaze3d.systems.DeviceFeatures	private final
+API24	DeviceInfo	field	hintsAndWorkarounds:com.mojang.blaze3d.systems.HintsAndWorkarounds	private final
+API24	DeviceInfo	field	isZZeroToOne:boolean	private final
+API24	DeviceInfo	field	limits:com.mojang.blaze3d.systems.DeviceLimits	private final
+API24	DeviceInfo	field	name:java.lang.String	private final
+API24	DeviceInfo	field	timestampPeriod:float	private final
+API24	DeviceInfo	field	type:com.mojang.blaze3d.systems.DeviceType	private final
+API24	DeviceInfo	field	underlyingExtensions:java.util.Set<java.lang.String>	private final
+API24	DeviceInfo	field	vendorName:java.lang.String	private final
+API24	DeviceInfo	method	backendName()java.lang.String	public
+API24	DeviceInfo	method	driverInfo()java.lang.String	public
+API24	DeviceInfo	method	equals(java.lang.Object)boolean	public
+API24	DeviceInfo	method	features()com.mojang.blaze3d.systems.DeviceFeatures	public
+API24	DeviceInfo	method	hashCode()int	public
+API24	DeviceInfo	method	hintsAndWorkarounds()com.mojang.blaze3d.systems.HintsAndWorkarounds	public
+API24	DeviceInfo	method	isZZeroToOne()boolean	public
+API24	DeviceInfo	method	limits()com.mojang.blaze3d.systems.DeviceLimits	public
+API24	DeviceInfo	method	name()java.lang.String	public
+API24	DeviceInfo	method	timestampPeriod()float	public
+API24	DeviceInfo	method	toString()java.lang.String	public
+API24	DeviceInfo	method	type()com.mojang.blaze3d.systems.DeviceType	public
+API24	DeviceInfo	method	underlyingExtensions()java.util.Set<java.lang.String>	public
+API24	DeviceInfo	method	vendorName()java.lang.String	public
+API24SUP	DeviceInfo	extends java.lang.Record	record
+API24	RecordedDeviation	ctor	<init>(java.time.Instant,int,net.minecraft.util.profiling.ProfileResults)	public
+API24	RecordedDeviation	field	profilerResultAtTick:net.minecraft.util.profiling.ProfileResults	public final
+API24	RecordedDeviation	field	tick:int	public final
+API24	RecordedDeviation	field	timestamp:java.time.Instant	public final
+API24SUP	RecordedDeviation	-	class

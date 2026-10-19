@@ -24,7 +24,8 @@
 //! | [`bit_set`] | `java.util.BitSet` (the subset `CarvingMask` uses) | JDK 25 |
 //! | [`java_hash_map`] | `java.util.HashMap` with its exact iteration order, tree bins included (the subset `CompoundTag` uses) | JDK 25 |
 //! | [`fastutil`] | `HashCommon.mix` (the fastutil methods vanilla calls, one by one) | fastutil 8.5.18 |
-//! | [`guava`] | `ImmutableMap<String, String>` literal tables (the Guava types ported files need) | Guava 33.6.0-jre |
+//! | [`guava`] | `ImmutableMap<String, String>` literal tables, `AbstractIterator`, `PeekingIterator` (the Guava types ported files need) | Guava 33.6.0-jre |
+//! | [`java_time`] | `java.time.Instant` as a value (no clock, no formatting) | JDK 25 |
 //!
 //! Every "pinned to" version is read from the Fabric Loom / Gradle cache, i.e. what
 //! Minecraft 26.2 actually resolves -- see `java-oracle/fetch_libs.ps1`.
@@ -38,6 +39,7 @@ pub mod guava;
 pub mod java_hash_map;
 pub mod java_io;
 pub mod java_lang;
+pub mod java_time;
 pub mod java_object;
 
 #[path = "jvm_math.rs"]

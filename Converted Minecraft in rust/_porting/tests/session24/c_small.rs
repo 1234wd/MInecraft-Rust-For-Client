@@ -5,7 +5,7 @@
 //! Groups: `ROTSEG`, `DEVLIM`, `VFE`, `VFEEQ`, `BLENDFN`, `GPUTEX`, `BINDGL`, `UNIDESC`, `PROFRES`,
 //! `GRALLOC`, `MULTFLOAT`.
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 
 use crate::sweep_probe::*;
 
@@ -312,7 +312,7 @@ fn blend_functions_match_the_jar() {
 
 struct TestTexture {
     state: GpuTextureState,
-    closed: bool,
+    closed: Cell<bool>,
 }
 
 impl GpuTexture for TestTexture {
@@ -320,12 +320,12 @@ impl GpuTexture for TestTexture {
         &self.state
     }
 
-    fn close(&mut self) {
-        self.closed = true;
+    fn close(&self) {
+        self.closed.set(true);
     }
 
     fn is_closed(&self) -> bool {
-        self.closed
+        self.closed.get()
     }
 }
 
@@ -367,7 +367,7 @@ fn gpu_texture_getters_match_the_jar() {
             assert_eq!(got.to_vec(), want);
             continue;
         }
-        let mut t = TestTexture {
+        let t = TestTexture {
             state: GpuTextureState::new(
                 i32f(r[2]),
                 s(r[3]),
@@ -377,7 +377,7 @@ fn gpu_texture_getters_match_the_jar() {
                 i32f(r[7]),
                 i32f(r[8]),
             ),
-            closed: false,
+            closed: Cell::new(false),
         };
         let w: Vec<String> = MIPS.iter().map(|&m| t.get_width(m).to_string()).collect();
         let h: Vec<String> = MIPS.iter().map(|&m| t.get_height(m).to_string()).collect();

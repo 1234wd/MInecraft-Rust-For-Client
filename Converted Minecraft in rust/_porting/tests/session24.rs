@@ -26,6 +26,8 @@ mod b_loggers;
 mod c_small;
 #[path = "session24/d_guava.rs"]
 mod d_guava;
+#[path = "session24/e_blaze.rs"]
+mod e_blaze;
 #[path = "session24/z_api.rs"]
 mod z_api;
 
@@ -36,6 +38,7 @@ const SOURCES: &[&str] = &[
     include_str!("session24/b_loggers.rs"),
     include_str!("session24/c_small.rs"),
     include_str!("session24/d_guava.rs"),
+    include_str!("session24/e_blaze.rs"),
     include_str!("session24/z_api.rs"),
 ];
 
