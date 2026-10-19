@@ -1,9 +1,9 @@
 //! Port of: net/minecraft/nbt/CollectionTag.java
 //! Java class(es): net.minecraft.nbt.CollectionTag, CollectionTag::<1 anonymous class(es)>
-//! Status: PARTIAL
+//! Status: VERIFIED
 //!
-//! Session 21. Every member of the interface is ported except `stream()`. Implemented by
-//! the three array tags; `ListTag` joins when it lands.
+//! Session 21; `stream()` added and the file completed in session 24. Implemented by the three
+//! array tags and (session 23) `ListTag`.
 //!
 //! # `iterator()` BECOMES `Iterator`, AND IT IS AN INDEX WALK, NOT A SLICE
 //!
@@ -19,13 +19,15 @@
 //! `while let`), so the exception has nowhere to be observed from safe code and is not
 //! raised. Noted rather than silently dropped.
 //!
-//! # `stream()` is NOT ported
+//! # `stream()` IS THE SAME INDEX WALK
 //!
-//! `StreamSupport.stream(this.spliterator(), false)` is a `java.util.stream.Stream`, and
-//! nothing in the ported tree consumes one. Rust's `Iterator` already covers every use the
-//! game makes of it (`forEach`, `filter`, `map`, `collect`), so porting a second traversal
-//! API would be structure with no behaviour. If a caller turns up that depends on
-//! `Stream`'s laziness or its `spliterator` characteristics, this is the comment to revisit.
+//! `StreamSupport.stream(this.spliterator(), false)` is a sequential, lazy, single-use
+//! `java.util.stream.Stream` over the collection's spliterator, which for this interface's own
+//! `iterator()` walks the indices in order. A Rust [`Iterator`] is that: lazy, single-use and
+//! ordered, and every `Stream` operation the game applies to one (`map`, `filter`,
+//! `forEach`, `collect`, `count`) has its `Iterator` counterpart. So [`CollectionTag::stream`]
+//! returns the [`CollectionTagIter`] -- not a second traversal API. Verified by the `CSTREAM`
+//! group of `sweep_probe.txt` (`tests/session24.rs`) for all four collection tags.
 //!
 //! # `setTag` / `addTag` RETURN A BOOLEAN INSTEAD OF THROWING
 //!
@@ -61,6 +63,11 @@ pub trait CollectionTag {
     fn is_empty(&self) -> bool {
         self.size() == 0
     }
+
+    /// Port of `CollectionTag#stream()`: the elements in index order, each built by `get`.
+    fn stream(&self) -> CollectionTagIter<'_, Self> {
+        CollectionTagIter::new(self)
+    }
 }
 
 /// Port of the anonymous `Iterator<Tag>` returned by `CollectionTag#iterator()`.
@@ -74,7 +81,10 @@ pub struct CollectionTagIter<'a, C: CollectionTag + ?Sized> {
 impl<'a, C: CollectionTag + ?Sized> CollectionTagIter<'a, C> {
     /// Port of `CollectionTag#iterator()`.
     pub fn new(collection: &'a C) -> Self {
-        Self { collection, index: 0 }
+        Self {
+            collection,
+            index: 0,
+        }
     }
 }
 

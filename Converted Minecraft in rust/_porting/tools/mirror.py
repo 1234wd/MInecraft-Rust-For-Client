@@ -164,6 +164,13 @@ path = "_porting/tests/session22.rs"
 name = "session23"
 path = "_porting/tests/session23.rs"
 
+# Session 24: the small-file conversion sweep, checked against `_porting/test-data/sweep_probe.txt`
+# (`java-oracle/src/p/SweepProbe.java`). One target, one module per sub-batch under
+# `_porting/tests/session24/`.
+[[test]]
+name = "session24"
+path = "_porting/tests/session24.rs"
+
 # Runtime dependencies. Currently EMPTY on purpose, and that is worth keeping that way.
 #
 # Session 08 measured musl's `log` (the `libm` crate) against FdLibm's as a candidate for
