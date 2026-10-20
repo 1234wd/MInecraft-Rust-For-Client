@@ -2,13 +2,14 @@
 
 use crate::sweep_probe::*;
 use minecraft_rust::javacompat::java_jfr::RecordedEvent;
+use minecraft_rust::javacompat::java_time::Instant;
 use minecraft_rust::net::minecraft::util::profiling::jfr::stats::ChunkIdentification::ChunkIdentification;
 use minecraft_rust::net::minecraft::util::profiling::jfr::stats::CpuLoadStat::CpuLoadStat;
 use minecraft_rust::net::minecraft::util::profiling::jfr::stats::FpsStat::FpsStat;
 use minecraft_rust::net::minecraft::util::profiling::jfr::stats::PacketIdentification::PacketIdentification;
 
 fn event() -> RecordedEvent {
-    let mut event = RecordedEvent::new();
+    let mut event = RecordedEvent::new(Instant::of_epoch_second(0));
     event.insert_string("level", Some("minecraft:overworld".to_string()));
     event.insert_string("dimension", Some("minecraft:overworld".to_string()));
     event.insert_int("chunkPosX", -123);

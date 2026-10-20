@@ -1866,45 +1866,59 @@ public class SweepProbe {
 		public float jvmUser;
 		public float machineTotal;
 		public int fps;
+		@jdk.jfr.Name("averageTickDuration")
+		@jdk.jfr.Timespan
+		public long averageTickDuration;
 		public String packetDirection;
 		public String protocolId;
 		public String packetId;
 	}
 
-	static jdk.jfr.consumer.RecordedEvent recordedStatEvent() throws Exception {
+	static java.util.List<jdk.jfr.consumer.RecordedEvent> recordedStatEvents(long... durations) throws Exception {
 		Path dump = Files.createTempFile("minecraft-stat-probe", ".jfr");
 		try (jdk.jfr.Recording recording = new jdk.jfr.Recording()) {
 			recording.enable(MinecraftStatProbe.class);
 			recording.start();
-			MinecraftStatProbe event = new MinecraftStatProbe();
-			event.begin();
-			event.level = "minecraft:overworld";
-			event.dimension = "minecraft:overworld";
-			event.chunkPosX = -123;
-			event.chunkPosZ = 456;
-			event.jvmSystem = 0.5F;
-			event.jvmUser = -0.0F;
-			event.machineTotal = 0.125F;
-			event.fps = 144;
-			event.packetDirection = "PLAY_TO_SERVER";
-			event.protocolId = "minecraft:game";
-			event.packetId = "minecraft:chat_command";
-			event.end();
-			event.commit();
+			for (long duration : durations) {
+				MinecraftStatProbe event = new MinecraftStatProbe();
+				event.begin();
+				event.level = "minecraft:overworld";
+				event.dimension = "minecraft:overworld";
+				event.chunkPosX = -123;
+				event.chunkPosZ = 456;
+				event.jvmSystem = 0.5F;
+				event.jvmUser = -0.0F;
+				event.machineTotal = 0.125F;
+				event.fps = 144;
+				event.averageTickDuration = duration;
+				event.packetDirection = "PLAY_TO_SERVER";
+				event.protocolId = "minecraft:game";
+				event.packetId = "minecraft:chat_command";
+				event.end();
+				event.commit();
+			}
 			recording.stop();
 			recording.dump(dump);
 		}
 		try (jdk.jfr.consumer.RecordingFile file = new jdk.jfr.consumer.RecordingFile(dump)) {
+			java.util.List<jdk.jfr.consumer.RecordedEvent> result = new java.util.ArrayList<>();
 			while (file.hasMoreEvents()) {
 				jdk.jfr.consumer.RecordedEvent event = file.readEvent();
 				if (event.getEventType().getName().equals("p.MinecraftStatProbe")) {
-					return event;
+					result.add(event);
 				}
 			}
+			if (result.size() != durations.length) {
+				throw new IllegalStateException("expected " + durations.length + " stat events, got " + result.size());
+			}
+			return result;
 		} finally {
 			Files.deleteIfExists(dump);
 		}
-		throw new IllegalStateException("stat probe event was not recorded");
+	}
+
+	static jdk.jfr.consumer.RecordedEvent recordedStatEvent() throws Exception {
+		return recordedStatEvents(9_876_543_210L).get(0);
 	}
 
 	static String eventFailure(Runnable action) {
@@ -1953,6 +1967,71 @@ public class SweepProbe {
 		row("S25_JFRSTAT", "cpu-ieee", b(nanCpu.equals(new net.minecraft.util.profiling.jfr.stats.CpuLoadStat(Double.longBitsToDouble(0x7ff0000000000001L), -0.0, 1.0))),
 			b(nanCpu.equals(new net.minecraft.util.profiling.jfr.stats.CpuLoadStat(Double.NaN, 0.0, 1.0))),
 			i(nanCpu.hashCode()));
+		tickTimeStatistics(event);
+	}
+
+	// ---- S26: java.time values consumed by TickTimeStat and its generated record methods
+
+	static void tickTimeStatistics(jdk.jfr.consumer.RecordedEvent event) throws Exception {
+		net.minecraft.util.profiling.jfr.stats.TickTimeStat from =
+			net.minecraft.util.profiling.jfr.stats.TickTimeStat.from(event);
+		row("S26_TICK", "from", b(from.timestamp().equals(event.getStartTime())),
+			l(from.currentAverage().getSeconds()), i(from.currentAverage().getNano()));
+		row("S26_TICKERROR", "null-event", eventFailure(() -> net.minecraft.util.profiling.jfr.stats.TickTimeStat.from(null)));
+		row("S26_TICKERROR", "missing-duration", eventFailure(() -> event.getDuration("missing")));
+		row("S26_TICKERROR", "wrong-duration-type", eventFailure(() -> event.getDuration("level")));
+		row("S26_TICKERROR", "missing-timespan", eventFailure(() -> event.getDuration("fps")));
+		row("S26_TICKERROR", "null-duration-name", eventFailure(() -> event.getDuration(null)));
+		long[] jfrNanos = {0L, -1L, Long.MIN_VALUE, Long.MAX_VALUE};
+		java.util.List<jdk.jfr.consumer.RecordedEvent> edgeEvents = recordedStatEvents(jfrNanos);
+		for (int n = 0; n < jfrNanos.length; n++) {
+			java.time.Duration d = edgeEvents.get(n).getDuration("averageTickDuration");
+			row("S26_JFRDURATION", i(n), l(jfrNanos[n]), l(d.getSeconds()), i(d.getNano()), i(d.hashCode()), esc(d.toString()));
+		}
+
+		long[] nanos = {Long.MIN_VALUE, Long.MIN_VALUE + 1, -86_400_000_001L, -1_000_000_001L,
+			-1L, 0L, 1L, 999_999_999L, 1_000_000_000L, 86_400_000_001L, Long.MAX_VALUE};
+		for (int n = 0; n < nanos.length; n++) {
+			java.time.Duration d = java.time.Duration.ofNanos(nanos[n]);
+			row("S26_DURATION", i(n), l(nanos[n]), l(d.getSeconds()), i(d.getNano()), i(d.hashCode()), esc(d.toString()));
+		}
+		long[][] durationParts = {{-1L, 500_000_000L}, {0L, -1L}, {1L, -1L}, {Long.MIN_VALUE, -1L},
+			{Long.MAX_VALUE, 1L}};
+		for (int n = 0; n < durationParts.length; n++) {
+			try {
+				java.time.Duration d = java.time.Duration.ofSeconds(durationParts[n][0], durationParts[n][1]);
+				row("S26_DURATION_ADJ", i(n), l(durationParts[n][0]), l(durationParts[n][1]),
+					l(d.getSeconds()), i(d.getNano()), i(d.hashCode()), esc(d.toString()));
+			} catch (RuntimeException e) {
+				row("S26_DURATION_ADJ", i(n), l(durationParts[n][0]), l(durationParts[n][1]), ex(e));
+			}
+		}
+
+		long[][] instantParts = {
+			{0L, 0L}, {-1L, 500_000_000L}, {-1L, 999_999_999L}, {0L, 1L},
+			{1L, 0L}, {1_000_000_000L, 123_000_000L},
+			{31556889864403199L, 999_999_999L}, {-31557014167219200L, 0L}
+		};
+		for (int n = 0; n < instantParts.length; n++) {
+			java.time.Instant instant = java.time.Instant.ofEpochSecond(instantParts[n][0], instantParts[n][1]);
+			row("S26_INSTANT", i(n), l(instant.getEpochSecond()), i(instant.getNano()), i(instant.hashCode()), esc(instant.toString()));
+		}
+
+		java.time.Instant timestamp = java.time.Instant.ofEpochSecond(-1L, 500_000_000L);
+		java.time.Duration average = java.time.Duration.ofSeconds(-1L, 500_000_000L);
+		net.minecraft.util.profiling.jfr.stats.TickTimeStat fixed =
+			new net.minecraft.util.profiling.jfr.stats.TickTimeStat(timestamp, average);
+		net.minecraft.util.profiling.jfr.stats.TickTimeStat same =
+			new net.minecraft.util.profiling.jfr.stats.TickTimeStat(java.time.Instant.ofEpochSecond(-1L, 500_000_000L),
+				java.time.Duration.ofNanos(-500_000_000L));
+		net.minecraft.util.profiling.jfr.stats.TickTimeStat different =
+			new net.minecraft.util.profiling.jfr.stats.TickTimeStat(timestamp, java.time.Duration.ZERO);
+		row("S26_TICKRECORD", "fixed", esc(fixed.timestamp().toString()), esc(fixed.currentAverage().toString()),
+			i(fixed.hashCode()), esc(fixed.toString()), b(fixed.equals(same)), b(fixed.equals(different)));
+		net.minecraft.util.profiling.jfr.stats.TickTimeStat nullComponents =
+			new net.minecraft.util.profiling.jfr.stats.TickTimeStat(null, null);
+		row("S26_TICKRECORD", "nulls", i(nullComponents.hashCode()), esc(nullComponents.toString()),
+			b(nullComponents.equals(new net.minecraft.util.profiling.jfr.stats.TickTimeStat(null, null))));
 	}
 
 	static final class ProbeIdentified implements net.minecraft.world.level.entity.UniquelyIdentifyable {
@@ -2340,6 +2419,12 @@ public class SweepProbe {
 		"net.minecraft.util.profiling.jfr.stats.PacketIdentification",
 		"net.minecraft.world.level.entity.UUIDLookup",
 	};
+	static final String[] API26_CLASSES = {
+		"net.minecraft.util.profiling.jfr.stats.TimedStat",
+		"net.minecraft.util.profiling.jfr.stats.TickTimeStat",
+		"com.mojang.blaze3d.framegraph.FramePass",
+		"com.mojang.realmsclient.dto.ReflectionBasedSerialization",
+	};
 
 	static String vis(int mod) {
 		return java.lang.reflect.Modifier.isPublic(mod) ? "public" : java.lang.reflect.Modifier.isProtected(mod) ? "protected"
@@ -2354,6 +2439,7 @@ public class SweepProbe {
 	static void apiShapes() throws Exception {
 		apiShapes(API_CLASSES, "API24", "API24SUP");
 		apiShapes(API25_CLASSES, "S25_API", "S25_SUP");
+		apiShapes(API26_CLASSES, "S26_API", "S26_SUP");
 	}
 
 	static void apiShapes(String[] classes, String memberGroup, String superGroup) throws Exception {

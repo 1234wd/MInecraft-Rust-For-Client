@@ -177,6 +177,12 @@ path = "_porting/tests/session24.rs"
 name = "session25"
 path = "_porting/tests/session25.rs"
 
+# Session 26: java.time values and Minecraft's JFR tick-time record, checked against the same
+# Minecraft 26.2/JDK 25 SweepProbe. This target owns only the S26_* groups.
+[[test]]
+name = "session26"
+path = "_porting/tests/session26.rs"
+
 # Runtime dependencies. Currently EMPTY on purpose, and that is worth keeping that way.
 #
 # Session 08 measured musl's `log` (the `libm` crate) against FdLibm's as a candidate for

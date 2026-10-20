@@ -1,0 +1,48 @@
+Converted Minecraft in rust/_porting/generated/session26-oracle-1/core.txt:320622: new blank line at EOF.
+Converted Minecraft in rust/_porting/generated/session26-oracle-1/mth.txt:10051: new blank line at EOF.
+Converted Minecraft in rust/_porting/generated/session26-oracle-1/mth_tables.txt:66059: new blank line at EOF.
+Converted Minecraft in rust/_porting/generated/session26-oracle-1/random.txt:40342: new blank line at EOF.
+Converted Minecraft in rust/_porting/generated/sweep_probe_candidate.txt:6: trailing whitespace.
+[32m+[m[32mEXC24	CowFSCreationException	1	net.minecraft.util.filefix.virtualfilesystem.exception.CowFSCreationException	net.minecraft.util.filefix.virtualfilesystem.exception.CowFSFileSystemException	true		net.minecraft.util.filefix.virtualfilesystem.exception.CowFSCreationException:[m[41m [m
+Converted Minecraft in rust/_porting/generated/sweep_probe_candidate.txt:8: trailing whitespace.
+[32m+[m[32mEXC24	CowFSSymlinkException	1	net.minecraft.util.filefix.virtualfilesystem.exception.CowFSSymlinkException	net.minecraft.util.filefix.virtualfilesystem.exception.CowFSCreationException	true		net.minecraft.util.filefix.virtualfilesystem.exception.CowFSSymlinkException:[m[41m [m
+Converted Minecraft in rust/_porting/generated/sweep_probe_candidate.txt:4715: trailing whitespace.
+[32m+[m[32mCSTREAM	byte		0[m[41m		[m
+Converted Minecraft in rust/_porting/generated/sweep_probe_candidate.txt:4716: trailing whitespace.
+[32m+[m[32mCSTREAM	int		0[m[41m		[m
+Converted Minecraft in rust/_porting/generated/sweep_probe_candidate.txt:4717: trailing whitespace.
+[32m+[m[32mCSTREAM	long		0[m[41m		[m
+Converted Minecraft in rust/_porting/generated/sweep_probe_candidate.txt:4718: trailing whitespace.
+[32m+[m[32mCSTREAM	list		0[m[41m		[m
+Converted Minecraft in rust/_porting/generated/sweep_probe_candidate.txt:4719: trailing whitespace.
+[32m+[m[32mCSTREAM	mixed		0[m[41m		[m
+Converted Minecraft in rust/_porting/generated/sweep_probe_candidate.txt:4974: trailing whitespace.
+[32m+[m[32mGPUTEX	tex	0		RG16_SNORM	1	1	6	1	1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,1,0,1	1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,1,0,1	6	1	RG16_SNORM	0[m[41m	[m
+Converted Minecraft in rust/_porting/generated/sweep_probe_candidate.txt:4977: trailing whitespace.
+[32m+[m[32mGPUTEX	tex	4		R32_FLOAT	0	0	1	1	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0	1	1	R32_FLOAT	4[m[41m	[m
+Converted Minecraft in rust/_porting/generated/sweep_probe_candidate.txt:5025: trailing whitespace.
+[32m+[m[32mPROFRES	empty	0	0	false	0	0	0	0	0	0[m[41m	[m
+Converted Minecraft in rust/_porting/generated/sweep_probe_candidate.txt:5027: trailing whitespace.
+[32m+[m[32mPROFRES	demangle[m[41m		[m
+Converted Minecraft in rust/_porting/generated/sweep_probe_repeat.txt:6: trailing whitespace.
+[32m+[m[32mEXC24	CowFSCreationException	1	net.minecraft.util.filefix.virtualfilesystem.exception.CowFSCreationException	net.minecraft.util.filefix.virtualfilesystem.exception.CowFSFileSystemException	true		net.minecraft.util.filefix.virtualfilesystem.exception.CowFSCreationException:[m[41m [m
+Converted Minecraft in rust/_porting/generated/sweep_probe_repeat.txt:8: trailing whitespace.
+[32m+[m[32mEXC24	CowFSSymlinkException	1	net.minecraft.util.filefix.virtualfilesystem.exception.CowFSSymlinkException	net.minecraft.util.filefix.virtualfilesystem.exception.CowFSCreationException	true		net.minecraft.util.filefix.virtualfilesystem.exception.CowFSSymlinkException:[m[41m [m
+Converted Minecraft in rust/_porting/generated/sweep_probe_repeat.txt:4715: trailing whitespace.
+[32m+[m[32mCSTREAM	byte		0[m[41m		[m
+Converted Minecraft in rust/_porting/generated/sweep_probe_repeat.txt:4716: trailing whitespace.
+[32m+[m[32mCSTREAM	int		0[m[41m		[m
+Converted Minecraft in rust/_porting/generated/sweep_probe_repeat.txt:4717: trailing whitespace.
+[32m+[m[32mCSTREAM	long		0[m[41m		[m
+Converted Minecraft in rust/_porting/generated/sweep_probe_repeat.txt:4718: trailing whitespace.
+[32m+[m[32mCSTREAM	list		0[m[41m		[m
+Converted Minecraft in rust/_porting/generated/sweep_probe_repeat.txt:4719: trailing whitespace.
+[32m+[m[32mCSTREAM	mixed		0[m[41m		[m
+Converted Minecraft in rust/_porting/generated/sweep_probe_repeat.txt:4974: trailing whitespace.
+[32m+[m[32mGPUTEX	tex	0		RG16_SNORM	1	1	6	1	1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,1,0,1	1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,1,0,1	6	1	RG16_SNORM	0[m[41m	[m
+Converted Minecraft in rust/_porting/generated/sweep_probe_repeat.txt:4977: trailing whitespace.
+[32m+[m[32mGPUTEX	tex	4		R32_FLOAT	0	0	1	1	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0	1	1	R32_FLOAT	4[m[41m	[m
+Converted Minecraft in rust/_porting/generated/sweep_probe_repeat.txt:5025: trailing whitespace.
+[32m+[m[32mPROFRES	empty	0	0	false	0	0	0	0	0	0[m[41m	[m
+Converted Minecraft in rust/_porting/generated/sweep_probe_repeat.txt:5027: trailing whitespace.
+[32m+[m[32mPROFRES	demangle[m[41m		[m

@@ -5890,6 +5890,42 @@ S25_JFRSTAT	missing-fps	EX:java.lang.IllegalArgumentException: Could not find fi
 S25_JFRSTAT	null-chunk	ChunkIdentification[level=null, dimension=null, x=-1, z=2]	-29	true
 S25_JFRSTAT	null-packet	PacketIdentification[direction=null, protocolId=null, packetId=null]	0	true
 S25_JFRSTAT	cpu-ieee	true	false	568852480
+S26_TICK	from	true	9	876543210
+S26_TICKERROR	null-event	EX:java.lang.NullPointerException: Cannot invoke "jdk.jfr.consumer.RecordedEvent.getStartTime()" because "event" is null
+S26_TICKERROR	missing-duration	EX:java.lang.IllegalArgumentException: Could not find field with name missing
+S26_TICKERROR	wrong-duration-type	EX:java.lang.IllegalArgumentException: Attempt to get field "level" with illegal data type conversion java.time.Duration
+S26_TICKERROR	missing-timespan	EX:java.lang.IllegalArgumentException: Attempt to get int field "fps" with missing @Timespan
+S26_TICKERROR	null-duration-name	EX:java.lang.NullPointerException: name
+S26_JFRDURATION	0	0	0	0	0	PT0S
+S26_JFRDURATION	1	-1	-1	999999999	-539607603	PT-0.000000001S
+S26_JFRDURATION	2	-9223372036854775808	-9223372036854775808	0	-2147483648	PT-2562047788015215H-30M-8S
+S26_JFRDURATION	3	9223372036854775807	9223372036854775807	999999999	1607876045	PT2562047788015215H30M7.999999999S
+S26_DURATION	0	-9223372036854775808	-9223372037	145224192	-550063354	PT-2562047H-47M-16.854775808S
+S26_DURATION	1	-9223372036854775807	-9223372037	145224193	-550063303	PT-2562047H-47M-16.854775807S
+S26_DURATION	2	-86400000001	-87	599999999	535228963	PT-1M-26.400000001S
+S26_DURATION	3	-1000000001	-2	999999999	-539607602	PT-1.000000001S
+S26_DURATION	4	-1	-1	999999999	-539607603	PT-0.000000001S
+S26_DURATION	5	0	0	0	0	PT0S
+S26_DURATION	6	1	0	1	51	PT0.000000001S
+S26_DURATION	7	999999999	0	999999999	-539607603	PT0.999999999S
+S26_DURATION	8	1000000000	1	0	1	PT1S
+S26_DURATION	9	86400000001	86	400000001	-1074836343	PT1M26.400000001S
+S26_DURATION	10	9223372036854775807	9223372036	854775807	1277330643	PT2562047H47M16.854775807S
+S26_DURATION_ADJ	0	-1	500000000	-1	500000000	-269803776	PT-0.5S
+S26_DURATION_ADJ	1	0	-1	-1	999999999	-539607603	PT-0.000000001S
+S26_DURATION_ADJ	2	1	-1	0	999999999	-539607603	PT0.999999999S
+S26_DURATION_ADJ	3	-9223372036854775808	-1	EX:java.lang.ArithmeticException: long overflow
+S26_DURATION_ADJ	4	9223372036854775807	1	9223372036854775807	1	-2147483597	PT2562047788015215H30M7.000000001S
+S26_INSTANT	0	0	0	0	1970-01-01T00:00:00Z
+S26_INSTANT	1	-1	500000000	-269803776	1969-12-31T23:59:59.500Z
+S26_INSTANT	2	-1	999999999	-539607603	1969-12-31T23:59:59.999999999Z
+S26_INSTANT	3	0	1	51	1970-01-01T00:00:00.000000001Z
+S26_INSTANT	4	1	0	1	1970-01-01T00:00:01Z
+S26_INSTANT	5	1000000000	123000000	-1316934592	2001-09-09T01:46:40.123Z
+S26_INSTANT	6	31556889864403199	999999999	-625237510	+1000000000-12-31T23:59:59.999999999Z
+S26_INSTANT	7	-31557014167219200	0	-336857328	-1000000000-01-01T00:00:00Z
+S26_TICKRECORD	fixed	1969-12-31T23:59:59.500Z	PT-0.5S	-43786240	TickTimeStat[timestamp=1969-12-31T23:59:59.500Z, currentAverage=PT-0.5S]	true	false
+S26_TICKRECORD	nulls	0	TickTimeStat[timestamp=null, currentAverage=null]	true
 S25_UUIDLOOKUP	hit	true
 S25_UUIDLOOKUP	miss	true
 API24	CowFSCreationException	ctor	<init>(java.lang.String)	public
@@ -6486,3 +6522,23 @@ S25_API	PacketIdentification	method	toString()java.lang.String	public
 S25_SUP	PacketIdentification	extends java.lang.Record	record
 S25_API	UUIDLookup	method	lookup(java.util.UUID)IdentifiedType	public abstract
 S25_SUP	UUIDLookup	-	interface
+S26_API	TimedStat	method	duration()java.time.Duration	public abstract
+S26_SUP	TimedStat	-	interface
+S26_API	TickTimeStat	ctor	<init>(java.time.Instant,java.time.Duration)	public
+S26_API	TickTimeStat	field	currentAverage:java.time.Duration	private final
+S26_API	TickTimeStat	field	timestamp:java.time.Instant	private final
+S26_API	TickTimeStat	method	currentAverage()java.time.Duration	public
+S26_API	TickTimeStat	method	equals(java.lang.Object)boolean	public
+S26_API	TickTimeStat	method	from(jdk.jfr.consumer.RecordedEvent)net.minecraft.util.profiling.jfr.stats.TickTimeStat	public static
+S26_API	TickTimeStat	method	hashCode()int	public
+S26_API	TickTimeStat	method	timestamp()java.time.Instant	public
+S26_API	TickTimeStat	method	toString()java.lang.String	public
+S26_SUP	TickTimeStat	extends java.lang.Record	record
+S26_API	FramePass	method	createsInternal(java.lang.String,com.mojang.blaze3d.resource.ResourceDescriptor<T>)com.mojang.blaze3d.resource.ResourceHandle<T>	public abstract
+S26_API	FramePass	method	disableCulling()void	public abstract
+S26_API	FramePass	method	executes(java.lang.Runnable)void	public abstract
+S26_API	FramePass	method	reads(com.mojang.blaze3d.resource.ResourceHandle<T>)void	public abstract
+S26_API	FramePass	method	readsAndWrites(com.mojang.blaze3d.resource.ResourceHandle<T>)com.mojang.blaze3d.resource.ResourceHandle<T>	public abstract
+S26_API	FramePass	method	requires(com.mojang.blaze3d.framegraph.FramePass)void	public abstract
+S26_SUP	FramePass	-	interface
+S26_SUP	ReflectionBasedSerialization	-	interface
