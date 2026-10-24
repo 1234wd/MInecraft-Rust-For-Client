@@ -145,3 +145,34 @@ impl std::fmt::Display for CopyOptionValue {
         }
     }
 }
+
+/// Narrow model of `java.nio.file.Path` used as a value type in records and interfaces.
+///
+/// Wraps `std::path::PathBuf` and provides Java-compatible `equals`, `hashCode`, and
+/// `toString`. Does not emulate filesystem operations (resolution, normalization, etc.).
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct Path {
+    inner: std::path::PathBuf,
+}
+
+impl Path {
+    /// Port of `Path.of(String first, String... more)`.
+    pub fn of(first: &str, more: &[&str]) -> Self {
+        let mut p = std::path::PathBuf::from(first);
+        for m in more {
+            p.push(m);
+        }
+        Path { inner: p }
+    }
+
+    /// Port of `Path.toString()`.
+    pub fn to_string(&self) -> String {
+        self.inner.to_string_lossy().into_owned()
+    }
+}
+
+impl std::fmt::Display for Path {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.inner.display())
+    }
+}

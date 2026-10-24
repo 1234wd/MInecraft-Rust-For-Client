@@ -252,7 +252,7 @@ com/mojang/realmsclient/dto/Backup.java,com.mojang.realmsclient.dto.ValueObject,
 com/mojang/realmsclient/dto/Backup.java,com.mojang.realmsclient.util.JsonUtils,SKELETON
 com/mojang/realmsclient/dto/BackupList.java,com.mojang.realmsclient.dto.Backup,SKELETON
 com/mojang/realmsclient/dto/BackupList.java,net.minecraft.util.LenientJsonParser,SKELETON
-com/mojang/realmsclient/dto/GuardedSerializer.java,com.mojang.realmsclient.dto.Exclude,SKELETON
+com/mojang/realmsclient/dto/GuardedSerializer.java,com.mojang.realmsclient.dto.Exclude,PORTED
 com/mojang/realmsclient/dto/GuardedSerializer.java,com.mojang.realmsclient.dto.ReflectionBasedSerialization,VERIFIED
 com/mojang/realmsclient/dto/Ops.java,net.minecraft.util.LenientJsonParser,SKELETON
 com/mojang/realmsclient/dto/OutboundPlayer.java,com.mojang.realmsclient.dto.ReflectionBasedSerialization,VERIFIED
@@ -1360,7 +1360,7 @@ net/minecraft/client/color/item/TeamColor.java,net.minecraft.world.entity.Living
 net/minecraft/client/color/item/TeamColor.java,net.minecraft.world.item.ItemStack,SKELETON
 net/minecraft/client/color/item/TeamColor.java,net.minecraft.world.scores.Team,SKELETON
 net/minecraft/client/data/Main.java,net.minecraft.SharedConstants,SKELETON
-net/minecraft/client/data/Main.java,net.minecraft.SuppressForbidden,SKELETON
+net/minecraft/client/data/Main.java,net.minecraft.SuppressForbidden,PORTED
 net/minecraft/client/data/Main.java,net.minecraft.client.ClientBootstrap,SKELETON
 net/minecraft/client/data/Main.java,net.minecraft.client.data.AtlasProvider,SKELETON
 net/minecraft/client/data/Main.java,net.minecraft.client.data.models.EquipmentAssetProvider,SKELETON
@@ -7950,7 +7950,7 @@ net/minecraft/client/renderer/item/CompositeModel.java,net.minecraft.world.entit
 net/minecraft/client/renderer/item/CompositeModel.java,net.minecraft.world.item.ItemDisplayContext,PARTIAL
 net/minecraft/client/renderer/item/CompositeModel.java,net.minecraft.world.item.ItemStack,SKELETON
 net/minecraft/client/renderer/item/ConditionalItemModel.java,com.mojang.math.Transformation,SKELETON
-net/minecraft/client/renderer/item/ConditionalItemModel.java,net.minecraft.client.multiplayer.CacheSlot,SKELETON
+net/minecraft/client/renderer/item/ConditionalItemModel.java,net.minecraft.client.multiplayer.CacheSlot,PORTED
 net/minecraft/client/renderer/item/ConditionalItemModel.java,net.minecraft.client.multiplayer.ClientLevel,SKELETON
 net/minecraft/client/renderer/item/ConditionalItemModel.java,net.minecraft.client.renderer.item.ItemModel,SKELETON
 net/minecraft/client/renderer/item/ConditionalItemModel.java,net.minecraft.client.renderer.item.ItemModelResolver,SKELETON
@@ -13727,7 +13727,7 @@ net/minecraft/server/jsonrpc/internalapi/MinecraftBanListServiceImpl.java,net.mi
 net/minecraft/server/jsonrpc/internalapi/MinecraftBanListServiceImpl.java,net.minecraft.server.players.NameAndId,SKELETON
 net/minecraft/server/jsonrpc/internalapi/MinecraftBanListServiceImpl.java,net.minecraft.server.players.UserBanListEntry,SKELETON
 net/minecraft/server/jsonrpc/internalapi/MinecraftExecutorServiceImpl.java,net.minecraft.server.dedicated.DedicatedServer,SKELETON
-net/minecraft/server/jsonrpc/internalapi/MinecraftExecutorServiceImpl.java,net.minecraft.server.jsonrpc.internalapi.MinecraftExecutorService,SKELETON
+net/minecraft/server/jsonrpc/internalapi/MinecraftExecutorServiceImpl.java,net.minecraft.server.jsonrpc.internalapi.MinecraftExecutorService,PORTED
 net/minecraft/server/jsonrpc/internalapi/MinecraftExecutorServiceImpl.java,net.minecraft.server.notifications.NotificationManager,SKELETON
 net/minecraft/server/jsonrpc/internalapi/MinecraftGameRuleService.java,net.minecraft.server.jsonrpc.methods.ClientInfo,VERIFIED
 net/minecraft/server/jsonrpc/internalapi/MinecraftGameRuleService.java,net.minecraft.server.jsonrpc.methods.GameRulesService,SKELETON
@@ -14000,7 +14000,7 @@ net/minecraft/server/packs/repository/PackCompatibility.java,net.minecraft.netwo
 net/minecraft/server/packs/repository/PackCompatibility.java,net.minecraft.server.packs.metadata.pack.PackFormat,SKELETON
 net/minecraft/server/packs/repository/PackCompatibility.java,net.minecraft.util.InclusiveRange,SKELETON
 net/minecraft/server/packs/repository/PackDetector.java,net.minecraft.world.level.validation.DirectoryValidator,SKELETON
-net/minecraft/server/packs/repository/PackDetector.java,net.minecraft.world.level.validation.ForbiddenSymlinkInfo,SKELETON
+net/minecraft/server/packs/repository/PackDetector.java,net.minecraft.world.level.validation.ForbiddenSymlinkInfo,PORTED
 net/minecraft/server/packs/repository/PackSource.java,net.minecraft.ChatFormatting,VERIFIED
 net/minecraft/server/packs/repository/PackSource.java,net.minecraft.network.chat.Component,SKELETON
 net/minecraft/server/packs/repository/RepositorySource.java,net.minecraft.server.packs.repository.Pack,SKELETON
@@ -14034,7 +14034,7 @@ net/minecraft/server/packs/resources/ReloadableResourceManager.java,net.minecraf
 net/minecraft/server/packs/resources/ReloadableResourceManager.java,net.minecraft.server.packs.resources.CloseableResourceManager,SKELETON
 net/minecraft/server/packs/resources/ReloadableResourceManager.java,net.minecraft.server.packs.resources.MultiPackResourceManager,SKELETON
 net/minecraft/server/packs/resources/ReloadableResourceManager.java,net.minecraft.server.packs.resources.PreparableReloadListener,SKELETON
-net/minecraft/server/packs/resources/ReloadableResourceManager.java,net.minecraft.server.packs.resources.ReloadInstance,SKELETON
+net/minecraft/server/packs/resources/ReloadableResourceManager.java,net.minecraft.server.packs.resources.ReloadInstance,PORTED
 net/minecraft/server/packs/resources/ReloadableResourceManager.java,net.minecraft.server.packs.resources.Resource,SKELETON
 net/minecraft/server/packs/resources/ReloadableResourceManager.java,net.minecraft.server.packs.resources.ResourceManager,SKELETON
 net/minecraft/server/packs/resources/ReloadableResourceManager.java,net.minecraft.server.packs.resources.SimpleReloadInstance,SKELETON
@@ -14285,7 +14285,7 @@ net/minecraft/util/ClassInstanceMultiMap.java,net.minecraft.util.Util,SKELETON
 net/minecraft/util/ClassTreeIdRegistry.java,net.minecraft.util.Util,SKELETON
 net/minecraft/util/ColorRGBA.java,net.minecraft.util.ExtraCodecs,SKELETON
 net/minecraft/util/CompilableString.java,net.minecraft.network.chat.Component,SKELETON
-net/minecraft/util/DelegateDataOutput.java,net.minecraft.SuppressForbidden,SKELETON
+net/minecraft/util/DelegateDataOutput.java,net.minecraft.SuppressForbidden,PORTED
 net/minecraft/util/DirectoryLock.java,net.minecraft.util.FileUtil,SKELETON
 net/minecraft/util/EncoderCache.java,net.minecraft.nbt.Tag,VERIFIED
 net/minecraft/util/FileZipper.java,net.minecraft.util.Util,SKELETON
@@ -23137,8 +23137,6 @@ net/minecraft/world/level/chunk/storage/ChunkIOErrorReporter.java,net.minecraft.
 net/minecraft/world/level/chunk/storage/ChunkIOErrorReporter.java,net.minecraft.ReportedException,SKELETON
 net/minecraft/world/level/chunk/storage/ChunkIOErrorReporter.java,net.minecraft.world.level.ChunkPos,VERIFIED
 net/minecraft/world/level/chunk/storage/ChunkIOErrorReporter.java,net.minecraft.world.level.chunk.storage.RegionStorageInfo,SKELETON
-net/minecraft/world/level/chunk/storage/ChunkScanAccess.java,net.minecraft.nbt.StreamTagVisitor,PORTED
-net/minecraft/world/level/chunk/storage/ChunkScanAccess.java,net.minecraft.world.level.ChunkPos,VERIFIED
 net/minecraft/world/level/chunk/storage/RecreatingSimpleRegionStorage.java,net.minecraft.nbt.CompoundTag,PARTIAL
 net/minecraft/world/level/chunk/storage/RecreatingSimpleRegionStorage.java,net.minecraft.util.datafix.DataFixTypes,SKELETON
 net/minecraft/world/level/chunk/storage/RecreatingSimpleRegionStorage.java,net.minecraft.world.level.ChunkPos,VERIFIED
@@ -26313,8 +26311,8 @@ net/minecraft/world/level/timers/TimerCallbacks.java,net.minecraft.util.ExtraCod
 net/minecraft/world/level/timers/TimerCallbacks.java,net.minecraft.world.level.timers.FunctionCallback,SKELETON
 net/minecraft/world/level/timers/TimerCallbacks.java,net.minecraft.world.level.timers.FunctionTagCallback,SKELETON
 net/minecraft/world/level/timers/TimerCallbacks.java,net.minecraft.world.level.timers.TimerCallback,SKELETON
-net/minecraft/world/level/validation/ContentValidationException.java,net.minecraft.world.level.validation.ForbiddenSymlinkInfo,SKELETON
-net/minecraft/world/level/validation/DirectoryValidator.java,net.minecraft.world.level.validation.ForbiddenSymlinkInfo,SKELETON
+net/minecraft/world/level/validation/ContentValidationException.java,net.minecraft.world.level.validation.ForbiddenSymlinkInfo,PORTED
+net/minecraft/world/level/validation/DirectoryValidator.java,net.minecraft.world.level.validation.ForbiddenSymlinkInfo,PORTED
 net/minecraft/world/phys/BlockHitResult.java,net.minecraft.core.BlockPos,PARTIAL
 net/minecraft/world/phys/BlockHitResult.java,net.minecraft.core.Direction,PARTIAL
 net/minecraft/world/phys/BlockHitResult.java,net.minecraft.world.phys.HitResult,SKELETON

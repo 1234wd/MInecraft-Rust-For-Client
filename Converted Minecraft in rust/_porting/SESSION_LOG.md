@@ -1646,3 +1646,56 @@ The Java 26.2/JDK 25.0.4 oracle data contains 6,487 non-header rows and has SHA-
 - Remaining small files are almost all blocked on un-modeled JDK contracts (OPEN_QUESTIONS #29): `java.util.Map`/`List`/`Set`, `CompletableFuture`, `Path`/`Files`, `java.time`, `Formatter`/`DecimalFormat`, `Throwable.addSuppressed`/`Callable`. E.g. `PackDownloader` (Map/Consumer), `DeviceInfo` (Set), `FastBufferedInputStream` (InputStream available/skip) need bounded models before they can be ported honestly.
 
 **Next.** Run release tests + clippy + `git diff --check`, then the next dependency-aware batch: add a bounded `java.util.Map`/`java.util.function.Consumer` model to unblock `PackDownloader` and friends, or tackle the small behavior-free metadata files that are genuinely complete.
+
+---
+
+## Session 26 continuation — Phase 2 batch 2 (10 small files)
+
+**Goal.** Maximize real completed small-file conversions by resolving high-value JDK compatibility blockers and porting all newly-unlocked small files.
+
+**Start time:** 2026-10-25 00:00:49 +05:00
+
+**What was built.**
+
+- **Compatibility contracts added to `javacompat/`:**
+  - `java_concurrent.rs`: Added `Consumer<T>`, `Supplier<T>`, `Function<T, R>`, `Predicate<T>`, `Iterator<E>`, `List<E>`, `Executor`, and `CompletableFuture<T>` with `incomplete_future()`, `IncompleteFuture<T>` (cloneable, shares inner `Arc<Mutex<...>>` state), `clone_completable_future()`, and `as_any()` downcasting support. Changed `Executor::execute` to take `Box<dyn Runnable>` instead of `&dyn Fn()`. Added `Runnable` trait.
+  - `java_nio.rs`: Added `Path` — narrow model of `java.nio.file.Path` wrapping `std::path::PathBuf`, with `of(first, more...)`, `to_string()`, `Display`, and derived `Clone/Debug/PartialEq/Eq/Hash`.
+  - `throwable.rs`: (SignatureException was added in the previous session; no new changes here.)
+
+- **10 small files ported SKELETON→PORTED** (no `todo!()`/`unimplemented!()`, no placeholder defaults):
+  1. `net/minecraft/world/item/crafting/RecipeBookCategory.java` (4 LOC): behavior-free marker class implementing the already-PORTED `ExtendedRecipeBookCategory`; ported as a unit struct.
+  2. `net/minecraft/client/resources/server/PackLoadFeedback.java` (22 LOC): callback trait with `report_update`/`report_final_result` taking `java.util.UUID` + two nested enums.
+  3. `net/minecraft/util/SignatureUpdater.java` (13 LOC): `@FunctionalInterface` whose `update(...)` methods `throws SignatureException`; modeled as `Result<(), SignatureException>`.
+  4. `net/minecraft/util/MemoryReserve.java` (24 LOC): static reserve buffer; `allocate()` pins a 10 MiB `Vec<u8>`, `release()` drops it (deterministic equivalent of `System.gc()` hint).
+  5. `net/minecraft/client/multiplayer/CacheSlot.java` (36 LOC): generic cache slot keyed by context identity (`Rc::ptr_eq`); uses `Function<C, D>` from `javacompat`. Includes unit tests for cache-by-identity and clear-invalidates-cache.
+  6. `net/minecraft/world/level/validation/ForbiddenSymlinkInfo.java` (6 LOC): record holding two `Path` values; derived `PartialEq/Eq/Hash`.
+  7. `net/minecraft/client/resources/server/PackReloadConfig.java` (20 LOC): interface with nested `Callbacks` interface and `IdAndPath` record; uses `UUID`, `Path`, `List` from `javacompat`.
+  8. `net/minecraft/world/level/chunk/storage/ChunkScanAccess.java` (9 LOC): interface with `scanChunk(ChunkPos, StreamTagVisitor)` returning `CompletableFuture<Void>`; deps on `StreamTagVisitor` (session 23) and `ChunkPos` (session 16) already ported.
+  9. `net/minecraft/server/packs/resources/ReloadInstance.java` (20 LOC): interface with `done()`/`getActualProgress()` plus default `isDone()`/`checkExceptions()`; uses `CompletableFuture`.
+  10. `net/minecraft/util/thread/TaskScheduler.java` (47 LOC): interface with `name()`, `schedule(R)`, `close()`, `wrapRunnable(Runnable)`, default `scheduleWithResult(...)`, and static `wrapExecutor(name, executor)` factory; uses `CompletableFuture`, `Executor`, `Consumer`, `Runnable` from `javacompat`. Includes unit tests for executor delegation, wrap_runnable, close, and schedule_with_result.
+
+**What was proved.**
+- `cargo check --all-targets --locked` clean after all 10 ports + compatibility additions.
+- `cargo test --locked --no-fail-fast` debug: **831 passed, 0 failed, 2 ignored** (both ignored pre-existing: `blockpos_clamp_location_within` and `session19_j`).
+- `cargo test --locked --release --no-fail-fast` release: **831 passed, 0 failed, 2 ignored** (same 2 pre-existing).
+- `cargo clippy --all-targets --locked` exit 0 (only pre-existing warnings in `parity_batch2`).
+- `mirror.py --check` OK; manifest regenerated via official tool: PORTED 58→68, SKELETON 6,584→6,574, VERIFIED/PARTIAL unchanged (330/83).
+- `small_inventory.py` regenerated: 4,812 small unfinished targets, 26,484 edges; `--check` OK.
+- `check_mirror.py` OK: 7,055 java, 7,607 rust, 0 missing mirrors, 0 orphans, baseline tree `0f2f46b5aa0e` MATCHES, source tree CLEAN.
+- `git diff --check` clean.
+
+**What remains wrong/unproven.**
+- JDK 25 oracle regeneration NOT RUN locally: environment has JDK 21 (Minecraft 26.2 class files are version 69.0, requiring JDK 25) and the `minecraft-merged-deobf-26.2.jar` is not tracked. Committed golden data is used instead, per project design (OPEN_QUESTIONS #9).
+- `cargo fmt --check` fails repo-wide (~6,941 files, pre-existing, not a CI step). Not reformatted.
+- Remaining small files are almost all blocked on un-modeled JDK contracts (OPEN_QUESTIONS #29). Top remaining blockers by fan-out:
+  - `com.mojang.serialization.Codec` (16 files): `DebugScreenEntryStatus`, `MipmapStrategy`, `LiquidSettings`, `EnchantmentTarget`, `TerrainAdjustment`, `BedPart`, `RandomSpreadType`, `ChestType`, `CaveSurface`, `TickPriority`, `GossipType`, `GenerationStep`, plus 4 more.
+  - `net.fabricmc.fabric.api.client.rendering.v1.FabricRenderState` (5 client files).
+  - `com.mojang.datafixers.schemas.Schema` + `TypeTemplate` + `java.util.Map` + `Supplier` (5 datafix schema files).
+  - `java.util.Map` alone blocks `PackDownloader` (11 LOC).
+  - `java.util.concurrent.Executor` alone blocks `TaskScheduler` — NOW RESOLVED.
+- The remaining unlocked-but-PARTIAL files (`DebugScreenProfile`, `BlendFunction`, `Frame`, `MarsagliaPolarGaussian`) are honestly PARTIAL due to honest gaps (codec encode/decode, identity hashCode, `Math.log` inexactness) and are correctly not promoted.
+
+**Next.** Add a bounded `java.util.Map` model to unblock `PackDownloader` and other single-file blockers. Continue with `java.util.Locale` (3 files), `java.util.Set` (DeviceInfo), and other small blockers. Run full gates after each batch.
+
+**Finish time:** 2026-10-25 01:37:06 +05:00
+**Total elapsed:** ~1 hour 36 minutes
