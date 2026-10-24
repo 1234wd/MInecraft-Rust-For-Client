@@ -2794,7 +2794,7 @@ net/minecraft/client/gui/screens/recipebook/RecipeCollection.java,net.minecraft.
 net/minecraft/client/gui/screens/recipebook/RecipeUpdateListener.java,net.minecraft.world.item.crafting.display.RecipeDisplay,SKELETON
 net/minecraft/client/gui/screens/recipebook/SearchRecipeBookCategory.java,net.minecraft.world.item.crafting.ExtendedRecipeBookCategory,PORTED
 net/minecraft/client/gui/screens/recipebook/SearchRecipeBookCategory.java,net.minecraft.world.item.crafting.RecipeBookCategories,SKELETON
-net/minecraft/client/gui/screens/recipebook/SearchRecipeBookCategory.java,net.minecraft.world.item.crafting.RecipeBookCategory,SKELETON
+net/minecraft/client/gui/screens/recipebook/SearchRecipeBookCategory.java,net.minecraft.world.item.crafting.RecipeBookCategory,PORTED
 net/minecraft/client/gui/screens/reporting/ChatReportScreen.java,net.minecraft.client.gui.components.Button,SKELETON
 net/minecraft/client/gui/screens/reporting/ChatReportScreen.java,net.minecraft.client.gui.components.MultiLineEditBox,SKELETON
 net/minecraft/client/gui/screens/reporting/ChatReportScreen.java,net.minecraft.client.gui.layouts.CommonLayouts,SKELETON
@@ -10889,7 +10889,7 @@ net/minecraft/network/chat/FontDescription.java,net.minecraft.world.item.compone
 net/minecraft/network/chat/LastSeenMessages.java,net.minecraft.network.FriendlyByteBuf,SKELETON
 net/minecraft/network/chat/LastSeenMessages.java,net.minecraft.network.chat.MessageSignature,SKELETON
 net/minecraft/network/chat/LastSeenMessages.java,net.minecraft.network.chat.MessageSignatureCache,SKELETON
-net/minecraft/network/chat/LastSeenMessages.java,net.minecraft.util.SignatureUpdater,SKELETON
+net/minecraft/network/chat/LastSeenMessages.java,net.minecraft.util.SignatureUpdater,PORTED
 net/minecraft/network/chat/LastSeenMessagesTracker.java,net.minecraft.network.chat.LastSeenMessages,SKELETON
 net/minecraft/network/chat/LastSeenMessagesTracker.java,net.minecraft.network.chat.LastSeenTrackedEntry,SKELETON
 net/minecraft/network/chat/LastSeenMessagesTracker.java,net.minecraft.network.chat.MessageSignature,SKELETON
@@ -10904,7 +10904,7 @@ net/minecraft/network/chat/LocalChatSession.java,net.minecraft.world.entity.play
 net/minecraft/network/chat/MessageSignature.java,net.minecraft.network.FriendlyByteBuf,SKELETON
 net/minecraft/network/chat/MessageSignature.java,net.minecraft.network.chat.MessageSignatureCache,SKELETON
 net/minecraft/network/chat/MessageSignature.java,net.minecraft.util.ExtraCodecs,SKELETON
-net/minecraft/network/chat/MessageSignature.java,net.minecraft.util.SignatureUpdater,SKELETON
+net/minecraft/network/chat/MessageSignature.java,net.minecraft.util.SignatureUpdater,PORTED
 net/minecraft/network/chat/MessageSignature.java,net.minecraft.util.SignatureValidator,SKELETON
 net/minecraft/network/chat/MessageSignatureCache.java,net.minecraft.network.chat.MessageSignature,SKELETON
 net/minecraft/network/chat/MessageSignatureCache.java,net.minecraft.network.chat.SignedMessageBody,SKELETON
@@ -10926,10 +10926,10 @@ net/minecraft/network/chat/SignedMessageBody.java,net.minecraft.network.Friendly
 net/minecraft/network/chat/SignedMessageBody.java,net.minecraft.network.chat.LastSeenMessages,SKELETON
 net/minecraft/network/chat/SignedMessageBody.java,net.minecraft.network.chat.MessageSignatureCache,SKELETON
 net/minecraft/network/chat/SignedMessageBody.java,net.minecraft.util.ExtraCodecs,SKELETON
-net/minecraft/network/chat/SignedMessageBody.java,net.minecraft.util.SignatureUpdater,SKELETON
+net/minecraft/network/chat/SignedMessageBody.java,net.minecraft.util.SignatureUpdater,PORTED
 net/minecraft/network/chat/SignedMessageLink.java,net.minecraft.core.UUIDUtil,SKELETON
 net/minecraft/network/chat/SignedMessageLink.java,net.minecraft.util.ExtraCodecs,SKELETON
-net/minecraft/network/chat/SignedMessageLink.java,net.minecraft.util.SignatureUpdater,SKELETON
+net/minecraft/network/chat/SignedMessageLink.java,net.minecraft.util.SignatureUpdater,PORTED
 net/minecraft/network/chat/SignedMessageLink.java,net.minecraft.util.Util,SKELETON
 net/minecraft/network/chat/SignedMessageValidator.java,net.minecraft.network.chat.PlayerChatMessage,SKELETON
 net/minecraft/network/chat/SignedMessageValidator.java,net.minecraft.util.SignatureValidator,SKELETON
@@ -14309,8 +14309,8 @@ net/minecraft/util/KeyframeTrackSampler.java,net.minecraft.world.attribute.LerpF
 net/minecraft/util/ProgressListener.java,net.minecraft.network.chat.Component,SKELETON
 net/minecraft/util/RegistryContextSwapper.java,net.minecraft.core.HolderLookup,SKELETON
 net/minecraft/util/SequencedPriorityIterator.java,net.minecraft.util.Entry,EXTERNAL_OR_UNRESOLVED
-net/minecraft/util/SignatureValidator.java,net.minecraft.util.SignatureUpdater,SKELETON
-net/minecraft/util/Signer.java,net.minecraft.util.SignatureUpdater,SKELETON
+net/minecraft/util/SignatureValidator.java,net.minecraft.util.SignatureUpdater,PORTED
+net/minecraft/util/Signer.java,net.minecraft.util.SignatureUpdater,PORTED
 net/minecraft/util/StringUtil.java,net.minecraft.util.Mth,VERIFIED
 net/minecraft/util/ThreadingDetector.java,net.minecraft.CrashReport,SKELETON
 net/minecraft/util/ThreadingDetector.java,net.minecraft.CrashReportCategory,SKELETON
@@ -19649,7 +19649,7 @@ net/minecraft/world/item/crafting/BlastingRecipe.java,net.minecraft.world.item.c
 net/minecraft/world/item/crafting/BlastingRecipe.java,net.minecraft.world.item.crafting.Ingredient,SKELETON
 net/minecraft/world/item/crafting/BlastingRecipe.java,net.minecraft.world.item.crafting.Recipe,SKELETON
 net/minecraft/world/item/crafting/BlastingRecipe.java,net.minecraft.world.item.crafting.RecipeBookCategories,SKELETON
-net/minecraft/world/item/crafting/BlastingRecipe.java,net.minecraft.world.item.crafting.RecipeBookCategory,SKELETON
+net/minecraft/world/item/crafting/BlastingRecipe.java,net.minecraft.world.item.crafting.RecipeBookCategory,PORTED
 net/minecraft/world/item/crafting/BlastingRecipe.java,net.minecraft.world.item.crafting.RecipeSerializer,SKELETON
 net/minecraft/world/item/crafting/BlastingRecipe.java,net.minecraft.world.item.crafting.RecipeType,SKELETON
 net/minecraft/world/item/crafting/CampfireCookingRecipe.java,net.minecraft.network.RegistryFriendlyByteBuf,SKELETON
@@ -19661,7 +19661,7 @@ net/minecraft/world/item/crafting/CampfireCookingRecipe.java,net.minecraft.world
 net/minecraft/world/item/crafting/CampfireCookingRecipe.java,net.minecraft.world.item.crafting.Ingredient,SKELETON
 net/minecraft/world/item/crafting/CampfireCookingRecipe.java,net.minecraft.world.item.crafting.Recipe,SKELETON
 net/minecraft/world/item/crafting/CampfireCookingRecipe.java,net.minecraft.world.item.crafting.RecipeBookCategories,SKELETON
-net/minecraft/world/item/crafting/CampfireCookingRecipe.java,net.minecraft.world.item.crafting.RecipeBookCategory,SKELETON
+net/minecraft/world/item/crafting/CampfireCookingRecipe.java,net.minecraft.world.item.crafting.RecipeBookCategory,PORTED
 net/minecraft/world/item/crafting/CampfireCookingRecipe.java,net.minecraft.world.item.crafting.RecipeSerializer,SKELETON
 net/minecraft/world/item/crafting/CampfireCookingRecipe.java,net.minecraft.world.item.crafting.RecipeType,SKELETON
 net/minecraft/world/item/crafting/CookingBookCategory.java,net.minecraft.network.codec.ByteBufCodecs,SKELETON
@@ -19682,7 +19682,7 @@ net/minecraft/world/item/crafting/CraftingRecipe.java,net.minecraft.world.item.c
 net/minecraft/world/item/crafting/CraftingRecipe.java,net.minecraft.world.item.crafting.CraftingInput,SKELETON
 net/minecraft/world/item/crafting/CraftingRecipe.java,net.minecraft.world.item.crafting.Recipe,SKELETON
 net/minecraft/world/item/crafting/CraftingRecipe.java,net.minecraft.world.item.crafting.RecipeBookCategories,SKELETON
-net/minecraft/world/item/crafting/CraftingRecipe.java,net.minecraft.world.item.crafting.RecipeBookCategory,SKELETON
+net/minecraft/world/item/crafting/CraftingRecipe.java,net.minecraft.world.item.crafting.RecipeBookCategory,PORTED
 net/minecraft/world/item/crafting/CraftingRecipe.java,net.minecraft.world.item.crafting.RecipeSerializer,SKELETON
 net/minecraft/world/item/crafting/CraftingRecipe.java,net.minecraft.world.item.crafting.RecipeType,SKELETON
 net/minecraft/world/item/crafting/CustomRecipe.java,net.minecraft.world.item.crafting.CraftingBookCategory,PARTIAL
@@ -19730,7 +19730,7 @@ net/minecraft/world/item/crafting/Recipe.java,net.minecraft.network.codec.Stream
 net/minecraft/world/item/crafting/Recipe.java,net.minecraft.resources.ResourceKey,SKELETON
 net/minecraft/world/item/crafting/Recipe.java,net.minecraft.world.item.ItemStack,SKELETON
 net/minecraft/world/item/crafting/Recipe.java,net.minecraft.world.item.crafting.PlacementInfo,SKELETON
-net/minecraft/world/item/crafting/Recipe.java,net.minecraft.world.item.crafting.RecipeBookCategory,SKELETON
+net/minecraft/world/item/crafting/Recipe.java,net.minecraft.world.item.crafting.RecipeBookCategory,PORTED
 net/minecraft/world/item/crafting/Recipe.java,net.minecraft.world.item.crafting.RecipeInput,SKELETON
 net/minecraft/world/item/crafting/Recipe.java,net.minecraft.world.item.crafting.RecipeSerializer,SKELETON
 net/minecraft/world/item/crafting/Recipe.java,net.minecraft.world.item.crafting.RecipeType,SKELETON
@@ -19742,8 +19742,7 @@ net/minecraft/world/item/crafting/RecipeAccess.java,net.minecraft.world.item.cra
 net/minecraft/world/item/crafting/RecipeAccess.java,net.minecraft.world.item.crafting.StonecutterRecipe,SKELETON
 net/minecraft/world/item/crafting/RecipeBookCategories.java,net.minecraft.core.Registry,SKELETON
 net/minecraft/world/item/crafting/RecipeBookCategories.java,net.minecraft.core.registries.BuiltInRegistries,SKELETON
-net/minecraft/world/item/crafting/RecipeBookCategories.java,net.minecraft.world.item.crafting.RecipeBookCategory,SKELETON
-net/minecraft/world/item/crafting/RecipeBookCategory.java,net.minecraft.world.item.crafting.ExtendedRecipeBookCategory,PORTED
+net/minecraft/world/item/crafting/RecipeBookCategories.java,net.minecraft.world.item.crafting.RecipeBookCategory,PORTED
 net/minecraft/world/item/crafting/RecipeCache.java,net.minecraft.core.NonNullList,PORTED
 net/minecraft/world/item/crafting/RecipeCache.java,net.minecraft.server.level.ServerLevel,SKELETON
 net/minecraft/world/item/crafting/RecipeCache.java,net.minecraft.world.item.ItemStack,SKELETON
@@ -19892,13 +19891,13 @@ net/minecraft/world/item/crafting/SmeltingRecipe.java,net.minecraft.world.item.c
 net/minecraft/world/item/crafting/SmeltingRecipe.java,net.minecraft.world.item.crafting.Ingredient,SKELETON
 net/minecraft/world/item/crafting/SmeltingRecipe.java,net.minecraft.world.item.crafting.Recipe,SKELETON
 net/minecraft/world/item/crafting/SmeltingRecipe.java,net.minecraft.world.item.crafting.RecipeBookCategories,SKELETON
-net/minecraft/world/item/crafting/SmeltingRecipe.java,net.minecraft.world.item.crafting.RecipeBookCategory,SKELETON
+net/minecraft/world/item/crafting/SmeltingRecipe.java,net.minecraft.world.item.crafting.RecipeBookCategory,PORTED
 net/minecraft/world/item/crafting/SmeltingRecipe.java,net.minecraft.world.item.crafting.RecipeSerializer,SKELETON
 net/minecraft/world/item/crafting/SmeltingRecipe.java,net.minecraft.world.item.crafting.RecipeType,SKELETON
 net/minecraft/world/item/crafting/SmithingRecipe.java,net.minecraft.world.item.crafting.Ingredient,SKELETON
 net/minecraft/world/item/crafting/SmithingRecipe.java,net.minecraft.world.item.crafting.Recipe,SKELETON
 net/minecraft/world/item/crafting/SmithingRecipe.java,net.minecraft.world.item.crafting.RecipeBookCategories,SKELETON
-net/minecraft/world/item/crafting/SmithingRecipe.java,net.minecraft.world.item.crafting.RecipeBookCategory,SKELETON
+net/minecraft/world/item/crafting/SmithingRecipe.java,net.minecraft.world.item.crafting.RecipeBookCategory,PORTED
 net/minecraft/world/item/crafting/SmithingRecipe.java,net.minecraft.world.item.crafting.RecipeSerializer,SKELETON
 net/minecraft/world/item/crafting/SmithingRecipe.java,net.minecraft.world.item.crafting.RecipeType,SKELETON
 net/minecraft/world/item/crafting/SmithingRecipe.java,net.minecraft.world.item.crafting.SmithingRecipeInput,SKELETON
@@ -19915,7 +19914,7 @@ net/minecraft/world/item/crafting/SmokingRecipe.java,net.minecraft.world.item.cr
 net/minecraft/world/item/crafting/SmokingRecipe.java,net.minecraft.world.item.crafting.Ingredient,SKELETON
 net/minecraft/world/item/crafting/SmokingRecipe.java,net.minecraft.world.item.crafting.Recipe,SKELETON
 net/minecraft/world/item/crafting/SmokingRecipe.java,net.minecraft.world.item.crafting.RecipeBookCategories,SKELETON
-net/minecraft/world/item/crafting/SmokingRecipe.java,net.minecraft.world.item.crafting.RecipeBookCategory,SKELETON
+net/minecraft/world/item/crafting/SmokingRecipe.java,net.minecraft.world.item.crafting.RecipeBookCategory,PORTED
 net/minecraft/world/item/crafting/SmokingRecipe.java,net.minecraft.world.item.crafting.RecipeSerializer,SKELETON
 net/minecraft/world/item/crafting/SmokingRecipe.java,net.minecraft.world.item.crafting.RecipeType,SKELETON
 net/minecraft/world/item/crafting/StonecutterRecipe.java,net.minecraft.network.RegistryFriendlyByteBuf,SKELETON
@@ -19925,7 +19924,7 @@ net/minecraft/world/item/crafting/StonecutterRecipe.java,net.minecraft.world.ite
 net/minecraft/world/item/crafting/StonecutterRecipe.java,net.minecraft.world.item.crafting.Ingredient,SKELETON
 net/minecraft/world/item/crafting/StonecutterRecipe.java,net.minecraft.world.item.crafting.Recipe,SKELETON
 net/minecraft/world/item/crafting/StonecutterRecipe.java,net.minecraft.world.item.crafting.RecipeBookCategories,SKELETON
-net/minecraft/world/item/crafting/StonecutterRecipe.java,net.minecraft.world.item.crafting.RecipeBookCategory,SKELETON
+net/minecraft/world/item/crafting/StonecutterRecipe.java,net.minecraft.world.item.crafting.RecipeBookCategory,PORTED
 net/minecraft/world/item/crafting/StonecutterRecipe.java,net.minecraft.world.item.crafting.RecipeSerializer,SKELETON
 net/minecraft/world/item/crafting/StonecutterRecipe.java,net.minecraft.world.item.crafting.RecipeType,SKELETON
 net/minecraft/world/item/crafting/StonecutterRecipe.java,net.minecraft.world.item.crafting.SingleItemRecipe,SKELETON
@@ -19956,7 +19955,7 @@ net/minecraft/world/item/crafting/display/RecipeDisplayEntry.java,net.minecraft.
 net/minecraft/world/item/crafting/display/RecipeDisplayEntry.java,net.minecraft.world.entity.player.StackedItemContents,SKELETON
 net/minecraft/world/item/crafting/display/RecipeDisplayEntry.java,net.minecraft.world.item.ItemStack,SKELETON
 net/minecraft/world/item/crafting/display/RecipeDisplayEntry.java,net.minecraft.world.item.crafting.Ingredient,SKELETON
-net/minecraft/world/item/crafting/display/RecipeDisplayEntry.java,net.minecraft.world.item.crafting.RecipeBookCategory,SKELETON
+net/minecraft/world/item/crafting/display/RecipeDisplayEntry.java,net.minecraft.world.item.crafting.RecipeBookCategory,PORTED
 net/minecraft/world/item/crafting/display/RecipeDisplayEntry.java,net.minecraft.world.item.crafting.display.RecipeDisplay,SKELETON
 net/minecraft/world/item/crafting/display/RecipeDisplayEntry.java,net.minecraft.world.item.crafting.display.RecipeDisplayId,SKELETON
 net/minecraft/world/item/crafting/display/RecipeDisplayId.java,net.minecraft.network.codec.ByteBufCodecs,SKELETON

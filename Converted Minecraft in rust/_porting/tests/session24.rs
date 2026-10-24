@@ -56,9 +56,11 @@ fn every_probe_group_is_claimed() {
     }
     // `rows("...")` in this file's own doc text is not a claim.
     claimed.remove("...");
+    // Session 25's groups are owned by the session25 target; Session 26's groups are owned by
+    // the session26 target. session24 claims only its own groups.
     let present: std::collections::BTreeSet<String> = sweep_probe::kinds()
         .into_iter()
-        .filter(|kind| !kind.starts_with("S25_"))
+        .filter(|kind| !kind.starts_with("S25_") && !kind.starts_with("S26_"))
         .map(str::to_string)
         .collect();
     let unread: Vec<&String> = present.difference(&claimed).collect();

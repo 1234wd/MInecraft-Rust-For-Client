@@ -31,7 +31,7 @@ struct TestPass {
 }
 
 impl FramePass for TestPass {
-    fn creates_internal<T>(
+    fn creates_internal<T: 'static>(
         &mut self,
         _name: String,
         descriptor: Arc<dyn ResourceDescriptor<T>>,

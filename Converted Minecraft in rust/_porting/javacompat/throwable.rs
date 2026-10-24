@@ -165,6 +165,47 @@ pub fn source_of(cause: &Option<Cause>) -> Option<&(dyn Error + 'static)> {
     cause.as_ref().map(|c| c.as_ref() as &(dyn Error + 'static))
 }
 
+/// Java `java.security.SignatureException`: an `Exception` carrying a nullable message.
+///
+/// `SignatureUpdater#update` declares `throws SignatureException`, so callers must be able to
+/// construct and match it. Modeled as an `std::error::Error` so it can be a `Result` error --
+/// a `throws` method is a call-and-continue contract, hence `Result` rather than a panic here
+/// (see `DESIGN_DECISIONS.md#panic-not-Result`).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SignatureException {
+    message: Option<String>,
+}
+
+impl SignatureException {
+    /// `new SignatureException()` / `new SignatureException(String message)`.
+    pub fn new(message: Option<String>) -> Self {
+        Self { message }
+    }
+
+    /// `getMessage()`.
+    pub fn get_message(&self) -> Option<&str> {
+        self.message.as_deref()
+    }
+}
+
+impl std::fmt::Display for SignatureException {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self.message {
+            Some(m) => write!(f, "java.security.SignatureException: {m}"),
+            None => f.write_str("java.security.SignatureException"),
+        }
+    }
+}
+
+impl std::error::Error for SignatureException {}
+
+/// Panics with `java.security.SignatureException: <message>`, the form a crash log records.
+#[cold]
+#[inline(never)]
+pub fn throw_signature_exception(message: &str) -> ! {
+    panic!("java.security.SignatureException: {message}")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
